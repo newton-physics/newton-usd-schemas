@@ -1,3 +1,6 @@
 __pycache__
+.coverage
+.coverage.xml
+.results.xml
 
 dist
