@@ -40,10 +40,9 @@ stage: Usd.Stage = Usd.Stage.CreateInMemory()
 prim: Usd.Prim = UsdPhysics.Scene.Define(stage, "/scene").GetPrim()
 prim.GetAttribute("physics:gravityMagnitude").Set(9.81)
 
-# TODO: uncomment once we have an API schema to use
 # apply a Newton schema and set some of its attributes
-# prim.ApplyAPI("NewtonSceneAPI")
-# prim.GetAttribute("newton:timeStep").Set(10)
+prim.ApplyAPI("NewtonSceneAPI")
+prim.GetAttribute("newton:timeStep").Set(0.002)
 
 stage.Export("/tmp/my_robot.usd")
 ```
