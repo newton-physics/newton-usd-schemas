@@ -2,3 +2,15 @@
 (
 )
 
+class NewtonSceneAPI "NewtonSceneAPI" (
+    inherits = </UsdAPISchemaBase>
+)
+{
+    uniform double newton:maxSolverIterations = 100 (
+        doc = "Maximum (constraint) solver iteration counts"
+    )
+
+    uniform double newton:timeStep = 0.005 (
+        doc = """Simulation time step in seconds"""
+    )
+}
