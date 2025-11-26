@@ -7,7 +7,7 @@ class NewtonSceneAPI "NewtonSceneAPI" (
 )
 {
     uniform double newton:maxSolverIterations = 100 (
-        doc = "Maximum number of iterations of the Newton Solver"
+        doc = "Maximum number of iterations of the physics solver"
     )
 
     uniform double newton:timeStep = 0.005 (
