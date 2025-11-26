@@ -12,7 +12,10 @@
               "bases": [
                 "UsdAPISchemaBase"
               ],
-              "schemaKind": "singleApplyAPI"
+              "schemaKind": "singleApplyAPI",
+              "apiSchemaCanOnlyApplyTo": [
+                "PhysicsScene"
+              ]
             }
           }
         },

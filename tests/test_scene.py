@@ -23,6 +23,10 @@ class TestNewtonSceneAPI(unittest.TestCase):
         self.scene.ApplyAPI("NewtonSceneAPI")
         self.assertTrue(self.scene.HasAPI("NewtonSceneAPI"))
 
+    def test_api_limitations(self):
+        prim: Usd.Prim = self.stage.DefinePrim("/NotScene", "Xform")
+        self.assertFalse(prim.CanApplyAPI("NewtonSceneAPI"))
+
     def test_max_solver_iterations(self):
         self.assertFalse(self.scene.HasAttribute("newton:maxSolverIterations"))
 
