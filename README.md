@@ -37,10 +37,11 @@ from pxr import Usd, UsdPhysics
 stage: Usd.Stage = Usd.Stage.CreateInMemory()
 
 # create a UsdPhysics.Scene and set gravity
-prim: Usd.Prim = UsdPhysics.Scene.Define(stage, "/scene").GetPrim()
-prim.GetAttribute("physics:gravityMagnitude").Set(9.81)
+scene: UsdPhysics.Scene = UsdPhysics.Scene.Define(stage, "/scene")
+scene.GetGravityMagnitudeAttr().Set(9.81)
 
 # apply a Newton schema and set some of its attributes
+prim: Usd.Prim = scene.GetPrim()
 prim.ApplyAPI("NewtonSceneAPI")
 prim.GetAttribute("newton:timeStep").Set(0.002)
 

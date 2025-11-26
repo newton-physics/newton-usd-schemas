@@ -13,4 +13,12 @@ class NewtonSceneAPI "NewtonSceneAPI" (
     uniform double newton:timeStep = 0.005 (
         doc = "Simulation time step in seconds"
     )
+
+    bool newton:enableGravity = true (
+        doc = """Enable/disable gravity in the simulation.
+
+        This is intentionally separated from the gravity direction and magnitude
+        to allow temporary disabling of gravity without modifying & caching values.
+        """
+    )
 }
