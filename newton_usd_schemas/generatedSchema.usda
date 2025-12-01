@@ -6,11 +6,11 @@ class NewtonSceneAPI "NewtonSceneAPI" (
     doc = "NewtonSceneAPI applies on top of a PhysicsScene Prim, providing attributes to control a Newton Solver."
 )
 {
-    uniform double newton:maxSolverIterations = 100 (
+    uniform int newton:maxSolverIterations = 100 (
         doc = "Maximum number of iterations of the physics solver"
     )
 
-    uniform double newton:timeStep = 0.005 (
+    uniform float newton:timeStep = 0.005 (
         doc = "Simulation time step in seconds"
     )
 
