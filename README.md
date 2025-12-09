@@ -16,7 +16,7 @@ This project is part of [Newton](https://github.com/newton-physics), a [Linux Fo
 
 # Design Principles
 
-Newton schemas follow a minimalist approach to determine which attributes should be included, and are similar to the philosophy that [USDPhysics](https://openusd.org/release/wp_rigid_body_physics.html) and the [Newton API](https://newton-physics.github.io/newton/api/newton.html) follow for capturing parameters that generalize across simulators. We view the Newton schemas as a proving and staging ground for physics parameters that should eventually be eligible for promotion into the USDPhysics standard.
+Newton schemas follow a minimalist approach to determine which attributes should be included, and are similar to the philosophy that [UsdPhysics](https://openusd.org/release/api/usd_physics_page_front.html#usdPhysics_purpose_and_scope) and the [Newton API](https://newton-physics.github.io/newton/api/newton.html) follow for capturing parameters that generalize across simulators. We view the Newton schemas as a proving and staging ground for physics parameters that should eventually be eligible for promotion into the UsdPhysics standard.
 
 A USD attribute belongs in the Newton schema if it meets one of these criteria:
 
