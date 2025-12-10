@@ -6,12 +6,14 @@ class NewtonSceneAPI "NewtonSceneAPI" (
     doc = "NewtonSceneAPI applies on top of a PhysicsScene Prim, providing attributes to control a Newton Solver."
 )
 {
-    uniform int newton:maxSolverIterations = 100 (
-        doc = "Maximum number of iterations of the physics solver"
+    uniform int newton:maxSolverIterations = -1 (
+        doc = """Maximum number of iterations of the physics solver.
+
+        If set to -1, each solver is free to choose an appropriate default."""
     )
 
-    uniform float newton:timeStep = 0.005 (
-        doc = "Simulation time step in seconds"
+    uniform int newton:timeStepsPerSecond = 1000 (
+        doc = "Simulation time step frequency in Hz"
     )
 
     bool newton:enableGravity = true (

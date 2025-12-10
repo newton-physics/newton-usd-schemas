@@ -34,26 +34,32 @@ class TestNewtonSceneAPI(unittest.TestCase):
         attr = self.scene.GetAttribute("newton:maxSolverIterations")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), 100)
+        self.assertEqual(attr.Get(), -1)
 
         success = attr.Set(10)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), 10)
 
-    def test_time_step(self):
+    def test_time_steps_per_second(self):
         self.assertFalse(self.scene.HasAttribute("newton:timeStep"))
 
         self.scene.ApplyAPI("NewtonSceneAPI")
-        attr = self.scene.GetAttribute("newton:timeStep")
+        attr = self.scene.GetAttribute("newton:timeStepsPerSecond")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertAlmostEqual(attr.Get(), 0.005)
+        self.assertEqual(attr.Get(), 1000)
 
-        success = attr.Set(0.001)
+        success = attr.Set(10000)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
-        self.assertAlmostEqual(attr.Get(), 0.001)
+        self.assertEqual(attr.Get(), 10000)
+
+        # Test rounding down to the nearest integer
+        success = attr.Set(0.9)
+        self.assertTrue(success)
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), 0)
 
     def test_enable_gravity(self):
         self.assertFalse(self.scene.HasAttribute("newton:enableGravity"))
