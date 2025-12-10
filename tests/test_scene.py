@@ -42,7 +42,7 @@ class TestNewtonSceneAPI(unittest.TestCase):
         self.assertEqual(attr.Get(), 10)
 
     def test_time_steps_per_second(self):
-        self.assertFalse(self.scene.HasAttribute("newton:timeStep"))
+        self.assertFalse(self.scene.HasAttribute("newton:timeStepsPerSecond"))
 
         self.scene.ApplyAPI("NewtonSceneAPI")
         attr = self.scene.GetAttribute("newton:timeStepsPerSecond")
