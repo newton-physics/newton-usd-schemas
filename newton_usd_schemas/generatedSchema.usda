@@ -24,3 +24,33 @@ class NewtonSceneAPI "NewtonSceneAPI" (
         """
     )
 }
+
+class NewtonCollisionAPI "NewtonCollisionAPI" (
+    apiSchemas = ["PhysicsCollisionAPI"]
+    doc = """NewtonCollisionAPI applies on top of a Gprim, providing extra collision attributes for Newton.
+
+    By applying this schema, the prim also inherits the `PhysicsCollisionAPI` schema."""
+)
+{
+    float newton:contactMargin = -inf (
+        doc = """Distance threshold below which contacts are detected.
+
+        If `newton:contactMargin` is set to -inf, the contact margin will be calculated automatically based on the size of the object."""
+    )
+}
+
+class NewtonMeshCollisionAPI "NewtonMeshCollisionAPI" (
+    apiSchemas = ["NewtonCollisionAPI", "PhysicsMeshCollisionAPI"]
+    doc = """NewtonMeshCollisionAPI applies on top of a Mesh, providing extra mesh collision attributes for Newton.
+
+    By applying this schema, the prim also inherits the `PhysicsCollisionAPI`, `NewtonCollisionAPI` and `PhysicsMeshCollisionAPI` schemas."""
+)
+{
+    uniform int newton:maxHullVertices = -1 (
+        doc = """Maximum number of vertices in the resulting convex hull approximation.
+
+        This value is only relevant when `physics:approximation = "convexHull"`.
+
+        If `newton:maxHullVertices` is set to -1, the hull computation should use as many vertices as necessary to produce a perfect convex hull."""
+    )
+}
