@@ -54,3 +54,19 @@ class NewtonMeshCollisionAPI "NewtonMeshCollisionAPI" (
         If `newton:maxHullVertices` is set to -1, the hull computation should use as many vertices as necessary to produce a perfect convex hull."""
     )
 }
+
+class NewtonMaterialAPI "NewtonMaterialAPI" (
+    apiSchemas = ["PhysicsMaterialAPI"]
+    doc = """NewtonMaterialAPI applies on top of a Material, providing extra physical material attributes for Newton.
+
+    By applying this schema, the prim also inherits the `PhysicsMaterialAPI` schema."""
+)
+{
+    float newton:torsionalFriction = 0 (
+        doc = "Torsional friction coefficient (resistance to spinning at a contact point)."
+    )
+
+    float newton:rollingFriction = 0 (
+        doc = "Rolling friction coefficient (resistance to rolling motion)."
+    )
+}
