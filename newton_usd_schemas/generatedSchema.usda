@@ -24,3 +24,117 @@ class NewtonSceneAPI "NewtonSceneAPI" (
         """
     )
 }
+class "NewtonXpbdSceneAPI" (
+    doc = """API providing XPBD solver-specific configuration parameters.
+    
+    This API exposes parameters specific to the XPBD (eXtended Position-Based Dynamics)
+    constraint solver.
+    
+    Proposed extension to: PhysicsSceneAPI"""
+)
+{
+    uniform int newton:xpbd:iterations = 2 (
+        doc = """Number of constraint solver iterations per time step.
+        
+        Controls how many times the constraint solver iterates to resolve all constraints
+        (contacts, joints, soft body constraints). Higher iteration counts improve constraint
+        satisfaction accuracy at the cost of increased computation.
+        
+        Range: [1, inf)"""
+    )
+
+    uniform float newton:xpbd:softBodyRelaxation = 0.9 (
+        doc = """Relaxation multiplier for tetrahedral FEM constraint corrections.
+        
+        Scales the computed position correction for tetrahedral soft body constraints.
+        Lower values improve stability but require more iterations for convergence.
+        
+        Range: [0, 1]
+        Units: dimensionless"""
+    )
+
+    uniform float newton:xpbd:softContactRelaxation = 0.9 (
+        doc = """Relaxation multiplier for soft contact constraint corrections.
+        
+        Scales the computed position correction for particle-particle and particle-shape
+        contacts. Lower values improve stability but require more iterations for convergence.
+        
+        Range: [0, 1]
+        Units: dimensionless"""
+    )
+
+    uniform float newton:xpbd:jointLinearRelaxation = 0.7 (
+        doc = """Relaxation multiplier for joint linear constraint corrections.
+        
+        Scales the computed position correction for joint linear (positional) constraints.
+        Lower values improve stability for complex kinematic chains but slow convergence.
+        
+        Range: [0, 1]
+        Units: dimensionless"""
+    )
+
+    uniform float newton:xpbd:jointAngularRelaxation = 0.4 (
+        doc = """Relaxation multiplier for joint angular constraint corrections.
+        
+        Scales the computed rotation correction for joint angular (rotational) constraints.
+        Lower values improve stability but slow convergence.
+        
+        Range: [0, 1]
+        Units: dimensionless"""
+    )
+
+    uniform float newton:xpbd:jointLinearCompliance = 0.0 (
+        doc = """Compliance for joint linear constraints.
+        
+        Inverse stiffness for joint linear constraints. Added to denominator in constraint
+        solver. Zero creates rigid constraints. Higher values create softer, springy joints.
+        
+        Range: [0, inf)
+        Units: second * second / mass"""
+    )
+
+    uniform float newton:xpbd:jointAngularCompliance = 0.0 (
+        doc = """Compliance for joint angular constraints.
+        
+        Inverse stiffness for joint angular constraints. Added to denominator in constraint
+        solver. Zero creates rigid constraints. Higher values create softer, springy joints.
+        
+        Range: [0, inf)
+        Units: degrees * second * second / (mass * distance * distance)"""
+    )
+
+    uniform float newton:xpbd:rigidContactRelaxation = 0.8 (
+        doc = """Relaxation multiplier for rigid body contact constraint corrections.
+        
+        Scales the computed correction for rigid body contacts including normal, friction,
+        torsional friction, and rolling friction. Lower values improve stability for
+        stacking but require more iterations.
+        
+        Range: [0, 1]
+        Units: dimensionless"""
+    )
+
+    uniform bool newton:xpbd:rigidContactConWeighting = true (
+        doc = """Enable contact constraint weighting for rigid bodies.
+        
+        When enabled, tracks the number of contacts per body and uses this information
+        to distribute contact corrections more evenly across multiple simultaneous contacts."""
+    )
+
+    uniform float newton:xpbd:angularDamping = 0.0 (
+        doc = """Angular velocity damping coefficient.
+        
+        Applied during rigid body integration as velocity *= (1 - damping * dt). Higher
+        values cause rotational motion to decay faster.
+        
+        Range: [0, inf)
+        Units: 1 / seconds"""
+    )
+
+    uniform bool newton:xpbd:enableRestitution = false (
+        doc = """Enable restitution for contacts.
+        
+        When enabled, applies velocity corrections after constraint solving to simulate
+        elastic collisions. Restitution coefficients are read from material properties."""
+    )
+}
