@@ -43,7 +43,7 @@ scene.GetGravityMagnitudeAttr().Set(9.81)
 # apply a Newton schema and set some of its attributes
 prim: Usd.Prim = scene.GetPrim()
 prim.ApplyAPI("NewtonSceneAPI")
-prim.GetAttribute("newton:timeStep").Set(0.002)
+prim.GetAttribute("newton:timeStepPerSecond").Set(500)  # 2ms
 
 stage.Export("/tmp/my_robot.usd")
 ```

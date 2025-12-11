@@ -62,10 +62,10 @@ class TestNewtonSceneAPI(unittest.TestCase):
         self.assertEqual(attr.Get(), 0)
 
     def test_enable_gravity(self):
-        self.assertFalse(self.scene.HasAttribute("newton:enableGravity"))
+        self.assertFalse(self.scene.HasAttribute("newton:gravityEnabled"))
 
         self.scene.ApplyAPI("NewtonSceneAPI")
-        attr = self.scene.GetAttribute("newton:enableGravity")
+        attr = self.scene.GetAttribute("newton:gravityEnabled")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), True)

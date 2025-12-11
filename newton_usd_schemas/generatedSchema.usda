@@ -16,8 +16,8 @@ class NewtonSceneAPI "NewtonSceneAPI" (
         doc = "Simulation time step frequency in Hz"
     )
 
-    bool newton:enableGravity = true (
-        doc = """Enable/disable gravity in the simulation.
+    bool newton:gravityEnabled = true (
+        doc = """Whether gravity should be enabled or disabled in the simulation.
 
         This is intentionally separated from the gravity direction and magnitude
         to allow temporary disabling of gravity without modifying & caching values.
