@@ -25,12 +25,7 @@ class NewtonSceneAPI "NewtonSceneAPI" (
     )
 }
 class "NewtonXpbdSceneAPI" (
-    doc = """API providing XPBD solver-specific configuration parameters.
-    
-    This API exposes parameters specific to the XPBD (eXtended Position-Based Dynamics)
-    constraint solver.
-    
-    Proposed extension to: PhysicsSceneAPI"""
+    doc = "Provides Newton's XPBD (eXtended Position-Based Dynamics) solver configuration."
 )
 {
     uniform int newton:xpbd:iterations = 2 (
@@ -131,8 +126,8 @@ class "NewtonXpbdSceneAPI" (
         Units: 1 / seconds"""
     )
 
-    uniform bool newton:xpbd:enableRestitution = false (
-        doc = """Enable restitution for contacts.
+    uniform bool newton:xpbd:restitutionEnabled = false (
+        doc = """Whether restitution is enabled for contacts.
         
         When enabled, applies velocity corrections after constraint solving to simulate
         elastic collisions. Restitution coefficients are read from material properties."""

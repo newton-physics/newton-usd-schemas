@@ -17,7 +17,8 @@
                 "PhysicsScene"
               ]
             },
-            "NewtonXpbdPhysicsSceneAPI": {
+            "NewtonPhysicsXpbdSceneAPI": {
+              "schemaIdentifier": "NewtonXpbdSceneAPI",
               "alias": {
                 "UsdSchemaBase": "NewtonXpbdSceneAPI"
               },
@@ -25,7 +26,10 @@
               "bases": [
                 "UsdAPISchemaBase"
               ],
-              "schemaKind": "singleApplyAPI"
+              "schemaKind": "singleApplyAPI",
+              "apiSchemaCanOnlyApplyTo": [
+                "PhysicsScene"
+              ]
             }
           }
         },
@@ -37,3 +41,4 @@
       }
     ]
   }
+  
