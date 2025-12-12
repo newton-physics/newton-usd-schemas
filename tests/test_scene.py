@@ -75,6 +75,7 @@ class TestNewtonSceneAPI(unittest.TestCase):
         self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), False)
 
+
 class TestNewtonXpbdSceneAPI(unittest.TestCase):
     def test_api_registered(self):
         plug_type = Plug.Registry().FindTypeByName("NewtonXpbdPhysicsSceneAPI")
@@ -246,6 +247,7 @@ class TestNewtonXpbdSceneAPI(unittest.TestCase):
         success = attr.Set(True)
         self.assertTrue(success)
         self.assertEqual(attr.Get(), True)
+
 
 if __name__ == "__main__":
     unittest.main()
