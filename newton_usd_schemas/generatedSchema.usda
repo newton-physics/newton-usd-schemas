@@ -24,6 +24,7 @@ class NewtonSceneAPI "NewtonSceneAPI" (
         """
     )
 }
+
 class "NewtonXpbdSceneAPI" (
     apiSchemas = ["NewtonSceneAPI"]
     doc = "Provides Newton's XPBD (eXtended Position-Based Dynamics) solver configuration."
@@ -122,5 +123,51 @@ class "NewtonXpbdSceneAPI" (
         
         When enabled, applies velocity corrections after constraint solving to simulate
         elastic collisions. Restitution coefficients are read from material properties."""
+    )
+}
+
+class NewtonCollisionAPI "NewtonCollisionAPI" (
+    apiSchemas = ["PhysicsCollisionAPI"]
+    doc = """NewtonCollisionAPI applies on top of a Gprim, providing extra collision attributes for Newton.
+
+    By applying this schema, the prim also inherits the `PhysicsCollisionAPI` schema."""
+)
+{
+    float newton:contactMargin = -inf (
+        doc = """Distance threshold below which contacts are detected.
+
+        If `newton:contactMargin` is set to -inf, the contact margin will be calculated automatically based on the size of the object."""
+    )
+}
+
+class NewtonMeshCollisionAPI "NewtonMeshCollisionAPI" (
+    apiSchemas = ["NewtonCollisionAPI", "PhysicsMeshCollisionAPI"]
+    doc = """NewtonMeshCollisionAPI applies on top of a Mesh, providing extra mesh collision attributes for Newton.
+
+    By applying this schema, the prim also inherits the `PhysicsCollisionAPI`, `NewtonCollisionAPI` and `PhysicsMeshCollisionAPI` schemas."""
+)
+{
+    uniform int newton:maxHullVertices = -1 (
+        doc = """Maximum number of vertices in the resulting convex hull approximation.
+
+        This value is only relevant when `physics:approximation = "convexHull"`.
+
+        If `newton:maxHullVertices` is set to -1, the hull computation should use as many vertices as necessary to produce a perfect convex hull."""
+    )
+}
+
+class NewtonMaterialAPI "NewtonMaterialAPI" (
+    apiSchemas = ["PhysicsMaterialAPI"]
+    doc = """NewtonMaterialAPI applies on top of a Material, providing extra physical material attributes for Newton.
+
+    By applying this schema, the prim also inherits the `PhysicsMaterialAPI` schema."""
+)
+{
+    float newton:torsionalFriction = 0 (
+        doc = "Torsional friction coefficient (resistance to spinning at a contact point)."
+    )
+
+    float newton:rollingFriction = 0 (
+        doc = "Rolling friction coefficient (resistance to rolling motion)."
     )
 }

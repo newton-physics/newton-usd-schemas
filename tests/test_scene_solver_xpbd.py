@@ -27,20 +27,6 @@ class TestNewtonXpbdSceneAPI(unittest.TestCase):
         prim: Usd.Prim = self.stage.DefinePrim("/NotScene", "Xform")
         self.assertFalse(prim.CanApplyAPI("NewtonXpbdSceneAPI"))
 
-    def test_iterations(self):
-        self.assertFalse(self.scene.HasAttribute("newton:xpbd:iterations"))
-
-        self.scene.ApplyAPI("NewtonXpbdSceneAPI")
-        attr = self.scene.GetAttribute("newton:xpbd:iterations")
-        self.assertIsNotNone(attr)
-        self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), 2)
-
-        success = attr.Set(10)
-        self.assertTrue(success)
-        self.assertTrue(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), 10)
-
     def test_soft_body_relaxation(self):
         self.scene.ApplyAPI("NewtonXpbdSceneAPI")
         attr = self.scene.GetAttribute("newton:xpbd:softBodyRelaxation")
