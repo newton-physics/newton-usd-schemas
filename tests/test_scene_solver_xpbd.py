@@ -21,6 +21,7 @@ class TestNewtonXpbdSceneAPI(unittest.TestCase):
 
     def test_api_application(self):
         self.scene.ApplyAPI("NewtonXpbdSceneAPI")
+        self.assertTrue(self.scene.HasAPI("NewtonSceneAPI"))
         self.assertTrue(self.scene.HasAPI("NewtonXpbdSceneAPI"))
 
     def test_api_limitations(self):
