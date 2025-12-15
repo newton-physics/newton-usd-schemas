@@ -25,19 +25,10 @@ class NewtonSceneAPI "NewtonSceneAPI" (
     )
 }
 class "NewtonXpbdSceneAPI" (
+    apiSchemas = ["NewtonSceneAPI"]
     doc = "Provides Newton's XPBD (eXtended Position-Based Dynamics) solver configuration."
 )
 {
-    uniform int newton:xpbd:iterations = 2 (
-        doc = """Number of constraint solver iterations per time step.
-        
-        Controls how many times the constraint solver iterates to resolve all constraints
-        (contacts, joints, soft body constraints). Higher iteration counts improve constraint
-        satisfaction accuracy at the cost of increased computation.
-        
-        Range: [1, inf)"""
-    )
-
     uniform float newton:xpbd:softBodyRelaxation = 0.9 (
         doc = """Relaxation multiplier for tetrahedral FEM constraint corrections.
         
