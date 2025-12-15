@@ -72,19 +72,10 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
 }
 
 class "NewtonKaminoSceneAPI" (
+    apiSchemas = ["NewtonSceneAPI"]
     doc = "Provides Newton's Kamino solver configuration."
 )
 {
-    uniform int newton:kamino:padmm:iterations = 200 (
-        doc = """Number of PADMM constraint solver iterations per time step.
-
-        Controls how many times the constraint solver iterates to resolve all constraints
-        (joints, joint-limits, contacts). Higher iteration counts improve constraint
-        satisfaction accuracy at the cost of increased computation.
-
-        Range: [1, inf)"""
-    )
-
     uniform float newton:kamino:padmm:primalTolerance = 1e-6 (
         doc = """The tolerance on the total PADMM primal residual `r_primal`.
 
@@ -116,7 +107,8 @@ class "NewtonKaminoSceneAPI" (
         Range: (1e-8, 1e-2)"""
     )
 
-    uniform string newton:kamino:padmm:warmstart = "containers" (
+    uniform token newton:kamino:padmm:warmstart = "containers" (
+        allowedTokens = ["none", "internal", "containers"]
         doc = """The warmstarting mode used for the PADMM constraint solver.
 
         Options:
@@ -185,7 +177,8 @@ class "NewtonKaminoSceneAPI" (
         """
     )
 
-    uniform string newton:kamino:jointCorrection = "twopi" (
+    uniform token newton:kamino:jointCorrection = "twopi" (
+        allowedTokens = ["none", "twopi", "continuous"]
         doc = """The rotation roll-over correction mode to use for rotational joint DoFs.
 
         Options:
