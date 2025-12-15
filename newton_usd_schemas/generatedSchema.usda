@@ -187,6 +187,128 @@ class "NewtonXpbdSceneAPI" (
     )
 }
 
+class "NewtonKaminoSceneAPI" (
+    apiSchemas = ["NewtonSceneAPI"]
+    doc = "Provides Newton's Kamino solver configuration."
+)
+{
+    uniform float newton:kamino:padmm:primalTolerance = 1e-6 (
+        doc = """The tolerance on the total PADMM primal residual `r_primal`.
+
+        The primal residual `r_primal` measures the convergence of the PADMM primal variables,
+        w.r.t the consensus between the primal and slack variables. This reflects how well the
+        solution satisfies the inequality constraints (joint-limits, contacts). Lower values
+        require more iterations for higher accuracy.
+
+        Range: (1e-8, 1e-2)"""
+    )
+
+    uniform float newton:kamino:padmm:dualTolerance = 1e-6 (
+        doc = """The tolerance on the total PADMM dual residual `r_dual`.
+
+        The dual residual `r_dual` measures the convergence of the PADMM dual variables,
+        and reflects the total violation over the set of constraints (joints, joint-limits,
+        contacts). Lower values require more iterations for higher accuracy.
+
+        Range: (1e-8, 1e-2)"""
+    )
+
+    uniform float newton:kamino:padmm:complementarityTolerance = 1e-6 (
+        doc = """The tolerance on the total PADMM complementarity residual `r_compl`.
+
+        The complementarity residual `r_compl` measures how well the solution satisfies the
+        complementarity conditions associated with inequality constraints (joint-limits,
+        contacts). Lower values require more iterations for higher accuracy.
+
+        Range: (1e-8, 1e-2)"""
+    )
+
+    uniform token newton:kamino:padmm:warmstart = "containers" (
+        allowedTokens = ["none", "internal", "containers"]
+        doc = """The warmstarting mode used for the PADMM constraint solver.
+
+        Options:
+        - "none": No warmstarting is performed.
+        - "internal": Warmstart using the PADMM internal solver state from the previous time step.
+        - "containers": Warmstart using cached per-constraint impulses and velocities from the previous time step.
+
+        Default: "containers"
+        """
+    )
+
+    uniform bool newton:kamino:padmm:acceleration = true (
+        doc = """Whether to use Nesterov acceleration in the PADMM constraint solver.
+
+        When enabled, Nesterov acceleration is applied to the PADMM
+        iterations to potentially improve the rate of convergence.
+        """
+    )
+
+    uniform float newton:kamino:constraints:alpha = 0.01 (
+        doc = """Global default Baumgarte stabilization parameter for bilateral joint constraints.
+
+        This parameter controls the amount of configuration-level error correction applied to bilateral
+        joint constraints (e.g. hinge, ball-and-socket). Higher values increase stiffness and reduce
+        positional drift, but may lead to instability if set too high.
+
+        Range: [0.0, 1.0]"""
+    )
+
+    uniform float newton:kamino:constraints:beta = 0.01 (
+        doc = """Global default Baumgarte stabilization parameter for unilateral joint-limit constraints.
+
+        This parameter controls the amount of configuration-level error correction applied to unilateral
+        joint-limit constraints. Higher values increase stiffness and reduce positional drift, but may
+        lead to instability if set too high.
+
+        Range: [0.0, 1.0]"""
+    )
+
+    uniform float newton:kamino:constraints:gamma = 0.01 (
+        doc = """Global default Baumgarte stabilization parameter for unilateral contact constraints.
+
+        This parameter controls the amount of configuration-level error correction applied to unilateral
+        contact constraints. Higher values increase stiffness and reduce positional drift, but may
+        lead to instability if set too high.
+
+        Range: [0.0, 1.0]"""
+    )
+
+    uniform float newton:kamino:constraints:delta = 1e-6 (
+        doc = """Contact penetration margin used for unilateral contact constraints.
+
+        This margin defines a small buffer distance for contact constraints, allowing for
+        minor penetrations to be tolerated before contact forces are applied. This helps
+        improve numerical stability and reduce jitter in contact-rich scenarios.
+
+        Range: [0.0, 1e-2]"""
+    )
+
+    uniform bool newton:kamino:constraints:precond = true (
+        doc = """Whether to use problem preconditioning in the constraint forward dynamics.
+
+        When enabled, the forward dynamics problem is scaled to improve numerical conditioning, which
+        can lead to solver robustness for very ill-conditioned systems. It may however slow down
+        convergence for well-conditioned systems.
+        """
+    )
+
+    uniform token newton:kamino:jointCorrection = "twopi" (
+        allowedTokens = ["none", "twopi", "continuous"]
+        doc = """The rotation roll-over correction mode to use for rotational joint DoFs.
+
+        Options:
+        - "none": No joint coordinate correction is applied. Rotational joint coordinates are computed to lie within ``[-pi, pi]``.
+        - "twopi": Rotational joint coordinates are computed to always lie within ``[-2*pi, 2*pi]``.
+        - "continuous": Rotational joint coordinates are continuously accumulated and thus unbounded.
+          This means that joint coordinates can increase/decrease indefinitely over time,
+          but are limited to numerical precision limits (i.e. ``[-FLOAT32_MAX, FLOAT32_MAX]``).
+
+        Default: "twopi"
+        """
+    )
+}
+
 class NewtonArticulationRootAPI "NewtonArticulationRootAPI" (
     apiSchemas = ["PhysicsArticulationRootAPI"]
     doc = """NewtonArticulationRootAPI extends the `PhysicsArticulationRootAPI` with additional attributes for Newton.
