@@ -23,7 +23,8 @@ dev = [
     "unittest-xml-reporting>=3.2.0",
     "pyyaml>=6.0",
     "requests>=2.32.3",
-    "usd-core>=25.5",
+    "usd-core>=25.5 ; platform_machine != 'aarch64'",
+    "usd-exchange>=2.1 ; platform_machine == 'aarch64'",
 ]
 
 [build-system]
