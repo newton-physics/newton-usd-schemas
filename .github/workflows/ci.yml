@@ -13,7 +13,7 @@ permissions:
   pull-requests: write  # Required to comment on PRs
 
 jobs:
-  check-code-format:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -29,10 +29,7 @@ jobs:
         run: uv run --group dev poe lint
 
   build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,14 +43,14 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: newton-usd-schemas-dist-${{ matrix.os }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || format('{0}', github.ref_name) }}
+          name: newton-usd-schemas-dist-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || format('{0}', github.ref_name) }}
           path: dist/
 
   test:
     needs: build
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -65,7 +62,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: newton-usd-schemas-dist-${{ matrix.os }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || format('{0}', github.ref_name) }}
+          name: newton-usd-schemas-dist-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || format('{0}', github.ref_name) }}
           path: dist/
 
       - name: Run tests
@@ -93,3 +90,23 @@ jobs:
           files: ${{ github.workspace }}/.coverage.xml
           flags: unittests
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  deploy:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - build
+      - test
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/newton-usd-schemas
+    permissions:
+      id-token: write
+    steps:
+      - name: Download wheel and source tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: newton-usd-schemas-dist-${{ github.ref_name }}
+          path: dist/
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc
