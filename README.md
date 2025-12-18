@@ -24,6 +24,7 @@ To start using the schemas, install the python wheel into a virtual environment 
 python -m venv .venv
 source .venv/bin/activate
 pip install newton-usd-schemas
+pip install usd-core  # or any other USD runtime
 ```
 
 At runtime, simply import the module to register the schemas with OpenUSD.
@@ -43,9 +44,9 @@ scene.GetGravityMagnitudeAttr().Set(9.81)
 # apply a Newton schema and set some of its attributes
 prim: Usd.Prim = scene.GetPrim()
 prim.ApplyAPI("NewtonSceneAPI")
-prim.GetAttribute("newton:timeStepPerSecond").Set(500)  # 2ms
+prim.GetAttribute("newton:timeStepsPerSecond").Set(500)  # 2ms
 
-stage.Export("/tmp/my_robot.usd")
+stage.Export("/tmp/my_robot.usda")  # or .usdc or .usd
 ```
 
 Once a USD layer is authored to storage, it can be loaded into a Newton runtime using [Newton's USD Parsing](https://newton-physics.github.io/newton/concepts/usd_parsing.html) mechanism.
