@@ -6,7 +6,7 @@ license-files = ["LICENSE.md"]
 authors = [{ name = "Newton Developers" }]
 description = "OpenUSD schema definitions for the Newton physics engine"
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10,<3.14"
 dependencies = []
 
 [project.urls]
@@ -23,8 +23,8 @@ dev = [
     "unittest-xml-reporting>=3.2.0",
     "pyyaml>=6.0",
     "requests>=2.32.3",
-    "usd-core>=25.5 ; platform_machine != 'aarch64'",
-    "usd-exchange>=2.1 ; platform_machine == 'aarch64'",
+    "usd-core>=25.11 ; platform_machine != 'aarch64'",
+    "usd-exchange>=2.2 ; platform_machine == 'aarch64'",
 ]
 
 [build-system]

@@ -1,3 +1,11 @@
+# 0.1.0a2
+
+## Fixes
+
+- Add Python 3.13 support
+  - Verified via CI test coverage for Python [3.10, 3.11, 3.12, 3.13]
+  - Note Linux aarch64 verification for 3.13 is skipped due to dev dependency limitations, though the wheel should still support it
+
 # 0.1.0a1
 
 ## Features
