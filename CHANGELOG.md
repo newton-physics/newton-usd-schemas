@@ -1,12 +1,4 @@
-# 0.1.0a2
-
-## Fixes
-
-- Add Python 3.13 support
-  - Verified via CI test coverage for Python [3.10, 3.11, 3.12, 3.13]
-  - Note Linux aarch64 verification for 3.13 is skipped due to dev dependency limitations, though the wheel should still support it
-
-# 0.1.0a1
+# 0.1.0rc1
 
 ## Features
 
@@ -15,6 +7,8 @@
 - Added `NewtonSceneAPI`, which applies on top of a `PhysicsScene` Prim, providing general attributes to control a Newton Solver
 - Added `NewtonXpbdSceneAPI`, which further extends a `PhysicsScene` with Newton's XPBD (eXtended Position-Based Dynamics) solver configuration
   - Applying `NewtonXpbdSceneAPI` implicitly applies the `NewtonSceneAPI` as well
+- Added `NewtonArticulationRootAPI`, which extends `PhysicsArticulationRootAPI` by allowing self collisions to be disabled
+  - Applying `NewtonArticulationRootAPI` implicitly applies `PhysicsArticulationRootAPI` as well
 - Added `NewtonCollisionAPI`, which extends `PhysicsCollisionAPI` with a contact margin (distance threshold below which contacts are detected)
   - Applying `NewtonCollisionAPI` implicitly applies `PhysicsCollisionAPI` as well
 - Added `NewtonMeshCollisionAPI`, which extends `PhysicsMeshCollisionAPI` with attributes to control mesh approximation algorithms
@@ -23,3 +17,6 @@
 - Added `NewtonMaterialAPI`, which extends `PhysicsMaterialAPI` with additional torsional and rolling friction attributes
   - These are currently used by both the mujoco & xpbd solvers, though may be ignored by other solvers.
   - Applying `NewtonMaterialAPI` implicitly applies `PhysicsMaterialAPI` as well
+- Added `NewtonMimicAPI` for authoring mimic/equality constraints between the DOFs of two `PhysicsJoint` prims
+  - The mimic constraint enforces that `joint0 = coef0 + coef1 * joint1` for the joint DOFs, where `joint0` (the follower) is
+    the joint to which this API is applied, and `joint1` (the leader) is specified via a `UsdRelationship`
