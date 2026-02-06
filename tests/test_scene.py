@@ -7,6 +7,8 @@ from pxr import Plug, Usd, UsdPhysics
 
 import newton_usd_schemas  # noqa: F401
 
+USD_HAS_LIMITS = Usd.GetVersion() >= (0, 25, 11)
+
 
 class TestNewtonSceneAPI(unittest.TestCase):
     def setUp(self):
@@ -41,6 +43,12 @@ class TestNewtonSceneAPI(unittest.TestCase):
         self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), 10)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertEqual(hard.GetMinimum(), -1)
+            self.assertIsNone(hard.GetMaximum())
+
     def test_time_steps_per_second(self):
         self.assertFalse(self.scene.HasAttribute("newton:timeStepsPerSecond"))
 
@@ -60,6 +68,12 @@ class TestNewtonSceneAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), 0)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertEqual(hard.GetMinimum(), 1)
+            self.assertIsNone(hard.GetMaximum())
 
     def test_enable_gravity(self):
         self.assertFalse(self.scene.HasAttribute("newton:gravityEnabled"))

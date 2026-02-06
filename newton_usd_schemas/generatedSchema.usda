@@ -9,11 +9,27 @@ class NewtonSceneAPI "NewtonSceneAPI" (
     uniform int newton:maxSolverIterations = -1 (
         doc = """Maximum number of iterations of the physics solver.
 
-        If set to -1, each solver is free to choose an appropriate default."""
+        If set to -1, each solver is free to choose an appropriate default.
+
+        Range: [-1, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
     )
 
     uniform int newton:timeStepsPerSecond = 1000 (
-        doc = "Simulation time step frequency in Hz"
+        doc = """Simulation time step frequency in Hz.
+
+        Range: [1, inf)
+        Units: hertz"""
+        limits = {
+            dictionary hard = {
+                int minimum = 1
+            }
+        }
     )
 
     bool newton:gravityEnabled = true (
@@ -38,6 +54,12 @@ class "NewtonXpbdSceneAPI" (
         
         Range: [0, 1]
         Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
     )
 
     uniform float newton:xpbd:softContactRelaxation = 0.9 (
@@ -48,6 +70,12 @@ class "NewtonXpbdSceneAPI" (
         
         Range: [0, 1]
         Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
     )
 
     uniform float newton:xpbd:jointLinearRelaxation = 0.7 (
@@ -58,6 +86,12 @@ class "NewtonXpbdSceneAPI" (
         
         Range: [0, 1]
         Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
     )
 
     uniform float newton:xpbd:jointAngularRelaxation = 0.4 (
@@ -68,6 +102,12 @@ class "NewtonXpbdSceneAPI" (
         
         Range: [0, 1]
         Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
     )
 
     uniform float newton:xpbd:jointLinearCompliance = 0.0 (
@@ -78,6 +118,11 @@ class "NewtonXpbdSceneAPI" (
         
         Range: [0, inf)
         Units: second * second / mass"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
     )
 
     uniform float newton:xpbd:jointAngularCompliance = 0.0 (
@@ -88,6 +133,11 @@ class "NewtonXpbdSceneAPI" (
         
         Range: [0, inf)
         Units: degrees * second * second / (mass * distance * distance)"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
     )
 
     uniform float newton:xpbd:rigidContactRelaxation = 0.8 (
@@ -99,6 +149,12 @@ class "NewtonXpbdSceneAPI" (
         
         Range: [0, 1]
         Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
     )
 
     uniform bool newton:xpbd:rigidContactConWeighting = true (
@@ -116,6 +172,11 @@ class "NewtonXpbdSceneAPI" (
         
         Range: [0, inf)
         Units: 1 / seconds"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
     )
 
     uniform bool newton:xpbd:restitutionEnabled = false (
@@ -150,7 +211,10 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
     float newton:contactMargin = -inf (
         doc = """Distance threshold below which contacts are detected.
 
-        If `newton:contactMargin` is set to -inf, the contact margin will be calculated automatically based on the size of the object."""
+        If `newton:contactMargin` is set to -inf, the contact margin will be calculated automatically based on the size of the object.
+
+        Range: [-inf, inf)
+        Units: distance"""
     )
 }
 
@@ -166,7 +230,15 @@ class NewtonMeshCollisionAPI "NewtonMeshCollisionAPI" (
 
         This value is only relevant when `physics:approximation = "convexHull"`.
 
-        If `newton:maxHullVertices` is set to -1, the hull computation should use as many vertices as necessary to produce a perfect convex hull."""
+        If `newton:maxHullVertices` is set to -1, the hull computation should use as many vertices as necessary to produce a perfect convex hull.
+
+        Range: [-1, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
     )
 }
 
@@ -177,11 +249,27 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
     By applying this schema, the prim also inherits the `PhysicsMaterialAPI` schema."""
 )
 {
-    float newton:torsionalFriction = 0 (
-        doc = "Torsional friction coefficient (resistance to spinning at a contact point)."
+    float newton:torsionalFriction = 0.25 (
+        doc = """Torsional friction coefficient (resistance to spinning at a contact point).
+
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
     )
 
-    float newton:rollingFriction = 0 (
-        doc = "Rolling friction coefficient (resistance to rolling motion)."
+    float newton:rollingFriction = 0.0005 (
+        doc = """Rolling friction coefficient (resistance to rolling motion).
+
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
     )
 }

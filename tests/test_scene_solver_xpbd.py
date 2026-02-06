@@ -7,6 +7,8 @@ from pxr import Plug, Usd, UsdPhysics
 
 import newton_usd_schemas  # noqa: F401
 
+USD_HAS_LIMITS = Usd.GetVersion() >= (0, 25, 11)
+
 
 class TestNewtonXpbdSceneAPI(unittest.TestCase):
     def setUp(self):
@@ -38,6 +40,12 @@ class TestNewtonXpbdSceneAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 0.8, places=5)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
+
     def test_soft_contact_relaxation(self):
         self.scene.ApplyAPI("NewtonXpbdSceneAPI")
         attr = self.scene.GetAttribute("newton:xpbd:softContactRelaxation")
@@ -47,6 +55,12 @@ class TestNewtonXpbdSceneAPI(unittest.TestCase):
         success = attr.Set(0.75)
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 0.75, places=5)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
 
     def test_joint_linear_relaxation(self):
         self.scene.ApplyAPI("NewtonXpbdSceneAPI")
@@ -58,6 +72,12 @@ class TestNewtonXpbdSceneAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 0.5, places=5)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
+
     def test_joint_angular_relaxation(self):
         self.scene.ApplyAPI("NewtonXpbdSceneAPI")
         attr = self.scene.GetAttribute("newton:xpbd:jointAngularRelaxation")
@@ -67,6 +87,12 @@ class TestNewtonXpbdSceneAPI(unittest.TestCase):
         success = attr.Set(0.3)
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 0.3, places=5)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
 
     def test_joint_linear_compliance(self):
         self.scene.ApplyAPI("NewtonXpbdSceneAPI")
@@ -78,6 +104,12 @@ class TestNewtonXpbdSceneAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 0.001, places=5)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
     def test_joint_angular_compliance(self):
         self.scene.ApplyAPI("NewtonXpbdSceneAPI")
         attr = self.scene.GetAttribute("newton:xpbd:jointAngularCompliance")
@@ -88,6 +120,12 @@ class TestNewtonXpbdSceneAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 0.002, places=5)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
     def test_rigid_contact_relaxation(self):
         self.scene.ApplyAPI("NewtonXpbdSceneAPI")
         attr = self.scene.GetAttribute("newton:xpbd:rigidContactRelaxation")
@@ -97,6 +135,12 @@ class TestNewtonXpbdSceneAPI(unittest.TestCase):
         success = attr.Set(0.9)
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 0.9, places=5)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
 
     def test_rigid_contact_con_weighting(self):
         self.scene.ApplyAPI("NewtonXpbdSceneAPI")
@@ -117,6 +161,12 @@ class TestNewtonXpbdSceneAPI(unittest.TestCase):
         success = attr.Set(0.1)
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 0.1, places=5)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
 
     def test_restitution_enabled(self):
         self.scene.ApplyAPI("NewtonXpbdSceneAPI")
