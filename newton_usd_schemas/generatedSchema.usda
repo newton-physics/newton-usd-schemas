@@ -273,3 +273,48 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
         }
     )
 }
+
+class NewtonMimicAPI "NewtonMimicAPI" (
+    doc = """NewtonMimicAPI applies on top of a PhysicsJoint, adding additional constraints to mimic the DOFs of another joint.
+
+    A mimic constraint enforces that `joint1 = coef1 * joint2 + coef0`,
+    where `joint1` is this joint and `joint2` is the joint that will be used
+    as the driver (specified via the `newton:mimicJoint` relationship).
+
+    The behavior on multi-DOF joints is undefined. The mimic constraint will be applied to each DOF independently,
+    but as the coefficients are shared across all DOFs, the units for translational and rotational DOFs will be mixed.
+    Therefore, it is recommended to only use this API on single-DOF joints.
+    """
+)
+{
+    bool newton:mimicEnabled = true (
+        doc = """Whether the mimic constraint is active.
+
+        When disabled, the follower joint moves independently, as though the mimic constraint was not applied."""
+    )
+
+    rel newton:mimicJoint (
+        doc = "Joint that will be mimicked."
+    )
+
+    float newton:mimicCoef0 = 0.0 (
+        doc = """Offset added after scaling the driver joint's position/angle.
+
+        In the mimic equation `joint1 = coef1 * joint2 + coef0`, this is the
+        constant offset term.
+
+        Range: (-inf, inf)
+        Units: distance or degrees (matches the joint type for single-DOF joints)"""
+    )
+
+    float newton:mimicCoef1 = 1.0 (
+        doc = """Scale factor applied to the driver joint's position/angle.
+
+        In the mimic equation `joint1 = coef1 * joint2 + coef0`, this is the
+        linear coefficient. A value of 1.0 means the follower tracks the
+        leader exactly (plus offset). Negative values reverse the direction.
+
+        Range: (-inf, inf)
+        Units: dimensionless"""
+    )
+}
