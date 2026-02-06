@@ -126,6 +126,20 @@ class "NewtonXpbdSceneAPI" (
     )
 }
 
+class NewtonArticulationRootAPI "NewtonArticulationRootAPI" (
+    apiSchemas = ["PhysicsArticulationRootAPI"]
+    doc = """NewtonArticulationRootAPI extends the `PhysicsArticulationRootAPI` with additional attributes for Newton.
+    
+    By applying this schema, the prim also inherits the `PhysicsArticulationRootAPI` schema."""
+)
+{
+    bool newton:selfCollisionEnabled = true (
+        doc = """Whether self collisions should be enabled or disabled for the entire articulation.
+
+        When disabled, this is equivalent to applying `PhysicsFilteredPairsAPI` relationships between all bodies in the articulation."""
+    )
+}
+
 class NewtonCollisionAPI "NewtonCollisionAPI" (
     apiSchemas = ["PhysicsCollisionAPI"]
     doc = """NewtonCollisionAPI applies on top of a Gprim, providing extra collision attributes for Newton.
