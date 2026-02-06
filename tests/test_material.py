@@ -7,6 +7,8 @@ from pxr import Plug, Usd, UsdPhysics, UsdShade
 
 import newton_usd_schemas  # noqa: F401
 
+USD_HAS_LIMITS = Usd.GetVersion() >= (0, 25, 11)
+
 
 class TestNewtonMaterialAPI(unittest.TestCase):
     def setUp(self):
@@ -47,6 +49,12 @@ class TestNewtonMaterialAPI(unittest.TestCase):
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.1)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
     def test_rolling_friction(self):
         self.assertFalse(self.material.HasAttribute("newton:rollingFriction"))
 
@@ -60,6 +68,12 @@ class TestNewtonMaterialAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.01)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
 
 
 if __name__ == "__main__":

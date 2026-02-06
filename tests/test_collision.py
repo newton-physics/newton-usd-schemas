@@ -8,6 +8,8 @@ from pxr import Plug, Usd, UsdGeom
 
 import newton_usd_schemas  # noqa: F401
 
+USD_HAS_LIMITS = Usd.GetVersion() >= (0, 25, 11)
+
 
 class TestNewtonCollisionAPI(unittest.TestCase):
     def setUp(self):
@@ -47,6 +49,12 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.2)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertIsNone(hard.GetMinimum())
+            self.assertIsNone(hard.GetMaximum())
 
 
 class TestNewtonMeshCollisionAPI(unittest.TestCase):
@@ -104,6 +112,12 @@ class TestNewtonMeshCollisionAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), -1)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertEqual(hard.GetMinimum(), -1)
+            self.assertIsNone(hard.GetMaximum())
 
 
 if __name__ == "__main__":
