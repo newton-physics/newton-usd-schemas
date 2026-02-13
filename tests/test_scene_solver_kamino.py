@@ -62,7 +62,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
 
     def test_padmm_warmstart(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
-        attr = self.scene.GetAttribute("newton:kamino:padmm:warmstart")
+        attr = self.scene.GetAttribute("newton:kamino:padmm:warmstarting")
         self.assertIsNotNone(attr)
         self.assertEqual(attr.Get(), "containers")
 
@@ -72,7 +72,17 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
 
     def test_padmm_acceleration(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
-        attr = self.scene.GetAttribute("newton:kamino:padmm:acceleration")
+        attr = self.scene.GetAttribute("newton:kamino:padmm:useAcceleration")
+        self.assertIsNotNone(attr)
+        self.assertEqual(attr.Get(), True)
+
+        success = attr.Set(False)
+        self.assertTrue(success)
+        self.assertEqual(attr.Get(), False)
+
+    def test_constraints_precond(self):
+        self.scene.ApplyAPI("NewtonKaminoSceneAPI")
+        attr = self.scene.GetAttribute("newton:kamino:constraints:usePreconditioning")
         self.assertIsNotNone(attr)
         self.assertEqual(attr.Get(), True)
 
@@ -109,26 +119,6 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         success = attr.Set(1e-1)
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 1e-1, places=7)
-
-    def test_constraints_delta(self):
-        self.scene.ApplyAPI("NewtonKaminoSceneAPI")
-        attr = self.scene.GetAttribute("newton:kamino:constraints:delta")
-        self.assertIsNotNone(attr)
-        self.assertAlmostEqual(attr.Get(), 1e-6, places=7)
-
-        success = attr.Set(1e-4)
-        self.assertTrue(success)
-        self.assertAlmostEqual(attr.Get(), 1e-4, places=7)
-
-    def test_constraints_precond(self):
-        self.scene.ApplyAPI("NewtonKaminoSceneAPI")
-        attr = self.scene.GetAttribute("newton:kamino:constraints:precond")
-        self.assertIsNotNone(attr)
-        self.assertEqual(attr.Get(), True)
-
-        success = attr.Set(False)
-        self.assertTrue(success)
-        self.assertEqual(attr.Get(), False)
 
     def test_joint_correction(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")

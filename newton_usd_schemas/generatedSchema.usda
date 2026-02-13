@@ -242,7 +242,7 @@ class "NewtonKaminoSceneAPI" (
         }
     )
 
-    uniform token newton:kamino:padmm:warmstart = "containers" (
+    uniform token newton:kamino:padmm:warmstarting = "containers" (
         allowedTokens = ["none", "internal", "containers"]
         doc = """The warmstarting mode used for the PADMM constraint solver.
 
@@ -255,11 +255,20 @@ class "NewtonKaminoSceneAPI" (
         """
     )
 
-    uniform bool newton:kamino:padmm:acceleration = true (
+    uniform bool newton:kamino:padmm:useAcceleration = true (
         doc = """Whether to use Nesterov acceleration in the PADMM constraint solver.
 
         When enabled, Nesterov acceleration is applied to the PADMM
         iterations to potentially improve the rate of convergence.
+        """
+    )
+
+    uniform bool newton:kamino:constraints:usePreconditioning = true (
+        doc = """Whether to use problem preconditioning in the constraint forward dynamics.
+
+        When enabled, the forward dynamics problem is scaled to improve numerical conditioning, which
+        can lead to solver robustness for very ill-conditioned systems. It may however slow down
+        convergence for well-conditioned systems.
         """
     )
 
@@ -312,15 +321,6 @@ class "NewtonKaminoSceneAPI" (
                 float maximum = 1
             }
         }
-    )
-
-    uniform bool newton:kamino:constraints:preconditioning = true (
-        doc = """Whether to use problem preconditioning in the constraint forward dynamics.
-
-        When enabled, the forward dynamics problem is scaled to improve numerical conditioning, which
-        can lead to solver robustness for very ill-conditioned systems. It may however slow down
-        convergence for well-conditioned systems.
-        """
     )
 
     uniform token newton:kamino:jointCorrection = "twopi" (
