@@ -209,10 +209,10 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
 )
 {
     float newton:contactMargin = 0 (
-        doc = """Outward offset/inflation of the shape's surface for broad phase collision detection.
+        doc = """Outward offset/inflation of the shape's surface for collision detection.
 
         Extends/inflates the effective collision surface outward by this amount. When two shapes collide,
-        their contact margins are summed (margin_a + margin_b) to determine the total separation.
+        their contact margins are summed (`margin_a + margin_b`) to determine the total separation/penetration.
         
         Range: [0, inf)
         Units: distance"""
@@ -223,9 +223,10 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
         }
     )
     float newton:contactGap = -inf (
-        doc = """Distance threshold below which contacts are detected during the broad phase.
+        doc = """Distance threshold below which contacts are detected.
 
-        During the broad phase detection, AABBs are expanded by this value.
+        AABBs are expanded by this value and contact points get added into the solver once their
+        separation is smaller than the contact gap sum (`gap_a + gap_b`).
 
         If `newton:contactGap` is set to `-inf`, the contact gap is assumed to match `newton:contactMargin`,
         ensuring collisions are not missed when inflated surfaces approach each other.
