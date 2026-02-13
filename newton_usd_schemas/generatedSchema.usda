@@ -48,10 +48,10 @@ class "NewtonXpbdSceneAPI" (
 {
     uniform float newton:xpbd:softBodyRelaxation = 0.9 (
         doc = """Relaxation multiplier for tetrahedral FEM constraint corrections.
-        
+
         Scales the computed position correction for tetrahedral soft body constraints.
         Lower values improve stability but require more iterations for convergence.
-        
+
         Range: [0, 1]
         Units: dimensionless"""
         limits = {
@@ -64,10 +64,10 @@ class "NewtonXpbdSceneAPI" (
 
     uniform float newton:xpbd:softContactRelaxation = 0.9 (
         doc = """Relaxation multiplier for soft contact constraint corrections.
-        
+
         Scales the computed position correction for particle-particle and particle-shape
         contacts. Lower values improve stability but require more iterations for convergence.
-        
+
         Range: [0, 1]
         Units: dimensionless"""
         limits = {
@@ -80,10 +80,10 @@ class "NewtonXpbdSceneAPI" (
 
     uniform float newton:xpbd:jointLinearRelaxation = 0.7 (
         doc = """Relaxation multiplier for joint linear constraint corrections.
-        
+
         Scales the computed position correction for joint linear (positional) constraints.
         Lower values improve stability for complex kinematic chains but slow convergence.
-        
+
         Range: [0, 1]
         Units: dimensionless"""
         limits = {
@@ -96,10 +96,10 @@ class "NewtonXpbdSceneAPI" (
 
     uniform float newton:xpbd:jointAngularRelaxation = 0.4 (
         doc = """Relaxation multiplier for joint angular constraint corrections.
-        
+
         Scales the computed rotation correction for joint angular (rotational) constraints.
         Lower values improve stability but slow convergence.
-        
+
         Range: [0, 1]
         Units: dimensionless"""
         limits = {
@@ -112,10 +112,10 @@ class "NewtonXpbdSceneAPI" (
 
     uniform float newton:xpbd:jointLinearCompliance = 0.0 (
         doc = """Compliance for joint linear constraints.
-        
+
         Inverse stiffness for joint linear constraints. Added to denominator in constraint
         solver. Zero creates rigid constraints. Higher values create softer, springy joints.
-        
+
         Range: [0, inf)
         Units: second * second / mass"""
         limits = {
@@ -127,10 +127,10 @@ class "NewtonXpbdSceneAPI" (
 
     uniform float newton:xpbd:jointAngularCompliance = 0.0 (
         doc = """Compliance for joint angular constraints.
-        
+
         Inverse stiffness for joint angular constraints. Added to denominator in constraint
         solver. Zero creates rigid constraints. Higher values create softer, springy joints.
-        
+
         Range: [0, inf)
         Units: degrees * second * second / (mass * distance * distance)"""
         limits = {
@@ -142,11 +142,11 @@ class "NewtonXpbdSceneAPI" (
 
     uniform float newton:xpbd:rigidContactRelaxation = 0.8 (
         doc = """Relaxation multiplier for rigid body contact constraint corrections.
-        
+
         Scales the computed correction for rigid body contacts including normal, friction,
         torsional friction, and rolling friction. Lower values improve stability for
         stacking but require more iterations.
-        
+
         Range: [0, 1]
         Units: dimensionless"""
         limits = {
@@ -159,17 +159,17 @@ class "NewtonXpbdSceneAPI" (
 
     uniform bool newton:xpbd:rigidContactConWeighting = true (
         doc = """Enable contact constraint weighting for rigid bodies.
-        
+
         When enabled, tracks the number of contacts per body and uses this information
         to distribute contact corrections more evenly across multiple simultaneous contacts."""
     )
 
     uniform float newton:xpbd:angularDamping = 0.0 (
         doc = """Angular velocity damping coefficient.
-        
+
         Applied during rigid body integration as velocity *= (1 - damping * dt). Higher
         values cause rotational motion to decay faster.
-        
+
         Range: [0, inf)
         Units: 1 / seconds"""
         limits = {
@@ -181,7 +181,7 @@ class "NewtonXpbdSceneAPI" (
 
     uniform bool newton:xpbd:restitutionEnabled = false (
         doc = """Whether restitution is enabled for contacts.
-        
+
         When enabled, applies velocity corrections after constraint solving to simulate
         elastic collisions. Restitution coefficients are read from material properties."""
     )
@@ -200,7 +200,14 @@ class "NewtonKaminoSceneAPI" (
         solution satisfies the inequality constraints (joint-limits, contacts). Lower values
         require more iterations for higher accuracy.
 
-        Range: (1e-8, 1e-2)"""
+        Range: [1e-10, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 1e-10
+            }
+        }
+
     )
 
     uniform float newton:kamino:padmm:dualTolerance = 1e-6 (
@@ -210,7 +217,13 @@ class "NewtonKaminoSceneAPI" (
         and reflects the total violation over the set of constraints (joints, joint-limits,
         contacts). Lower values require more iterations for higher accuracy.
 
-        Range: (1e-8, 1e-2)"""
+        Range: [1e-10, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 1e-10
+            }
+        }
     )
 
     uniform float newton:kamino:padmm:complementarityTolerance = 1e-6 (
@@ -220,7 +233,13 @@ class "NewtonKaminoSceneAPI" (
         complementarity conditions associated with inequality constraints (joint-limits,
         contacts). Lower values require more iterations for higher accuracy.
 
-        Range: (1e-8, 1e-2)"""
+        Range: [1e-10, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 1e-10
+            }
+        }
     )
 
     uniform token newton:kamino:padmm:warmstart = "containers" (
@@ -251,7 +270,14 @@ class "NewtonKaminoSceneAPI" (
         joint constraints (e.g. hinge, ball-and-socket). Higher values increase stiffness and reduce
         positional drift, but may lead to instability if set too high.
 
-        Range: [0.0, 1.0]"""
+        Range: [0.0, 1.0]
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
     )
 
     uniform float newton:kamino:constraints:beta = 0.01 (
@@ -261,7 +287,14 @@ class "NewtonKaminoSceneAPI" (
         joint-limit constraints. Higher values increase stiffness and reduce positional drift, but may
         lead to instability if set too high.
 
-        Range: [0.0, 1.0]"""
+        Range: [0.0, 1.0]
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
     )
 
     uniform float newton:kamino:constraints:gamma = 0.01 (
@@ -271,20 +304,17 @@ class "NewtonKaminoSceneAPI" (
         contact constraints. Higher values increase stiffness and reduce positional drift, but may
         lead to instability if set too high.
 
-        Range: [0.0, 1.0]"""
+        Range: [0.0, 1.0]
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
     )
 
-    uniform float newton:kamino:constraints:delta = 1e-6 (
-        doc = """Contact penetration margin used for unilateral contact constraints.
-
-        This margin defines a small buffer distance for contact constraints, allowing for
-        minor penetrations to be tolerated before contact forces are applied. This helps
-        improve numerical stability and reduce jitter in contact-rich scenarios.
-
-        Range: [0.0, 1e-2]"""
-    )
-
-    uniform bool newton:kamino:constraints:precond = true (
+    uniform bool newton:kamino:constraints:preconditioning = true (
         doc = """Whether to use problem preconditioning in the constraint forward dynamics.
 
         When enabled, the forward dynamics problem is scaled to improve numerical conditioning, which
@@ -312,7 +342,7 @@ class "NewtonKaminoSceneAPI" (
 class NewtonArticulationRootAPI "NewtonArticulationRootAPI" (
     apiSchemas = ["PhysicsArticulationRootAPI"]
     doc = """NewtonArticulationRootAPI extends the `PhysicsArticulationRootAPI` with additional attributes for Newton.
-    
+
     By applying this schema, the prim also inherits the `PhysicsArticulationRootAPI` schema."""
 )
 {
