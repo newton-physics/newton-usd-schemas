@@ -40,6 +40,12 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 1e-4, places=7)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 1e-10)
+            self.assertIsNone(hard.GetMaximum())
+
     def test_padmm_dual_tolerance(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
         attr = self.scene.GetAttribute("newton:kamino:padmm:dualTolerance")
@@ -49,6 +55,12 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         success = attr.Set(1e-4)
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 1e-4, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 1e-10)
+            self.assertIsNone(hard.GetMaximum())
 
     def test_padmm_complementarity_tolerance(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -60,17 +72,30 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 1e-4, places=7)
 
-    def test_padmm_warmstart(self):
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 1e-10)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_padmm_warmstarting(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
         attr = self.scene.GetAttribute("newton:kamino:padmm:warmstarting")
         self.assertIsNotNone(attr)
         self.assertEqual(attr.Get(), "containers")
 
+        success = attr.Set("internal")
+        self.assertTrue(success)
+        self.assertEqual(attr.Get(), "internal")
+
         success = attr.Set("none")
         self.assertTrue(success)
         self.assertEqual(attr.Get(), "none")
 
-    def test_padmm_acceleration(self):
+        success = attr.Set("foobar")
+        self.assertFalse(success)
+
+    def test_padmm_use_acceleration(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
         attr = self.scene.GetAttribute("newton:kamino:padmm:useAcceleration")
         self.assertIsNotNone(attr)
@@ -80,7 +105,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertEqual(attr.Get(), False)
 
-    def test_constraints_precond(self):
+    def test_constraints_use_preconditioning(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
         attr = self.scene.GetAttribute("newton:kamino:constraints:usePreconditioning")
         self.assertIsNotNone(attr)
@@ -100,6 +125,12 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 1e-1, places=7)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
+
     def test_constraints_beta(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
         attr = self.scene.GetAttribute("newton:kamino:constraints:beta")
@@ -109,6 +140,12 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         success = attr.Set(1e-1)
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 1e-1, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
 
     def test_constraints_gamma(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -120,11 +157,21 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertAlmostEqual(attr.Get(), 1e-1, places=7)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
+
     def test_joint_correction(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
         attr = self.scene.GetAttribute("newton:kamino:jointCorrection")
         self.assertIsNotNone(attr)
         self.assertEqual(attr.Get(), "twopi")
+
+        success = attr.Set("pi")
+        self.assertTrue(success)
+        self.assertEqual(attr.Get(), "pi")
 
         success = attr.Set("none")
         self.assertTrue(success)
