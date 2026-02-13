@@ -1,4 +1,4 @@
-# 0.1.0rc1
+# 0.1.0rc2
 
 ## Features
 
@@ -7,9 +7,11 @@
 - Added `NewtonSceneAPI`, which applies on top of a `PhysicsScene` Prim, providing general attributes to control a Newton Solver
 - Added `NewtonXpbdSceneAPI`, which further extends a `PhysicsScene` with Newton's XPBD (eXtended Position-Based Dynamics) solver configuration
   - Applying `NewtonXpbdSceneAPI` implicitly applies the `NewtonSceneAPI` as well
+- Added `NewtonKaminoSceneAPI`, which further extends a `PhysicsScene` with Newton's Kamino solver configuration
+  - Applying `NewtonKaminoSceneAPI` implicitly applies the `NewtonSceneAPI` as well
 - Added `NewtonArticulationRootAPI`, which extends `PhysicsArticulationRootAPI` by allowing self collisions to be disabled
   - Applying `NewtonArticulationRootAPI` implicitly applies `PhysicsArticulationRootAPI` as well
-- Added `NewtonCollisionAPI`, which extends `PhysicsCollisionAPI` with a contact margin (distance threshold below which contacts are detected)
+- Added `NewtonCollisionAPI`, which extends `PhysicsCollisionAPI` with contact margin & gap (used during collision detection)
   - Applying `NewtonCollisionAPI` implicitly applies `PhysicsCollisionAPI` as well
 - Added `NewtonMeshCollisionAPI`, which extends `PhysicsMeshCollisionAPI` with attributes to control mesh approximation algorithms
   - Only `convexHull` attributes exist for now
