@@ -81,6 +81,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
     def test_padmm_warmstarting(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
         attr = self.scene.GetAttribute("newton:kamino:padmm:warmstarting")
+        allowed = attr.GetMetadata("allowedTokens")
         self.assertIsNotNone(attr)
         self.assertEqual(attr.Get(), "containers")
 
@@ -92,7 +93,13 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertTrue(success)
         self.assertEqual(attr.Get(), "none")
 
-        success = attr.Set("foobar")
+        success = "containers" in allowed
+        self.assertTrue(success)
+        success = "internal" in allowed
+        self.assertTrue(success)
+        success = "none" in allowed
+        self.assertTrue(success)
+        success = "foobar" in allowed
         self.assertFalse(success)
 
     def test_padmm_use_acceleration(self):
@@ -166,16 +173,26 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
     def test_joint_correction(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
         attr = self.scene.GetAttribute("newton:kamino:jointCorrection")
+        allowed = attr.GetMetadata("allowedTokens")
         self.assertIsNotNone(attr)
         self.assertEqual(attr.Get(), "twopi")
 
-        success = attr.Set("pi")
+        success = attr.Set("continuous")
         self.assertTrue(success)
-        self.assertEqual(attr.Get(), "pi")
+        self.assertEqual(attr.Get(), "continuous")
 
         success = attr.Set("none")
         self.assertTrue(success)
         self.assertEqual(attr.Get(), "none")
+
+        success = "twopi" in allowed
+        self.assertTrue(success)
+        success = "continuous" in allowed
+        self.assertTrue(success)
+        success = "none" in allowed
+        self.assertTrue(success)
+        success = "foobar" in allowed
+        self.assertFalse(success)
 
 
 if __name__ == "__main__":
