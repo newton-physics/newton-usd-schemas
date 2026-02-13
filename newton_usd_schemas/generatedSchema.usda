@@ -208,10 +208,27 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
     By applying this schema, the prim also inherits the `PhysicsCollisionAPI` schema."""
 )
 {
-    float newton:contactMargin = -inf (
-        doc = """Distance threshold below which contacts are detected.
+    float newton:contactMargin = 0 (
+        doc = """Outward offset/inflation of the shape's surface for broad phase collision detection.
 
-        If `newton:contactMargin` is set to -inf, the contact margin will be calculated automatically based on the size of the object.
+        Extends/inflates the effective collision surface outward by this amount. When two shapes collide,
+        their contact margins are summed (margin_a + margin_b) to determine the total separation.
+        
+        Range: [0, inf)
+        Units: distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+    float newton:contactGap = -inf (
+        doc = """Distance threshold below which contacts are detected during the broad phase.
+
+        During the broad phase detection, AABBs are expanded by this value.
+
+        If `newton:contactGap` is set to `-inf`, the contact gap is assumed to match `newton:contactMargin`,
+        ensuring collisions are not missed when inflated surfaces approach each other.
 
         Range: [-inf, inf)
         Units: distance"""

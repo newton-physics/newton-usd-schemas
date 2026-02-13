@@ -31,6 +31,7 @@ class TestNewtonCollisionAPI(unittest.TestCase):
 
         self.assertTrue(self.prim.HasAttribute("physics:collisionEnabled"))  # from PhysicsCollisionAPI
         self.assertTrue(self.prim.HasAttribute("newton:contactMargin"))  # from NewtonCollisionAPI
+        self.assertTrue(self.prim.HasAttribute("newton:contactGap"))  # from NewtonCollisionAPI
 
     def test_api_limitations(self):
         xform: Usd.Prim = UsdGeom.Xform.Define(self.stage, "/InvalidType").GetPrim()
@@ -43,7 +44,7 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         attr = self.prim.GetAttribute("newton:contactMargin")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertAlmostEqual(attr.Get(), 0.0)
 
         success = attr.Set(0.2)
         self.assertTrue(success)
@@ -53,8 +54,22 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()
             self.assertTrue(hard.IsValid())
-            self.assertIsNone(hard.GetMinimum())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
             self.assertIsNone(hard.GetMaximum())
+
+    def test_contact_gap(self):
+        self.assertFalse(self.prim.HasAttribute("newton:contactGap"))
+
+        self.prim.ApplyAPI("NewtonCollisionAPI")
+        attr = self.prim.GetAttribute("newton:contactGap")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), -math.inf)
+
+        success = attr.Set(0.1)
+        self.assertTrue(success)
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.1)
 
 
 class TestNewtonMeshCollisionAPI(unittest.TestCase):
@@ -81,6 +96,7 @@ class TestNewtonMeshCollisionAPI(unittest.TestCase):
 
         self.assertTrue(self.prim.HasAttribute("physics:collisionEnabled"))  # from PhysicsCollisionAPI
         self.assertTrue(self.prim.HasAttribute("newton:contactMargin"))  # from NewtonCollisionAPI
+        self.assertTrue(self.prim.HasAttribute("newton:contactGap"))  # from NewtonCollisionAPI
         self.assertTrue(self.prim.HasAttribute("physics:approximation"))  # from PhysicsMeshCollisionAPI
         self.assertTrue(self.prim.HasAttribute("newton:maxHullVertices"))  # from NewtonMeshCollisionAPI
 
