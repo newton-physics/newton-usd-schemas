@@ -44,7 +44,7 @@
               "apiSchemaCanOnlyApplyTo": [
                 "PhysicsScene"
               ]
-            }
+            },
             "NewtonPhysicsArticulationRootAPI": {
               "schemaIdentifier": "NewtonArticulationRootAPI",
               "alias": {

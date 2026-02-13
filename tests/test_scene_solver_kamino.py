@@ -7,6 +7,8 @@ from pxr import Plug, Usd, UsdPhysics
 
 import newton_usd_schemas  # noqa: F401
 
+USD_HAS_LIMITS = Usd.GetVersion() >= (0, 25, 11)
+
 
 class TestNewtonKaminoSceneAPI(unittest.TestCase):
     def setUp(self):
@@ -21,6 +23,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
 
     def test_api_application(self):
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
+        self.assertTrue(self.scene.HasAPI("NewtonSceneAPI"))
         self.assertTrue(self.scene.HasAPI("NewtonKaminoSceneAPI"))
 
     def test_api_limitations(self):
