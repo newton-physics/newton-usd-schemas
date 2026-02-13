@@ -217,7 +217,7 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
         Range: [0, inf)
         Units: distance"""
         limits = {
-            dictionary hard = {
+            dictionary soft = {
                 float minimum = 0
             }
         }

@@ -52,10 +52,10 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         self.assertAlmostEqual(attr.Get(), 0.2)
 
         if USD_HAS_LIMITS:
-            hard = attr.GetHardLimits()
-            self.assertTrue(hard.IsValid())
-            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
-            self.assertIsNone(hard.GetMaximum())
+            soft = attr.GetSoftLimits()
+            self.assertTrue(soft.IsValid())
+            self.assertAlmostEqual(soft.GetMinimum(), 0.0)
+            self.assertIsNone(soft.GetMaximum())
 
     def test_contact_gap(self):
         self.assertFalse(self.prim.HasAttribute("newton:contactGap"))
