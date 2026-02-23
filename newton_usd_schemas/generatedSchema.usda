@@ -366,6 +366,9 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
         Extends/inflates the effective collision surface outward by this amount. When two shapes collide,
         their contact margins are summed (`margin_a + margin_b`) to determine the total separation/penetration.
         
+        `newton:contactMargin` is essential for thin shells and cloth to improve simulation stability and reduce
+        self-intersections.
+
         Range: [0, inf)
         Units: distance"""
         limits = {
@@ -375,16 +378,22 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
         }
     )
     float newton:contactGap = -inf (
-        doc = """Distance threshold below which contacts are detected.
+        doc = """Additional contact detection gap.
 
         AABBs are expanded by this value and potential contact points get added into the solver
-        once their separation is smaller than the contact gap sum (`gap_a + gap_b`).
+        once their separation is smaller than the contact gap sum (`margin_a + margin_b + gap_a + gap_b`).
 
-        If `newton:contactGap` is set to `-inf`, the contact gap is assumed to match `newton:contactMargin`,
-        ensuring collisions are not missed when inflated surfaces approach each other.
+        Increasing `newton:contactGap` helps avoid tunneling by detecting contacts earlier.
 
-        Range: [-inf, inf)
+        If `newton:contactGap` is set to `-inf`, Newton's builder default should be used instead.
+
+        Range: [0, inf)
         Units: distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
     )
 }
 

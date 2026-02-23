@@ -71,6 +71,12 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.1)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
 
 class TestNewtonMeshCollisionAPI(unittest.TestCase):
     def setUp(self):
