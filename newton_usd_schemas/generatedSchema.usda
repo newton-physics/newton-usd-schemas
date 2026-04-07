@@ -498,3 +498,360 @@ class NewtonMimicAPI "NewtonMimicAPI" (
         Units: dimensionless"""
     )
 }
+
+class NewtonActuator "NewtonActuator" (
+    doc = """Base typed schema for Newton actuators.
+
+    An actuator transmits forces to one or more joints. The target joint(s) are
+    specified via the newton:target relationship. The control law and any
+    transmission modifiers are defined by applying API schemas."""
+)
+{
+    rel newton:target (
+        doc = "Joint prim(s) driven by this actuator."
+    )
+}
+
+class NewtonIdealPDActuator "NewtonIdealPDActuator" (
+    inherits = </NewtonActuator>
+    apiSchemas = ["NewtonPDControlAPI"]
+    doc = """An ideal PD-controlled actuator with no transmission modeling.
+
+    Convenience typed schema that composes NewtonActuator with NewtonPDControlAPI."""
+)
+{
+    rel newton:target (
+        doc = "Joint prim(s) driven by this actuator."
+    )
+}
+
+class NewtonDelayedPDActuator "NewtonDelayedPDActuator" (
+    inherits = </NewtonActuator>
+    apiSchemas = ["NewtonPDControlAPI", "NewtonDelayAPI"]
+    doc = """A PD-controlled actuator with input delay to model actuator lag.
+
+    Convenience typed schema that composes NewtonActuator with NewtonPDControlAPI
+    and NewtonDelayAPI."""
+)
+{
+    rel newton:target (
+        doc = "Joint prim(s) driven by this actuator."
+    )
+}
+
+class NewtonDCMotorActuator "NewtonDCMotorActuator" (
+    inherits = </NewtonActuator>
+    apiSchemas = ["NewtonPDControlAPI", "NewtonDCMotorAPI"]
+    doc = """A PD-controlled actuator with DC motor torque-speed saturation.
+
+    Convenience typed schema that composes NewtonActuator with NewtonPDControlAPI
+    and NewtonDCMotorAPI."""
+)
+{
+    rel newton:target (
+        doc = "Joint prim(s) driven by this actuator."
+    )
+}
+
+class NewtonActuatorControlBaseAPI "NewtonActuatorControlBaseAPI" (
+    doc = """Base API for all actuator control laws.
+
+    Applying any control law API (e.g. PD, PID, Network) automatically applies this base.
+    Check prim.HasAPI('NewtonActuatorControlBaseAPI') to detect whether any control
+    law is present.
+
+    Only one control law API should be applied to a given NewtonActuator prim."""
+)
+{
+    float newton:maxForce = inf (
+        doc = """Maximum force or torque output limit.
+
+        The controller output is clamped to the range [-maxForce, +maxForce].
+
+        Range: [0, inf)
+        Units: force (N) or torque (Nm)"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
+class NewtonPDControlAPI "NewtonPDControlAPI" (
+    apiSchemas = ["NewtonActuatorControlBaseAPI"]
+    doc = """Stateless PD (Proportional-Derivative) controller.
+
+    Control law: tau = clamp(constantForce + act + kp*(target_pos - q) + kd*(target_vel - v), +/-maxForce)"""
+)
+{
+    float newton:kp = 0 (
+        doc = """Proportional gain.
+
+        Multiplied by position error (target_pos - current_pos) to produce
+        a restoring force proportional to displacement.
+
+        Range: [0, inf)
+        Units: force/distance (N/m) or torque/angle (Nm/rad)"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:kd = 0 (
+        doc = """Derivative gain.
+
+        Multiplied by velocity error (target_vel - current_vel) to produce
+        a damping force proportional to velocity.
+
+        Range: [0, inf)
+        Units: force*time/distance (Ns/m) or torque*time/angle (Nms/rad)"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:constantForce = 0 (
+        doc = """Constant offset force added to the controller output.
+
+        Useful for gravity compensation or preload forces.
+
+        Range: (-inf, inf)
+        Units: force (N) or torque (Nm)"""
+    )
+}
+
+class NewtonPIDControlAPI "NewtonPIDControlAPI" (
+    apiSchemas = ["NewtonPDControlAPI"]
+    doc = """Stateful PID (Proportional-Integral-Derivative) controller.
+
+    Extends the PD controller with an integral term for steady-state error elimination.
+
+    Control law: tau = clamp(constantForce + act + kp*(target_pos - q) + ki*integral(e)*dt + kd*(target_vel - v), +/-maxForce)"""
+)
+{
+    float newton:ki = 0 (
+        doc = """Integral gain.
+
+        Multiplied by the accumulated position error integral to eliminate
+        steady-state error.
+
+        Range: [0, inf)
+        Units: force/(distance*time) or torque/(angle*time)"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:integralMax = inf (
+        doc = """Anti-windup limit for the integral term.
+
+        The accumulated integral is clamped to [-integralMax, +integralMax]
+        to prevent windup when the actuator is saturated.
+
+        Range: [0, inf)
+        Units: distance*time (m*s) or angle*time (rad*s)"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
+class NewtonNetworkControlAPI "NewtonNetworkControlAPI" (
+    apiSchemas = ["NewtonActuatorControlBaseAPI"]
+    doc = """Base API for neural network-based actuator controllers.
+
+    Provides the common attributes shared by all network-based control laws:
+    the policy asset path and output torque scaling. Specific network architectures
+    (MLP, LSTM, etc.) extend this API with their own input conventions.
+
+    Check prim.HasAPI('NewtonNetworkControlAPI') to detect whether any network
+    control law is present."""
+)
+{
+    asset newton:policyPath (
+        doc = """Path to the pre-trained network model file (e.g., TorchScript .pt).
+
+        This asset is resolved through USD's asset resolution system."""
+    )
+
+    float newton:torqueScale = 1.0 (
+        doc = """Scaling factor applied to the network's output torques.
+
+        Range: (-inf, inf)
+        Units: dimensionless"""
+    )
+}
+
+class NewtonMLPControlAPI "NewtonMLPControlAPI" (
+    apiSchemas = ["NewtonNetworkControlAPI"]
+    doc = """MLP (Multi-Layer Perceptron) network actuator controller.
+
+    Uses a pre-trained MLP to compute joint torques from scaled position error
+    and velocity inputs. The network receives concatenated position errors and
+    velocities from selected history timesteps.
+
+    Input preparation per actuator:
+        pos_input = [pos_error[t] for t in inputIdx] * positionScale
+        vel_input = [velocity[t] for t in inputIdx] * velocityScale
+        network_input = cat(pos_input, vel_input)  (or vel, pos if inputOrder='vel_pos')
+
+    Output: torque = network(input) * torqueScale, clamped to +/-maxForce."""
+)
+{
+    float newton:positionScale = 1.0 (
+        doc = """Scaling factor applied to position error inputs before feeding the network.
+
+        Range: (-inf, inf)
+        Units: dimensionless"""
+    )
+
+    float newton:velocityScale = 1.0 (
+        doc = """Scaling factor applied to velocity inputs before feeding the network.
+
+        Range: (-inf, inf)
+        Units: dimensionless"""
+    )
+
+    token newton:inputOrder = "pos_vel" (
+        allowedTokens = ["pos_vel", "vel_pos"]
+        doc = """Order in which position error and velocity are concatenated
+        as input to the network.
+
+        'pos_vel': [position_error, velocity]
+        'vel_pos': [velocity, position_error]"""
+    )
+
+    int[] newton:inputIdx = [0] (
+        doc = """History timestep indices to feed the network.
+
+        0 = current timestep, 1 = one step ago, etc. The network receives
+        position error and velocity from each of these timesteps, concatenated."""
+    )
+}
+
+class NewtonLSTMControlAPI "NewtonLSTMControlAPI" (
+    apiSchemas = ["NewtonNetworkControlAPI"]
+    doc = """LSTM (Long Short-Term Memory) network actuator controller.
+
+    Uses a pre-trained LSTM to compute joint torques from position error and
+    velocity. The network maintains hidden and cell state across timesteps to
+    capture temporal dynamics of the actuator.
+
+    The network receives input of shape (batch, 1, 2) with features
+    [position_error, velocity] at each timestep. The LSTM's internal state
+    provides the temporal history, so no explicit history buffer is needed.
+
+    Output: torque = network(input, hidden_state), clamped to +/-maxForce."""
+)
+{
+}
+
+class NewtonDelayAPI "NewtonDelayAPI" (
+    doc = """Adds input delay to an actuator to model communication or processing lag.
+
+    Target positions, velocities, and control inputs are delayed by the specified
+    number of simulation timesteps before being used by the controller."""
+)
+{
+    int newton:delaySteps = 0 (
+        doc = """Number of simulation timesteps to delay actuator inputs before being used by the controller.
+
+        Range: [0, inf)
+        Units: dimensionless (timesteps)"""
+        limits = {
+            dictionary hard = {
+                int minimum = 0
+            }
+        }
+    )
+}
+
+class NewtonGearBoxAPI "NewtonGearBoxAPI" (
+    doc = """Models a physical gearbox that amplifies actuator force at the cost of speed.
+
+    Output torque = input torque * gearRatio, output speed = input speed / gearRatio.
+    The amplified torque is clipped to maxTorqueOutput."""
+)
+{
+    float newton:gearRatio = 1.0 (
+        doc = """Gear reduction ratio.
+
+        Values greater than 1 amplify torque and reduce velocity.
+        Values less than 1 reduce torque and amplify velocity.
+
+        Range: (0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:maxTorqueOutput = inf (
+        doc = """Maximum torque the gearbox can transmit at the output shaft.
+
+        Clips the amplified torque to prevent exceeding mechanical limits.
+
+        Range: [0, inf)
+        Units: torque (Nm)"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
+class NewtonDCMotorAPI "NewtonDCMotorAPI" (
+    doc = """Adds DC motor torque-speed saturation to an actuator.
+
+    Replaces the fixed maxForce box clamp with a velocity-dependent torque limit
+    based on the DC motor torque-speed characteristic:
+
+    tau_max(v) = clamp(saturationEffort * (1 - v/velocityLimit), 0, maxForce)
+
+    At zero velocity the motor can produce up to saturationEffort (capped by maxForce).
+    As velocity approaches velocityLimit, available torque drops to zero."""
+)
+{
+    float newton:saturationEffort = inf (
+        doc = """Peak motor torque at stall (zero velocity).
+
+        This is the maximum torque the motor can produce when not spinning,
+        before being capped by the control law's maxForce.
+
+        Range: [0, inf)
+        Units: torque (Nm)"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:velocityLimit = inf (
+        doc = """Maximum no-load joint velocity for the torque-speed curve.
+
+        At this velocity, the motor can produce zero torque in the direction
+        of motion due to back-EMF. A value of inf disables the torque-speed
+        saturation effect.
+
+        Range: (0, inf)
+        Units: velocity (rad/s or m/s)"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
