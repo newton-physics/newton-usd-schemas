@@ -869,12 +869,12 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
     float[] newton:lookupPositions = [] (
         doc = """Sorted joint positions for the effort lookup table.
 
-        Must be monotonically increasing and the same length as newton:lookupTorques.
+        Must be monotonically increasing and the same length as newton:lookupEfforts.
 
         Units: degrees"""
     )
 
-    float[] newton:lookupTorques = [] (
+    float[] newton:lookupEfforts = [] (
         doc = """Maximum output effort values corresponding to each entry in newton:lookupPositions.
 
         Must be the same length as newton:lookupPositions.
