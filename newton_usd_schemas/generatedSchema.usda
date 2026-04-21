@@ -508,7 +508,7 @@ class NewtonActuator "NewtonActuator" (
     
     Actuators must provide a single control law by applying a NewtonActuatorControlBaseAPI derived schema (e.g. NewtonPDControlAPI).
     
-    Actuator input delay can be included by applying NewtonActuatorDelayAPI. This is useful to model actuator communication or processing lag.
+    Actuator command input delay can be included by applying NewtonActuatorDelayAPI. This is useful to model actuator communication or processing lag.
 
     Additional effort clamping behaviors can be added by applying any number of NewtonActuatorClampingBaseAPI
     derived schemas (e.g. NewtonMaxEffortClampingAPI). The order of clamping is not guaranteed to be preserved thus 
@@ -527,21 +527,23 @@ class NewtonActuator "NewtonActuator" (
 }
 
 class NewtonActuatorDelayAPI "NewtonActuatorDelayAPI" (
-    doc = """Adds input delay to an actuator to model communication or processing lag.
+    doc = """Adds command input delay to an actuator to model communication or processing lag.
 
-    Target positions, velocities, and control inputs are delayed by the specified
-    number of simulation timesteps before being used by the controller.
+    Command inputs such as control targets and feedforward terms are delayed by the specified
+    number of actuator timesteps before being used by the controller.
     """
 )
 {
     int newton:delaySteps = 1 (
-        doc = """Number of simulation timesteps to delay actuator inputs.
+        doc = """Number of actuator timesteps to delay commanded inputs.
 
-        Range: [1, inf)
+        A value of 0 disables command input delay.
+
+        Range: [0, inf)
         Units: dimensionless"""
         limits = {
             dictionary hard = {
-                int minimum = 1
+                int minimum = 0
             }
         }
     )
@@ -697,7 +699,7 @@ class NewtonMLPControlAPI "NewtonMLPControlAPI" (
 
     Uses a pre-trained MLP to compute joint effort from scaled position error
     and velocity inputs. The network receives concatenated position errors and
-    velocities from selected history timesteps.
+    velocities from the buffered actuator timestep history specified by newton:inputIdx.
 
     Input preparation per actuator:
         pos_input = [pos_error[t] for t in inputIdx] * positionScale
@@ -737,10 +739,10 @@ class NewtonMLPControlAPI "NewtonMLPControlAPI" (
     )
 
     int[] newton:inputIdx = [0] (
-        doc = """History timestep indices to feed the network.
+        doc = """History actuator timestep indices to feed the network.
 
-        0 = current timestep, 1 = one step ago, etc. The network receives
-        position error and velocity from each of these timesteps, concatenated."""
+        0 = current actuator timestep, 1 = one actuator timestep ago, etc. The network receives
+        position error and velocity from each of these actuator timesteps, concatenated."""
     )
 }
 
@@ -749,11 +751,11 @@ class NewtonLSTMControlAPI "NewtonLSTMControlAPI" (
     doc = """LSTM (Long Short-Term Memory) network actuator controller.
 
     Uses a pre-trained LSTM to compute joint effort from position error and
-    velocity. The network maintains hidden and cell state across timesteps to
+    velocity. The network maintains hidden and cell state across actuator timesteps to
     capture temporal dynamics of the actuator.
 
     The network receives input of shape (batch, 1, 2) with features
-    [position_error, velocity] at each timestep. The LSTM's internal state
+    [position_error, velocity] at each actuator timestep. The LSTM's internal state
     provides the temporal history, so no explicit history buffer is needed.
 
     Output: effort = network(input, hidden_state)"""
