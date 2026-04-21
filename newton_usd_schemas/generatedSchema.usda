@@ -793,7 +793,7 @@ class NewtonActuatorClampingBaseAPI "NewtonActuatorClampingBaseAPI" (
 
 class NewtonMaxEffortClampingAPI "NewtonMaxEffortClampingAPI" (
     apiSchemas = ["NewtonActuatorClampingBaseAPI"]
-    doc = """Symmetric box clamp on actuator output effort.
+    doc = """Symmetric clamp on actuator output effort.
 
     Clamps the actuator output to the range [-maxEffort, +maxEffort].
     """
@@ -816,9 +816,9 @@ class NewtonMaxEffortClampingAPI "NewtonMaxEffortClampingAPI" (
 
 class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
     apiSchemas = ["NewtonActuatorClampingBaseAPI"]
-    doc = """DC Motor velocity-dependent effort saturation.
+    doc = """DC motor velocity-dependent effort clamp.
 
-    A velocity-dependent effort limit based on the DC motor effort-speed characteristic:
+    A velocity-dependent effort clamp based on the DC motor effort-speed characteristic:
 
         tau_max(v) = clamp(saturationEffort * (1 - v/velocityLimit), 0, maxEffort)
 
@@ -860,7 +860,7 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
         doc = """Maximum no-load joint velocity for the effort-speed curve.
 
         At this velocity, the motor can produce zero effort in the direction
-        of motion due to back-EMF. A value of inf disables the effort-speed
+        of motion due to losses such as back-EMF. A value of inf disables the effort-speed
         saturation effect.
 
         Range: (0, inf)
