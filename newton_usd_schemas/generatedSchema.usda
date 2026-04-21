@@ -553,9 +553,9 @@ class NewtonActuatorControlBaseAPI "NewtonActuatorControlBaseAPI" (
     doc = """Base API for all actuator control laws.
 
     Control laws compute actuator output effort (i.e. force/torque for linear/rotational actuators)
-    from inputs that include commands, and simulation and actuator state.
-    This output may still be constrained by one or more applied NewtonActuatorClampingBaseAPI
-    derived schemas.
+    from authored controller parameters, commanded inputs such as control targets and optional
+    feedforward terms, and simulation and actuator state. This output may still be constrained by
+    one or more applied NewtonActuatorClampingBaseAPI derived schemas.
 
     Actuators must provide a single control law by applying a NewtonActuatorControlBaseAPI derived schema (e.g. NewtonPDControlAPI).
 
@@ -571,9 +571,16 @@ class NewtonPDControlAPI "NewtonPDControlAPI" (
     apiSchemas = ["NewtonActuatorControlBaseAPI"]
     doc = """Stateless PD (Proportional-Derivative) controller.
 
-    Control law: tau = act + kp*(target_pos - q) + kd*(target_vel - v)"""
+    Control law: effort = constEffort + feedforward + kp*(target_pos - q) + kd*(target_vel - v)"""
 )
 {
+    float newton:constEffort = 0 (
+        doc = """Constant bias effort added to the controller output (in joint space).
+
+        Range: (-inf, inf)
+        Units: force or torque"""
+    )
+
     float newton:kp = 0 (
         doc = """Proportional gain (in joint space).
 
@@ -612,9 +619,16 @@ class NewtonPIDControlAPI "NewtonPIDControlAPI" (
     Includes proportional, integral, and derivative terms for steady-state
     error elimination.
 
-    Control law: tau = act + kp*(target_pos - q) + ki*integral(e)*dt + kd*(target_vel - v)"""
+    Control law: effort = constEffort + feedforward + kp*(target_pos - q) + ki*integral(target_pos - q) + kd*(target_vel - v)"""
 )
 {
+    float newton:constEffort = 0 (
+        doc = """Constant bias effort added to the controller output (in joint space).
+
+        Range: (-inf, inf)
+        Units: force or torque"""
+    )
+
     float newton:kp = 0 (
         doc = """Proportional gain (in joint space).
 
@@ -664,7 +678,7 @@ class NewtonPIDControlAPI "NewtonPIDControlAPI" (
         doc = """Anti-windup limit for the integral term.
 
         The accumulated integral is clamped to [-integralMax, +integralMax]
-        to prevent windup when the actuator is saturated.
+        to prevent integral windup under sustained tracking error, such as during actuator saturation.
 
         Range: [0, inf)
         Units: distance * seconds or degrees * seconds"""
