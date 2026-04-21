@@ -804,9 +804,9 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
 
     A velocity-dependent effort limit based on the DC motor effort-speed characteristic:
 
-        tau_max(v) = clamp(saturationEffort * (1 - v/velocityLimit), 0, maxForce)
+        tau_max(v) = clamp(saturationEffort * (1 - v/velocityLimit), 0, maxEffort)
 
-    At zero velocity the motor can produce up to saturationEffort (capped by maxForce).
+    At zero velocity the motor can produce up to saturationEffort (capped by maxEffort).
     As velocity approaches velocityLimit, available effort drops to zero.
     """
 )
@@ -829,7 +829,7 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
         doc = """Peak motor effort at stall (zero velocity).
 
         This is the maximum effort the motor can produce when not spinning,
-        before being capped by maxForce.
+        before being capped by maxEffort.
 
         Range: [0, inf)
         Units: force or torque"""
