@@ -800,7 +800,7 @@ class NewtonMaxEffortClampingAPI "NewtonMaxEffortClampingAPI" (
 )
 {
     float newton:maxEffort = inf (
-        doc = """Maximum output effort limit (in joint space, post-gearhead).
+        doc = """Maximum output effort limit (in joint space).
 
         The actuator output is clamped to the range [-maxEffort, +maxEffort].
 
@@ -828,7 +828,7 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
 )
 {
     float newton:maxEffort = inf (
-        doc = """Effort limit for the effort-speed curve (in joint space, post-gearhead).
+        doc = """Effort limit for the effort-speed curve (in joint space).
 
         Caps the velocity-dependent effort envelope.
 
@@ -877,9 +877,8 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
     apiSchemas = ["NewtonActuatorClampingBaseAPI"]
     doc = """Position-dependent effort clamping via lookup table.
 
-    Provides position-dependent effort limits interpolated from a lookup table,
-    to model actuators where the transmission ratio and thus maximum output effort
-    vary with joint position."""
+    Provides position-dependent effort limits interpolated from a lookup table
+    to model actuators whose maximum output effort varies with joint position."""
 )
 {
     float[] newton:lookupPositions = [] (
