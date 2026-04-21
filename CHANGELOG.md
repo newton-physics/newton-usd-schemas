@@ -1,3 +1,20 @@
+# 0.2.0rc1
+
+## Features
+
+- Added experimental `NewtonActuator` typed schema for actuating a `PhysicsRevoluteJoint` or `PhysicsPrismaticJoint`
+  - Only single-DOF joint actuation is supported at this time.
+    - Multi-DOF PhysicsJoints are not supported, even when locked via LimitAPIs to a single axis.
+  - Actuators require a single control law via applied API
+    - Chose one of `NewtonPDControlAPI`, `NewtonPIDControlAPI`, or `NewtonNeuralControlAPI` when authoring an actuator
+    - Custom control laws can be implemented by inheriting `NewtonActuatorControlBaseAPI`
+  - Actuators may optionally have any number of clamping operations via applied APIs
+    - Apply any of `NewtonMaxEffortClampingAPI`, `NewtonDCMotorClampingAPI`, or `NewtonPositionBasedClampingAPI`
+    - Custom clamping can be implemented by inheriting `NewtonActuatorClampingBaseAPI`
+  - Control input delay can be added by applying `NewtonActuatorDelayAPI`
+  - All actuator attributes use pure SI units (meters, radians, seconds, kg)
+    - Rotational attributes use radians, diverging from `UsdPhysicsDriveAPI` which uses degrees
+
 # 0.1.0
 
 ## Features

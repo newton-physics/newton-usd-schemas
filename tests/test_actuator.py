@@ -59,14 +59,17 @@ class TestNewtonActuatorDelayAPI(unittest.TestCase):
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), 1)
 
-        attr.Set(5)
+        attr.Set(0)
         self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), 0)
+
+        attr.Set(5)
         self.assertEqual(attr.Get(), 5)
 
         if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()
             self.assertTrue(hard.IsValid())
-            self.assertEqual(hard.GetMinimum(), 1)
+            self.assertEqual(hard.GetMinimum(), 0)
             self.assertIsNone(hard.GetMaximum())
 
     def test_api_limitations(self):
@@ -235,117 +238,37 @@ class TestNewtonPIDControlAPI(unittest.TestCase):
             self.assertIsNone(hard.GetMaximum())
 
 
-class TestNewtonNetworkControlAPI(unittest.TestCase):
+class TestNewtonNeuralControlAPI(unittest.TestCase):
     def setUp(self):
         self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
         self.prim: Usd.Prim = self.stage.DefinePrim("/Actuator", "NewtonActuator")
 
     def test_api_registered(self):
-        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsNetworkControlAPI")
-        self.assertEqual(plug_type.typeName, "NewtonPhysicsNetworkControlAPI")
-        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsNetworkControlAPI")
-        self.assertEqual(schema_type, "NewtonNetworkControlAPI")
+        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsNeuralControlAPI")
+        self.assertEqual(plug_type.typeName, "NewtonPhysicsNeuralControlAPI")
+        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsNeuralControlAPI")
+        self.assertEqual(schema_type, "NewtonNeuralControlAPI")
 
     def test_api_application(self):
-        self.assertFalse(self.prim.HasAPI("NewtonNetworkControlAPI"))
+        self.assertFalse(self.prim.HasAPI("NewtonNeuralControlAPI"))
         self.assertFalse(self.prim.HasAPI("NewtonActuatorControlBaseAPI"))
-        self.prim.ApplyAPI("NewtonNetworkControlAPI")
-        self.assertTrue(self.prim.HasAPI("NewtonNetworkControlAPI"))
+        self.prim.ApplyAPI("NewtonNeuralControlAPI")
+        self.assertTrue(self.prim.HasAPI("NewtonNeuralControlAPI"))
         self.assertTrue(self.prim.HasAPI("NewtonActuatorControlBaseAPI"))
-        self.assertTrue(self.prim.HasAttribute("newton:networkPath"))
+        self.assertTrue(self.prim.HasAttribute("newton:modelPath"))
 
-    def test_network_path(self):
-        self.prim.ApplyAPI("NewtonNetworkControlAPI")
-        attr = self.prim.GetAttribute("newton:networkPath")
+    def test_model_path(self):
+        self.prim.ApplyAPI("NewtonNeuralControlAPI")
+        attr = self.prim.GetAttribute("newton:modelPath")
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertIsNone(attr.Get())
 
-        attr.Set("path/to/network.pt")
+        attr.Set("path/to/model.pt")
         self.assertTrue(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), "path/to/network.pt")
+        self.assertEqual(attr.Get().path, "path/to/model.pt")
 
     def test_api_limitations(self):
         xform = self.stage.DefinePrim("/NotActuator", "Xform")
-        self.assertFalse(xform.CanApplyAPI("NewtonNetworkControlAPI"))
-
-
-class TestNewtonMLPControlAPI(unittest.TestCase):
-    def setUp(self):
-        self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
-        self.prim: Usd.Prim = self.stage.DefinePrim("/Actuator", "NewtonActuator")
-
-    def test_api_registered(self):
-        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsMLPControlAPI")
-        self.assertEqual(plug_type.typeName, "NewtonPhysicsMLPControlAPI")
-        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsMLPControlAPI")
-        self.assertEqual(schema_type, "NewtonMLPControlAPI")
-
-    def test_api_application(self):
-        self.assertFalse(self.prim.HasAPI("NewtonMLPControlAPI"))
-        self.assertFalse(self.prim.HasAPI("NewtonNetworkControlAPI"))
-        self.assertFalse(self.prim.HasAPI("NewtonActuatorControlBaseAPI"))
-        self.prim.ApplyAPI("NewtonMLPControlAPI")
-        self.assertTrue(self.prim.HasAPI("NewtonMLPControlAPI"))
-        self.assertTrue(self.prim.HasAPI("NewtonNetworkControlAPI"))
-        self.assertTrue(self.prim.HasAPI("NewtonActuatorControlBaseAPI"))
-        self.assertTrue(self.prim.HasAttribute("newton:networkPath"))
-        self.assertTrue(self.prim.HasAttribute("newton:torqueScale"))
-        self.assertTrue(self.prim.HasAttribute("newton:positionScale"))
-        self.assertTrue(self.prim.HasAttribute("newton:velocityScale"))
-        self.assertTrue(self.prim.HasAttribute("newton:velocityFirst"))
-        self.assertTrue(self.prim.HasAttribute("newton:inputIdx"))
-
-    def test_scales(self):
-        self.prim.ApplyAPI("NewtonMLPControlAPI")
-        self.assertAlmostEqual(self.prim.GetAttribute("newton:positionScale").Get(), 1.0)
-        self.assertAlmostEqual(self.prim.GetAttribute("newton:velocityScale").Get(), 1.0)
-        self.assertAlmostEqual(self.prim.GetAttribute("newton:torqueScale").Get(), 1.0)
-
-    def test_velocity_first(self):
-        self.prim.ApplyAPI("NewtonMLPControlAPI")
-        attr = self.prim.GetAttribute("newton:velocityFirst")
-        self.assertFalse(attr.Get())
-
-        attr.Set(True)
-        self.assertTrue(attr.Get())
-
-    def test_input_idx(self):
-        self.prim.ApplyAPI("NewtonMLPControlAPI")
-        attr = self.prim.GetAttribute("newton:inputIdx")
-        self.assertEqual(list(attr.Get()), [0])
-
-        attr.Set([0, 1, 2])
-        self.assertEqual(list(attr.Get()), [0, 1, 2])
-
-    def test_api_limitations(self):
-        xform = self.stage.DefinePrim("/NotActuator", "Xform")
-        self.assertFalse(xform.CanApplyAPI("NewtonMLPControlAPI"))
-
-
-class TestNewtonLSTMControlAPI(unittest.TestCase):
-    def setUp(self):
-        self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
-        self.prim: Usd.Prim = self.stage.DefinePrim("/Actuator", "NewtonActuator")
-
-    def test_api_registered(self):
-        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsLSTMControlAPI")
-        self.assertEqual(plug_type.typeName, "NewtonPhysicsLSTMControlAPI")
-        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsLSTMControlAPI")
-        self.assertEqual(schema_type, "NewtonLSTMControlAPI")
-
-    def test_api_application(self):
-        self.assertFalse(self.prim.HasAPI("NewtonLSTMControlAPI"))
-        self.assertFalse(self.prim.HasAPI("NewtonNetworkControlAPI"))
-        self.assertFalse(self.prim.HasAPI("NewtonActuatorControlBaseAPI"))
-        self.prim.ApplyAPI("NewtonLSTMControlAPI")
-        self.assertTrue(self.prim.HasAPI("NewtonLSTMControlAPI"))
-        self.assertTrue(self.prim.HasAPI("NewtonNetworkControlAPI"))
-        self.assertTrue(self.prim.HasAPI("NewtonActuatorControlBaseAPI"))
-        self.assertTrue(self.prim.HasAttribute("newton:networkPath"))
-
-    def test_api_limitations(self):
-        xform = self.stage.DefinePrim("/NotActuator", "Xform")
-        self.assertFalse(xform.CanApplyAPI("NewtonLSTMControlAPI"))
+        self.assertFalse(xform.CanApplyAPI("NewtonNeuralControlAPI"))
 
 
 class TestNewtonActuatorClampingBaseAPI(unittest.TestCase):
@@ -369,28 +292,28 @@ class TestNewtonActuatorClampingBaseAPI(unittest.TestCase):
         self.assertFalse(xform.CanApplyAPI("NewtonActuatorClampingBaseAPI"))
 
 
-class TestNewtonMaxForceClampingAPI(unittest.TestCase):
+class TestNewtonMaxEffortClampingAPI(unittest.TestCase):
     def setUp(self):
         self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
         self.prim: Usd.Prim = self.stage.DefinePrim("/Actuator", "NewtonActuator")
 
     def test_api_registered(self):
-        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsMaxForceClampingAPI")
-        self.assertEqual(plug_type.typeName, "NewtonPhysicsMaxForceClampingAPI")
-        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsMaxForceClampingAPI")
-        self.assertEqual(schema_type, "NewtonMaxForceClampingAPI")
+        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsMaxEffortClampingAPI")
+        self.assertEqual(plug_type.typeName, "NewtonPhysicsMaxEffortClampingAPI")
+        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsMaxEffortClampingAPI")
+        self.assertEqual(schema_type, "NewtonMaxEffortClampingAPI")
 
     def test_api_application(self):
-        self.assertFalse(self.prim.HasAPI("NewtonMaxForceClampingAPI"))
+        self.assertFalse(self.prim.HasAPI("NewtonMaxEffortClampingAPI"))
         self.assertFalse(self.prim.HasAPI("NewtonActuatorClampingBaseAPI"))
-        self.prim.ApplyAPI("NewtonMaxForceClampingAPI")
-        self.assertTrue(self.prim.HasAPI("NewtonMaxForceClampingAPI"))
+        self.prim.ApplyAPI("NewtonMaxEffortClampingAPI")
+        self.assertTrue(self.prim.HasAPI("NewtonMaxEffortClampingAPI"))
         self.assertTrue(self.prim.HasAPI("NewtonActuatorClampingBaseAPI"))
-        self.assertTrue(self.prim.HasAttribute("newton:maxForce"))
+        self.assertTrue(self.prim.HasAttribute("newton:maxEffort"))
 
-    def test_max_force(self):
-        self.prim.ApplyAPI("NewtonMaxForceClampingAPI")
-        attr = self.prim.GetAttribute("newton:maxForce")
+    def test_max_effort(self):
+        self.prim.ApplyAPI("NewtonMaxEffortClampingAPI")
+        attr = self.prim.GetAttribute("newton:maxEffort")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), math.inf)
@@ -407,7 +330,7 @@ class TestNewtonMaxForceClampingAPI(unittest.TestCase):
 
     def test_api_limitations(self):
         xform = self.stage.DefinePrim("/NotActuator", "Xform")
-        self.assertFalse(xform.CanApplyAPI("NewtonMaxForceClampingAPI"))
+        self.assertFalse(xform.CanApplyAPI("NewtonMaxEffortClampingAPI"))
 
 
 class TestNewtonDCMotorClampingAPI(unittest.TestCase):
@@ -427,14 +350,14 @@ class TestNewtonDCMotorClampingAPI(unittest.TestCase):
         self.prim.ApplyAPI("NewtonDCMotorClampingAPI")
         self.assertTrue(self.prim.HasAPI("NewtonDCMotorClampingAPI"))
         self.assertTrue(self.prim.HasAPI("NewtonActuatorClampingBaseAPI"))
-        self.assertFalse(self.prim.HasAPI("NewtonMaxForceClampingAPI"))
-        self.assertTrue(self.prim.HasAttribute("newton:maxForce"))
+        self.assertFalse(self.prim.HasAPI("NewtonMaxEffortClampingAPI"))
+        self.assertTrue(self.prim.HasAttribute("newton:maxMotorEffort"))
         self.assertTrue(self.prim.HasAttribute("newton:saturationEffort"))
         self.assertTrue(self.prim.HasAttribute("newton:velocityLimit"))
 
-    def test_max_force(self):
+    def test_max_motor_effort(self):
         self.prim.ApplyAPI("NewtonDCMotorClampingAPI")
-        attr = self.prim.GetAttribute("newton:maxForce")
+        attr = self.prim.GetAttribute("newton:maxMotorEffort")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), math.inf)
 
@@ -500,21 +423,21 @@ class TestNewtonPositionBasedClampingAPI(unittest.TestCase):
         self.prim.ApplyAPI("NewtonPositionBasedClampingAPI")
         self.assertTrue(self.prim.HasAPI("NewtonPositionBasedClampingAPI"))
         self.assertTrue(self.prim.HasAPI("NewtonActuatorClampingBaseAPI"))
-        self.assertTrue(self.prim.HasAttribute("newton:lookupAngles"))
-        self.assertTrue(self.prim.HasAttribute("newton:lookupTorques"))
+        self.assertTrue(self.prim.HasAttribute("newton:lookupPositions"))
+        self.assertTrue(self.prim.HasAttribute("newton:lookupEfforts"))
 
-    def test_lookup_angles(self):
+    def test_lookup_positions(self):
         self.prim.ApplyAPI("NewtonPositionBasedClampingAPI")
-        attr = self.prim.GetAttribute("newton:lookupAngles")
+        attr = self.prim.GetAttribute("newton:lookupPositions")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), [])
 
         attr.Set([0.0, 45.0, 90.0])
         self.assertEqual(attr.Get(), [0.0, 45.0, 90.0])
 
-    def test_lookup_torques(self):
+    def test_lookup_efforts(self):
         self.prim.ApplyAPI("NewtonPositionBasedClampingAPI")
-        attr = self.prim.GetAttribute("newton:lookupTorques")
+        attr = self.prim.GetAttribute("newton:lookupEfforts")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), [])
 
