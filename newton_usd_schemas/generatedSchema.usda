@@ -500,17 +500,18 @@ class NewtonMimicAPI "NewtonMimicAPI" (
 }
 
 class NewtonActuator "NewtonActuator" (
-    doc = """Defines a physical actuator used to transmit forces onto other physical components.
+    doc = """Defines a physical actuator used to transmit effort onto other physical components.
 
-    An actuator transmits forces onto one or more physical components (e.g. joints). The target(s) are
+    An actuator transmits effort (i.e. force/torque for linear/rotational actuators)
+    onto one or more physical components (e.g. joints). The target(s) are
     specified via the `newton:targets` relationship.
     
     Actuators must provide a single control law by applying a NewtonActuatorControlBaseAPI derived schema (e.g. NewtonPDControlAPI).
     
     Actuator input delay can be included by applying NewtonActuatorDelayAPI. This is useful to model actuator communication or processing lag.
 
-    Additional force/torque clamping behaviors can be added by applying any number of NewtonActuatorClampingBaseAPI
-    derived schemas (e.g. NewtonMaxForceClampingAPI). The order of clamping is not guaranteed to be preserved thus 
+    Additional effort clamping behaviors can be added by applying any number of NewtonActuatorClampingBaseAPI
+    derived schemas (e.g. NewtonMaxEffortClampingAPI). The order of clamping is not guaranteed to be preserved thus 
     clamping operations must be order independent.
     """
 )
@@ -549,6 +550,11 @@ class NewtonActuatorDelayAPI "NewtonActuatorDelayAPI" (
 class NewtonActuatorControlBaseAPI "NewtonActuatorControlBaseAPI" (
     doc = """Base API for all actuator control laws.
 
+    Control laws compute actuator output effort (i.e. force/torque for linear/rotational actuators)
+    from inputs that include commands, and simulation and actuator state.
+    This output may still be constrained by one or more applied NewtonActuatorClampingBaseAPI
+    derived schemas.
+
     Actuators must provide a single control law by applying a NewtonActuatorControlBaseAPI derived schema (e.g. NewtonPDControlAPI).
 
     Applying any control law API (e.g. PD, PID, Network) automatically applies this base.
@@ -570,7 +576,7 @@ class NewtonPDControlAPI "NewtonPDControlAPI" (
         doc = """Proportional gain (in joint space).
 
         Multiplied by position error (target_pos - current_pos) to produce
-        a restoring force proportional to displacement.
+        a restoring effort proportional to displacement.
 
         Range: [0, inf)
         Units: force / distance or torque / degrees"""
@@ -585,7 +591,7 @@ class NewtonPDControlAPI "NewtonPDControlAPI" (
         doc = """Derivative gain (in joint space).
 
         Multiplied by velocity error (target_vel - current_vel) to produce
-        a damping force proportional to velocity.
+        a damping effort proportional to velocity.
 
         Range: [0, inf)
         Units: force * seconds / distance or torque * seconds / degrees"""
@@ -611,7 +617,7 @@ class NewtonPIDControlAPI "NewtonPIDControlAPI" (
         doc = """Proportional gain (in joint space).
 
         Multiplied by position error (target_pos - current_pos) to produce
-        a restoring force proportional to displacement.
+        a restoring effort proportional to displacement.
 
         Range: [0, inf)
         Units: force / distance or torque / degrees"""
@@ -626,7 +632,7 @@ class NewtonPIDControlAPI "NewtonPIDControlAPI" (
         doc = """Derivative gain (in joint space).
 
         Multiplied by velocity error (target_vel - current_vel) to produce
-        a damping force proportional to velocity.
+        a damping effort proportional to velocity.
 
         Range: [0, inf)
         Units: force * seconds / distance or torque * seconds / degrees"""
@@ -689,7 +695,7 @@ class NewtonMLPControlAPI "NewtonMLPControlAPI" (
     apiSchemas = ["NewtonNetworkControlAPI"]
     doc = """MLP (Multi-Layer Perceptron) network actuator controller.
 
-    Uses a pre-trained MLP to compute joint torques from scaled position error
+    Uses a pre-trained MLP to compute joint effort from scaled position error
     and velocity inputs. The network receives concatenated position errors and
     velocities from selected history timesteps.
 
@@ -698,7 +704,7 @@ class NewtonMLPControlAPI "NewtonMLPControlAPI" (
         vel_input = [velocity[t] for t in inputIdx] * velocityScale
         network_input = cat(pos_input, vel_input)  (or vel, pos if velocityFirst=true)
 
-    Output: torque = network(input) * torqueScale"""
+    Output: effort = network(input) * effortScale"""
 )
 {
     float newton:positionScale = 1.0 (
@@ -715,8 +721,8 @@ class NewtonMLPControlAPI "NewtonMLPControlAPI" (
         Units: dimensionless"""
     )
 
-    float newton:torqueScale = 1.0 (
-        doc = """Scaling factor applied to the network's output torques.
+    float newton:effortScale = 1.0 (
+        doc = """Scaling factor applied to the network's output effort.
 
         Range: (-inf, inf)
         Units: dimensionless"""
@@ -742,7 +748,7 @@ class NewtonLSTMControlAPI "NewtonLSTMControlAPI" (
     apiSchemas = ["NewtonNetworkControlAPI"]
     doc = """LSTM (Long Short-Term Memory) network actuator controller.
 
-    Uses a pre-trained LSTM to compute joint torques from position error and
+    Uses a pre-trained LSTM to compute joint effort from position error and
     velocity. The network maintains hidden and cell state across timesteps to
     capture temporal dynamics of the actuator.
 
@@ -750,7 +756,7 @@ class NewtonLSTMControlAPI "NewtonLSTMControlAPI" (
     [position_error, velocity] at each timestep. The LSTM's internal state
     provides the temporal history, so no explicit history buffer is needed.
 
-    Output: torque = network(input, hidden_state)"""
+    Output: effort = network(input, hidden_state)"""
 )
 {
 }
@@ -758,29 +764,29 @@ class NewtonLSTMControlAPI "NewtonLSTMControlAPI" (
 class NewtonActuatorClampingBaseAPI "NewtonActuatorClampingBaseAPI" (
     doc = """Base API for all actuator clamping strategies.
 
-    Additional force/torque clamping behaviors can be added to a NewtonActuator by applying any number of
-    NewtonActuatorClampingBaseAPI derived schemas (e.g. NewtonMaxForceClampingAPI). The order of clamping
+    Any number of NewtonActuatorClampingBaseAPI derived schemas (e.g. NewtonMaxEffortClampingAPI) may be
+    applied to a NewtonActuator to constrain actuator output effort (i.e. force/torque for linear/rotational actuators). The order of clamping
     is not guaranteed to be preserved thus clamping operations must be order independent.
 
-    Applying any clamping API (e.g. NewtonMaxForceClampingAPI, NewtonDCMotorClampingAPI, NewtonPositionBasedClampingAPI) automatically
+    Applying any clamping API (e.g. NewtonMaxEffortClampingAPI, NewtonDCMotorClampingAPI, NewtonPositionBasedClampingAPI) automatically
     applies this base. Check prim.HasAPI('NewtonActuatorClampingBaseAPI') to detect whether any clamping is present.
     """
 )
 {
 }
 
-class NewtonMaxForceClampingAPI "NewtonMaxForceClampingAPI" (
+class NewtonMaxEffortClampingAPI "NewtonMaxEffortClampingAPI" (
     apiSchemas = ["NewtonActuatorClampingBaseAPI"]
-    doc = """Symmetric box clamp on actuator output force.
+    doc = """Symmetric box clamp on actuator output effort.
 
-    Clamps the controller output to the range [-maxForce, +maxForce].
+    Clamps the actuator output to the range [-maxEffort, +maxEffort].
     """
 )
 {
-    float newton:maxForce = inf (
-        doc = """Maximum force or torque output limit (in joint space, post-gearhead).
+    float newton:maxEffort = inf (
+        doc = """Maximum output effort limit (in joint space, post-gearhead).
 
-        The controller output is clamped to the range [-maxForce, +maxForce].
+        The actuator output is clamped to the range [-maxEffort, +maxEffort].
 
         Range: [0, inf)
         Units: force or torque"""
@@ -794,21 +800,21 @@ class NewtonMaxForceClampingAPI "NewtonMaxForceClampingAPI" (
 
 class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
     apiSchemas = ["NewtonActuatorClampingBaseAPI"]
-    doc = """DC Motor velocity-dependent torque saturation.
+    doc = """DC Motor velocity-dependent effort saturation.
 
-    A velocity-dependent torque limit based on the DC motor torque-speed characteristic:
+    A velocity-dependent effort limit based on the DC motor effort-speed characteristic:
 
         tau_max(v) = clamp(saturationEffort * (1 - v/velocityLimit), 0, maxForce)
 
     At zero velocity the motor can produce up to saturationEffort (capped by maxForce).
-    As velocity approaches velocityLimit, available torque drops to zero.
+    As velocity approaches velocityLimit, available effort drops to zero.
     """
 )
 {
-    float newton:maxForce = inf (
-        doc = """Effort limit for the torque-speed curve (in joint space, post-gearhead).
+    float newton:maxEffort = inf (
+        doc = """Effort limit for the effort-speed curve (in joint space, post-gearhead).
 
-        Caps the velocity-dependent torque envelope.
+        Caps the velocity-dependent effort envelope.
 
         Range: [0, inf)
         Units: force or torque"""
@@ -820,9 +826,9 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
     )
 
     float newton:saturationEffort = inf (
-        doc = """Peak motor torque at stall (zero velocity).
+        doc = """Peak motor effort at stall (zero velocity).
 
-        This is the maximum torque the motor can produce when not spinning,
+        This is the maximum effort the motor can produce when not spinning,
         before being capped by maxForce.
 
         Range: [0, inf)
@@ -835,10 +841,10 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
     )
 
     float newton:velocityLimit = inf (
-        doc = """Maximum no-load joint velocity for the torque-speed curve.
+        doc = """Maximum no-load joint velocity for the effort-speed curve.
 
-        At this velocity, the motor can produce zero torque in the direction
-        of motion due to back-EMF. A value of inf disables the torque-speed
+        At this velocity, the motor can produce zero effort in the direction
+        of motion due to back-EMF. A value of inf disables the effort-speed
         saturation effect.
 
         Range: (0, inf)
@@ -853,15 +859,15 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
 
 class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
     apiSchemas = ["NewtonActuatorClampingBaseAPI"]
-    doc = """Angle-dependent torque clamping via lookup table.
+    doc = """Position-dependent effort clamping via lookup table.
 
-    Provides angle-dependent torque limits interpolated from a lookup table,
-    to model actuators where the transmission ratio and thus maximum output torque
-    vary with joint angle."""
+    Provides position-dependent effort limits interpolated from a lookup table,
+    to model actuators where the transmission ratio and thus maximum output effort
+    vary with joint position."""
 )
 {
-    float[] newton:lookupAngles = [] (
-        doc = """Sorted joint angles for the torque lookup table.
+    float[] newton:lookupPositions = [] (
+        doc = """Sorted joint positions for the effort lookup table.
 
         Must be monotonically increasing and the same length as newton:lookupTorques.
 
@@ -869,9 +875,9 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
     )
 
     float[] newton:lookupTorques = [] (
-        doc = """Maximum output torques corresponding to each entry in newton:lookupAngles.
+        doc = """Maximum output effort values corresponding to each entry in newton:lookupPositions.
 
-        Must be the same length as newton:lookupAngles.
+        Must be the same length as newton:lookupPositions.
 
         Units: force or torque"""
     )
