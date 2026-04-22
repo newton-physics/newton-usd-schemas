@@ -500,14 +500,14 @@ class NewtonMimicAPI "NewtonMimicAPI" (
 }
 
 class NewtonActuator "NewtonActuator" (
-    doc = """Defines a physical actuator used to transmit effort onto other physical components.
+    doc = """Defines a physical actuator that computes effort to apply to a joint.
 
     EXPERIMENTAL: The Newton actuator schema family is provisional. Attribute names,
     defaults, and composition rules may change without notice in subsequent releases.
 
-    An actuator transmits effort (i.e. force/torque for linear/rotational actuators)
-    onto one or more physical components (e.g. joints). The target(s) are
-    specified via the `newton:targets` relationship.
+    An actuator computes effort (i.e. force/torque for linear/rotational actuators) to apply
+    to a PhysicsRevoluteJoint or PhysicsPrismaticJoint specified via the `newton:targets`
+    relationship. Future versions may expand the set of valid target types.
 
     Actuators must provide a single control law by applying a NewtonActuatorControlBaseAPI derived schema (e.g. NewtonPDControlAPI).
 
@@ -519,6 +519,9 @@ class NewtonActuator "NewtonActuator" (
 
     Note: Newton actuators use pure SI units throughout (meters, radians, seconds, kg).
     Rotational attributes use radians, diverging from UsdPhysicsDriveAPI which uses degrees.
+    Actuator attributes are also documented in joint space. Neither the SI-unit nor the
+    joint-space convention is enforced, and users may scale attributes to fit their own
+    convention by updating their parser and/or integration code accordingly.
     """
 )
 {
@@ -526,7 +529,7 @@ class NewtonActuator "NewtonActuator" (
         doc = """The joint driven by this actuator.
 
         The relationship must be authored. Parsers should raise an error if no target
-        is provided; users should deactivate the prim if they want to disable it.
+        is provided; users should deactivate the prim if they want to disable the actuator.
 
         Currently only the first target is honored, and it must identify either a
         `PhysicsRevoluteJoint` or `PhysicsPrismaticJoint`.
@@ -542,10 +545,10 @@ class NewtonActuatorDelayAPI "NewtonActuatorDelayAPI" (
     Command inputs such as control targets and feedforward terms are delayed by the specified
     number of actuator timesteps before being used by the controller.
 
-    When DelayAPI is applied, the implementation will always produce delay output.
-    When the buffer is empty (e.g. right after reset) or a DOF has `newton:delaySteps == 0`,
-    the current targets are returned directly. When underfilled, the lag is clamped to the
-    available history so the oldest entry is returned.
+    When DelayAPI is applied, command inputs to the controller are always defined.
+    If the delay buffer is empty (e.g. right after reset) or an actuator has
+    `newton:delaySteps == 0`, current command inputs are used. If the requested delay
+    exceeds the available history, the oldest available command input in the buffer is used.
     """
 )
 {
