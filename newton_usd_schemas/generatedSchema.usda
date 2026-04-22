@@ -767,8 +767,8 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
 
     A four-quadrant effort clamp based on the DC motor effort-speed characteristic:
 
-        tau_max(v) = clamp(saturationEffort * (1 - v/velocityLimit), 0, maxMotorEffort)
-        tau_min(v) = clamp(saturationEffort * (1 + v/velocityLimit), 0, maxMotorEffort)
+        effort_max(vel) = min(saturationEffort * (1 - vel / velocityLimit),  maxMotorEffort)
+        effort_min(vel) = max(saturationEffort * (-1 - vel / velocityLimit), -maxMotorEffort)
 
     At zero velocity the motor can produce up to saturationEffort (capped by maxMotorEffort).
     As velocity approaches velocityLimit, available effort drops to zero in both directions.
@@ -832,8 +832,7 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
     - Inputs strictly between adjacent (position, effort) entries are linearly interpolated.
     - Inputs at or below newton:lookupPositions[0] clamp to newton:lookupEfforts[0].
     - Inputs at or above newton:lookupPositions[-1] clamp to newton:lookupEfforts[-1].
-    - There is no extrapolation beyond the table range and no wraparound.
-    - An empty or single-entry table produces a zero effort limit.
+    - For rotational actuators, positions do not wrap periodically.
     """
 )
 {
