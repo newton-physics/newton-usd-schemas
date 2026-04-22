@@ -517,11 +517,10 @@ class NewtonActuator "NewtonActuator" (
     derived schemas (e.g. NewtonMaxEffortClampingAPI). The order of clamping is not guaranteed to be preserved thus
     clamping operations must be order independent.
 
-    Note: Newton actuators use pure SI units throughout (meters, radians, seconds, kg).
-    Rotational attributes use radians, diverging from UsdPhysicsDriveAPI which uses degrees.
-    Actuator attributes are also documented in joint space. Neither the SI-unit nor the
-    joint-space convention is enforced, and users may scale attributes to fit their own
-    convention by updating their parser and/or integration code accordingly.
+    Note: Newton actuators use radians, diverging from UsdPhysicsDriveAPI which uses degrees.
+    Actuator attributes are also documented in joint space, though this is not enforced,
+    and users may scale attributes to fit their own convention by updating their parser
+    and/or integration code accordingly.
     """
 )
 {
