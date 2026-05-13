@@ -421,6 +421,16 @@ class NewtonMeshCollisionAPI "NewtonMeshCollisionAPI" (
     )
 }
 
+class NewtonSiteAPI "NewtonSiteAPI" (
+    doc = """NewtonSiteAPI applies on top of a Gprim, marking it as a non-colliding, massless
+    reference frame used for sensing, attachment, or coordinate queries.
+
+    Mutually exclusive with NewtonCollisionAPI. A site cannot also be a collider — tools that
+    enumerate colliders via PhysicsCollisionAPI should exclude sites & vice versa."""
+)
+{
+}
+
 class NewtonMaterialAPI "NewtonMaterialAPI" (
     apiSchemas = ["PhysicsMaterialAPI"]
     doc = """NewtonMaterialAPI applies on top of a Material, providing extra physical material attributes for Newton.
