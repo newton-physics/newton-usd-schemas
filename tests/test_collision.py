@@ -227,7 +227,7 @@ class TestNewtonSDFCollisionAPI(unittest.TestCase):
         if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()
             self.assertTrue(hard.IsValid())
-            self.assertIsNone(hard.GetMinimum())
+            self.assertAlmostEqual(hard.GetMinimum(), -1.0)
             self.assertAlmostEqual(hard.GetMaximum(), 0.0)
 
     def test_sdf_narrow_band_outer_fraction(self):

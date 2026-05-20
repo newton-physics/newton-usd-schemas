@@ -477,10 +477,11 @@ class NewtonSDFCollisionAPI "NewtonSDFCollisionAPI" (
         If `newton:sdfNarrowBandInnerFraction` is set to `-inf`,
         newton:sdfNarrowBandInner is used instead.
 
-        Range: (-inf, 0)
+        Range: [-1, 0)
         Units: dimensionless"""
         limits = {
             dictionary hard = {
+                float minimum = -1
                 float maximum = 0
             }
         }
