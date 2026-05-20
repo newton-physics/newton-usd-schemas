@@ -397,6 +397,190 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
     )
 }
 
+class NewtonSDFCollisionAPI "NewtonSDFCollisionAPI" (
+    apiSchemas = ["NewtonCollisionAPI"]
+    doc = """Configures SDF-based collision (and optional hydroelastic contact).
+
+    EXPERIMENTAL: NewtonSDFCollisionAPI and its hydroelastic attributes are
+    provisional. Attribute names, defaults, and the folding of hydroelastic
+    configuration into this schema may change without notice in subsequent
+    releases.
+
+    Applying this schema enables signed distance field (SDF) generation for
+    the collision shape. The SDF should be built from the base Gprim surface, using the configured resolution and narrow band parameters.
+
+    Hydroelastic contact is opt-in via newton:hydroelasticEnabled, and uses
+    the same SDF representation.
+
+    By applying this schema, the prim also inherits the `NewtonCollisionAPI`
+    and `PhysicsCollisionAPI` schemas."""
+)
+{
+    uniform int newton:sdfMaxResolution = 64 (
+        doc = """Maximum dimension for the sparse SDF grid.
+
+        Must be divisible by 8. If newton:sdfTargetVoxelSize is also authored,
+        target voxel size takes precedence.
+
+        Range: [8, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = 8
+            }
+        }
+    )
+    uniform float newton:sdfTargetVoxelSize = -inf (
+        doc = """Target voxel size for the sparse SDF grid.
+
+        When authored with a positive value, takes precedence over
+        newton:sdfMaxResolution.
+
+        If `newton:sdfTargetVoxelSize` is set to `-inf`, newton:sdfMaxResolution
+        is used instead.
+
+        Range: (0, inf)
+        Units: distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+    uniform float newton:sdfNarrowBandInner = -0.1 (
+        doc = """Inner (negative) narrow band distance for SDF computation.
+
+        Range: (-inf, 0]
+        Units: distance"""
+        limits = {
+            dictionary soft = {
+                float maximum = 0
+            }
+        }
+    )
+    uniform float newton:sdfNarrowBandInnerFraction = -inf (
+        doc = """Inner narrow band as a fraction of the local-space bounding
+        box diagonal.
+
+        When authored with a negative value, overrides newton:sdfNarrowBandInner
+        at parse time. The absolute distance used for SDF generation is computed
+        as fraction * bbox_diagonal. Negative values are expected (band extends
+        inside the surface).
+
+        If `newton:sdfNarrowBandInnerFraction` is set to `-inf`,
+        newton:sdfNarrowBandInner is used instead.
+
+        Range: [-1, 0)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = -1
+                float maximum = 0
+            }
+        }
+    )
+    uniform float newton:sdfNarrowBandOuter = 0.1 (
+        doc = """Outer (positive) narrow band distance for SDF computation.
+
+        Range: [0, inf)
+        Units: distance"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+    uniform float newton:sdfNarrowBandOuterFraction = -inf (
+        doc = """Outer narrow band as a fraction of the local-space bounding
+        box diagonal.
+
+        When authored with a positive value, overrides newton:sdfNarrowBandOuter
+        at parse time. The absolute distance used for SDF generation is computed
+        as fraction * bbox_diagonal.
+
+        If `newton:sdfNarrowBandOuterFraction` is set to `-inf`,
+        newton:sdfNarrowBandOuter is used instead.
+
+        Range: (0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+    uniform token newton:sdfTextureFormat = "uint16" (
+        allowedTokens = ["uint8", "uint16", "float32"]
+        doc = """Subgrid texture storage format for the SDF.
+
+        "uint16" (default) stores subgrid voxels as 16-bit normalized textures
+        (half the memory of "float32"). "float32" stores full-precision values.
+        "uint8" uses 8-bit textures for minimum memory."""
+    )
+    uniform float newton:sdfMargin = -inf (
+        doc = """SDF boundary margin.
+
+        Enlarges the SDF boundary beyond the mesh AABB by this distance,
+        enabling precise distance queries slightly outside the geometry.
+
+        This is separate from newton:contactMargin which controls collision
+        detection inflation.
+
+        If `newton:sdfMargin` is set to `-inf`, newton:contactGap is used
+        instead.
+
+        Range: (0, inf)
+        Units: distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+    uniform float newton:sdfMarginFraction = -inf (
+        doc = """SDF boundary margin as a fraction of the local-space bounding
+        box diagonal.
+
+        When authored with a positive value, overrides newton:sdfMargin at
+        parse time. The absolute distance used for SDF generation is computed
+        as fraction * bbox_diagonal.
+
+        If `newton:sdfMarginFraction` is set to `-inf`, newton:sdfMargin is
+        used instead.
+
+        Range: (0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+    bool newton:hydroelasticEnabled = false (
+        doc = """Toggles hydroelastic contacts for this shape.
+
+        When true, the shape participates in hydroelastic contact generation;
+        both shapes in a colliding pair must have this attribute true for
+        hydroelastic contacts to be generated. Requires SDF to be configured."""
+    )
+    float newton:hydroelasticStiffness = 1e10 (
+        doc = """Hydroelastic contact stiffness coefficient.
+
+        Contact force is computed as: force = k_eff * area * depth, where
+        k_eff is the effective stiffness of the two shapes in series
+        (harmonic mean). Higher values produce stiffer contacts. Only
+        consulted when newton:hydroelasticEnabled is true.
+
+        Range: (0, inf)
+        Units: force / (distance * distance * distance)"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
 class NewtonMeshCollisionAPI "NewtonMeshCollisionAPI" (
     apiSchemas = ["NewtonCollisionAPI", "PhysicsMeshCollisionAPI"]
     doc = """NewtonMeshCollisionAPI applies on top of a Mesh, providing extra mesh collision attributes for Newton.
