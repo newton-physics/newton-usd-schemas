@@ -79,7 +79,10 @@
               "bases": [
                 "UsdAPISchemaBase"
               ],
-              "schemaKind": "singleApplyAPI"
+              "schemaKind": "singleApplyAPI",
+              "apiSchemaCanOnlyApplyTo": [
+                "Gprim"
+              ]
             },
             "NewtonPhysicsMeshCollisionAPI": {
               "schemaIdentifier": "NewtonMeshCollisionAPI",

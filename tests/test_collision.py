@@ -118,10 +118,9 @@ class TestNewtonSDFCollisionAPI(unittest.TestCase):
         self.assertTrue(self.prim.HasAttribute("newton:contactMargin"))
         self.assertTrue(self.prim.HasAttribute("newton:contactGap"))
 
-    def test_api_applicability(self):
-        # Matches PhysicsCollisionAPI: applicable to any prim type.
-        xform: Usd.Prim = UsdGeom.Xform.Define(self.stage, "/AnyPrim").GetPrim()
-        self.assertTrue(xform.CanApplyAPI("NewtonSDFCollisionAPI"))
+    def test_api_limitations(self):
+        xform: Usd.Prim = UsdGeom.Xform.Define(self.stage, "/InvalidType").GetPrim()
+        self.assertFalse(xform.CanApplyAPI("NewtonSDFCollisionAPI"))
 
     def test_sdf_enabled(self):
         self.prim.ApplyAPI("NewtonSDFCollisionAPI")
