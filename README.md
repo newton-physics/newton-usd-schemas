@@ -45,6 +45,14 @@ stage.Export("/tmp/my_robot.usda")  # or .usdc or .usd
 
 Once a USD layer is authored to storage, it can be loaded into a Newton runtime using [Newton's USD Parsing](https://newton-physics.github.io/newton/concepts/usd_parsing.html) mechanism.
 
+# Experimental Status
+
+The Newton USD Schemas are currently in a v0.x development phase. The schemas are considered experimental & could change in future releases.
+
+If existing schemas need to change in subsequent releases, we will first attempt to provide easy migrations via non-breaking changes & deprecations. However, in some cases a breaking change may be required, and we will provide auto-upgrade scripts or agentic skills to aid content migration.
+
+Please note automated upgrades may not always be possible & content could require manual updates to comply.
+
 # Design Principles
 
 Newton schemas follow a minimalist approach to determine which attributes should be included, and are similar to the philosophy that [UsdPhysics](https://openusd.org/release/api/usd_physics_page_front.html#usdPhysics_purpose_and_scope) and the [Newton API](https://newton-physics.github.io/newton/api/newton.html) follow for capturing parameters that generalize across simulators. We view the Newton schemas as a proving and staging ground for physics parameters that should eventually be eligible for promotion into the UsdPhysics standard.
