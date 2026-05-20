@@ -410,7 +410,7 @@ class NewtonSDFCollisionAPI "NewtonSDFCollisionAPI" (
     the collision shape. The SDF should be built from the base Gprim surface, using the configured resolution and narrow band parameters.
 
     Hydroelastic contact is opt-in via newton:hydroelasticEnabled, and uses
-    the same SDF representation. Not supported for planes and heightfields.
+    the same SDF representation.
 
     By applying this schema, the prim also inherits the `NewtonCollisionAPI`
     and `PhysicsCollisionAPI` schemas."""
@@ -559,8 +559,7 @@ class NewtonSDFCollisionAPI "NewtonSDFCollisionAPI" (
 
         When true, the shape participates in hydroelastic contact generation;
         both shapes in a colliding pair must have this attribute true for
-        hydroelastic contacts to be generated. Requires SDF to be configured.
-        Not supported for planes and heightfields."""
+        hydroelastic contacts to be generated. Requires SDF to be configured."""
     )
     float newton:kh = 1e10 (
         doc = """Hydroelastic contact stiffness coefficient [N/m^3].
