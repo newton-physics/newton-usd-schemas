@@ -401,11 +401,6 @@ class NewtonSDFCollisionAPI "NewtonSDFCollisionAPI" (
     apiSchemas = ["NewtonCollisionAPI"]
     doc = """Configures SDF-based collision (and optional hydroelastic contact).
 
-    EXPERIMENTAL: NewtonSDFCollisionAPI and its hydroelastic attributes are
-    provisional. Attribute names, defaults, and the folding of hydroelastic
-    configuration into this schema may change without notice in subsequent
-    releases.
-
     Applying this schema enables signed distance field (SDF) generation for
     the collision shape. The SDF should be built from the base Gprim surface, using the configured resolution and narrow band parameters.
 
