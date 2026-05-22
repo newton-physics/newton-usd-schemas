@@ -353,6 +353,85 @@ class NewtonArticulationRootAPI "NewtonArticulationRootAPI" (
     )
 }
 
+class NewtonMassAPI "NewtonMassAPI" (
+    apiSchemas = ["PhysicsMassAPI"]
+    doc = """`NewtonMassAPI` applies on top of an `Xformable`, providing extra mass attributes for Newton.
+
+    By applying this schema, the prim also inherits the `PhysicsMassAPI` schema.
+
+    `newton:inertia` is a compact symmetric inertia tensor that overrides
+    `physics:diagonalInertia` and `physics:principalAxes` when authored.
+
+    `newton:massModel` and `newton:shellThickness` control how density is
+    integrated into mass and inertia during implicit computation only.
+    Explicit overrides via `physics:mass` or `newton:inertia` take
+    precedence over implicit computation from shape geometry."""
+)
+{
+    double[] newton:inertia = [] (
+        arraySizeConstraint = 6
+        doc = """Symmetric 3x3 inertia tensor as 6 elements
+        `[Ixx, Iyy, Izz, Ixy, Ixz, Iyz]` in the body's local frame.
+
+        When authored on a body prim, overrides `physics:diagonalInertia` and
+        `physics:principalAxes`. An empty array (default) means no opinion —
+        standard `UsdPhysics` mass resolution applies.
+
+        Avoids the eigenvalue decomposition required by the
+        `physics:diagonalInertia` + `physics:principalAxes` representation.
+        Double precision prevents lossy conversion from source data that
+        already represents the full tensor.
+
+        Units: mass * distance * distance"""
+    )
+
+    uniform token newton:massModel = "solid" (
+        allowedTokens = ["solid", "shell"]
+        doc = """Controls how the shape's geometry contributes to implicit
+        mass and inertia computation.
+
+        Only meaningful on collision shape prims (`Gprim`). Has no effect
+        when applied to an `Xform` body prim.
+
+        Only affects implicit computation from shape geometry. When
+        `physics:mass` or `newton:inertia` is authored, those explicit
+        values take precedence regardless of this setting.
+
+        "solid": Mass and inertia are computed assuming uniform density
+        throughout the shape's volume. Density is resolved from
+        `physics:density` on the prim or a bound `PhysicsMaterialAPI`.
+
+        "shell": Mass and inertia are computed assuming density is
+        concentrated in a thin shell at the shape's surface. Density
+        is resolved the same way as "solid" (`physics:density` on the
+        prim or a bound `PhysicsMaterialAPI`). Wall thickness is
+        controlled by `newton:shellThickness`."""
+    )
+
+    float newton:shellThickness = -inf (
+        doc = """Wall thickness for shell mass and inertia computation,
+        measured inward from the outer surface of the shape.
+
+        Only meaningful on collision shape prims (`Gprim`). Has no effect
+        when applied to an `Xform` body prim.
+
+        Only used when `newton:massModel` is "shell"; ignored for "solid".
+
+        If set to `-inf`, the active solver chooses an appropriate thickness.
+        This is a per-solver decision: solvers may fall back to
+        `newton:contactMargin`, use zero-thickness mathematical shell inertia,
+        or apply their own default.
+
+        Range: (0, inf)
+        Units: distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
 class NewtonCollisionAPI "NewtonCollisionAPI" (
     apiSchemas = ["PhysicsCollisionAPI"]
     doc = """NewtonCollisionAPI applies on top of a Gprim, providing extra collision attributes for Newton.
@@ -365,7 +444,7 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
 
         Extends/inflates the effective collision surface outward by this amount. When two shapes collide,
         their contact margins are summed (`margin_a + margin_b`) to determine the total separation/penetration.
-        
+
         `newton:contactMargin` is essential for thin shells and cloth to improve simulation stability and reduce
         self-intersections.
 
