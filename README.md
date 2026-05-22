@@ -10,7 +10,7 @@ This project is part of [Newton](https://github.com/newton-physics), a [Linux Fo
 
 # Get Started
 
-These schemas are [codeless](https://openusd.org/release/tut_generating_new_schema.html#codeless-schemas), in that they contain no compiled code nor any public API of their own. Since codeless schemas do not provide any code, clients do not need to recompile USD to use or update these schemas. They are deployed as a python module via a wheel package for convenience, as all Newton projects use pyproject based dependencies & most USD authoring workflows include a python runtime.
+These schemas are [codeless](https://openusd.org/release/tut_generating_new_schema.html#codeless-schemas), in that they contain no compiled code nor any public API of their own. Since codeless schemas do not provide any code, clients do not need to recompile USD to use or update these schemas. They are deployed as a python module via a wheel package for convenience, as all Newton projects use pyproject based dependencies and most USD authoring workflows include a python runtime.
 
 To start using the schemas, install the python wheel into a virtual environment using your favorite package manager:
 
@@ -44,6 +44,14 @@ stage.Export("/tmp/my_robot.usda")  # or .usdc or .usd
 ```
 
 Once a USD layer is authored to storage, it can be loaded into a Newton runtime using [Newton's USD Parsing](https://newton-physics.github.io/newton/concepts/usd_parsing.html) mechanism.
+
+# Experimental Status
+
+The Newton USD Schemas are currently in a v0.x development phase. The schemas are considered experimental and could change in future releases.
+
+If existing schemas need to change in subsequent releases, we will first attempt to provide easy migrations via non-breaking changes and deprecations. However, in some cases a breaking change may be required, and we will provide auto-upgrade scripts or agentic skills to aid content migration.
+
+Please note automated upgrades may not always be possible and content could require manual updates to comply.
 
 # Design Principles
 

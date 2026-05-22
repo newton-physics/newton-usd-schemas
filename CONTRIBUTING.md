@@ -21,7 +21,7 @@ If you want to contribute your changes back upstream, please first start a GitHu
 If you intend to submit a Pull Request:
 - First, ensure alignment with the Code Owners on the associated Issue, to avoid redundant work or wasted iterations.
 - Develop your changes on a well named [development branch](#development-branches) within your personal clone/mirror/fork.
-- Run all test suites locally & ensure passing results in your dev environment.
+- Run all test suites locally and ensure passing results in your dev environment.
 - Be prepared to sign the Newton Contributor License Agreement, see below.
 
 Please note that in some cases, we may not merge GitHub Pull Requests directly. We will take suggestions under advisement and discuss internally. We may rebase your commits to provide alignment with internal development branches.
@@ -34,7 +34,7 @@ Newton repositories use [EasyCLA](https://lfcla.com/) for managing CLAs. You may
 
 ### Branches and Versions
 
-The default branch is named `main` and it is a protected branch. Our CI Pipeline automatically builds & tests all changes from this branch on both Windows and Linux. However, all new features target the `main` branch, and we may merge code changes to this branch at any time; it is not guaranteed to be stable/usable and may break API/ABI regularly.
+The default branch is named `main` and it is a protected branch. Our CI Pipeline automatically builds and tests all changes from this branch on both Windows and Linux. However, all new features target the `main` branch, and we may merge code changes to this branch at any time; it is not guaranteed to be stable/usable and may break API/ABI regularly.
 
 We advise to use an official published wheel of the newton-usd-schemas, or source from the GitHub tag associated with it, to ensure stability.
 

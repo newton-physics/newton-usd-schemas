@@ -17,7 +17,7 @@
 
 ## Fixes
 
-- Realigned torsional & rolling friction fallback values with Newton's ShapeConfig (matching MuJoCo's native defaults).
+- Realigned torsional and rolling friction fallback values with Newton's ShapeConfig (matching MuJoCo's native defaults).
 
 # 0.1.0
 
@@ -32,13 +32,13 @@
   - Applying `NewtonKaminoSceneAPI` implicitly applies the `NewtonSceneAPI` as well
 - Added `NewtonArticulationRootAPI`, which extends `PhysicsArticulationRootAPI` by allowing self collisions to be disabled
   - Applying `NewtonArticulationRootAPI` implicitly applies `PhysicsArticulationRootAPI` as well
-- Added `NewtonCollisionAPI`, which extends `PhysicsCollisionAPI` with contact margin & gap (used during collision detection)
+- Added `NewtonCollisionAPI`, which extends `PhysicsCollisionAPI` with contact margin and gap (used during collision detection)
   - Applying `NewtonCollisionAPI` implicitly applies `PhysicsCollisionAPI` as well
 - Added `NewtonMeshCollisionAPI`, which extends `PhysicsMeshCollisionAPI` with attributes to control mesh approximation algorithms
   - Only `convexHull` attributes exist for now
   - Applying `NewtonMeshCollisionAPI` implicitly applies all 3 of the other collision APIs as well
 - Added `NewtonMaterialAPI`, which extends `PhysicsMaterialAPI` with additional torsional and rolling friction attributes
-  - These are currently used by both the mujoco & xpbd solvers, though may be ignored by other solvers.
+  - These are currently used by both the mujoco and xpbd solvers, though may be ignored by other solvers.
   - Applying `NewtonMaterialAPI` implicitly applies `PhysicsMaterialAPI` as well
 - Added `NewtonMimicAPI` for authoring mimic/equality constraints between the DOFs of two `PhysicsJoint` prims
   - The mimic constraint enforces that `joint0 = coef0 + coef1 * joint1` for the joint DOFs, where `joint0` (the follower) is
