@@ -505,8 +505,10 @@ class NewtonSDFCollisionAPI "NewtonSDFCollisionAPI" (
         This is separate from `newton:contactMargin` which controls collision
         detection inflation.
 
-        If `newton:sdfMargin` is set to `-inf`, `newton:contactGap` is used
-        instead.
+        If `newton:sdfMargin` is set to `-inf`, `newton:contactMargin + newton:contactGap`
+        is used as the SDF margin fallback. Since broad-phase collision detection considers
+        pairs within `margin + gap` of the surface and an SDF only provides accurate distances
+        within its own margin, this fallback ensures the SDF covers the broad-phase reach.
 
         Range: (0, inf)
         Units: distance"""
