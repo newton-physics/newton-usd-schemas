@@ -474,6 +474,60 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
             }
         }
     )
+    float newton:contactStiffness = 2500 (
+        doc = """Spring constant of the penalty contact model.
+
+        Higher values produce stiffer contacts at the cost of requiring smaller time steps.
+
+        Range: [0, inf)
+        Units: force/distance"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+    float newton:contactDamping = 100 (
+        doc = """Damping coefficient of the penalty contact model.
+
+        Dissipates energy during contact to reduce bouncing.
+
+        Range: [0, inf)
+        Units: force * time / distance"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+    float newton:contactFrictionStiffness = 1000 (
+        doc = """Stiffness of the tangential friction response.
+
+        At low sliding speeds, friction force equals `kf * velocity` (viscous regime); at high speeds
+        it is clamped to the Coulomb limit `mu * normal_force`.
+
+        Range: [0, inf)
+        Units: force * time / distance"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+    float newton:contactAdhesion = 0 (
+        doc = """Contact adhesion distance.
+
+        When two surfaces are within this distance, an attractive force pulls them together.
+        A value of 0 disables adhesion.
+
+        Range: [0, inf)
+        Units: distance"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
 }
 
 class NewtonMeshCollisionAPI "NewtonMeshCollisionAPI" (

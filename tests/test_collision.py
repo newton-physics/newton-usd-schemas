@@ -32,6 +32,10 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         self.assertTrue(self.prim.HasAttribute("physics:collisionEnabled"))  # from PhysicsCollisionAPI
         self.assertTrue(self.prim.HasAttribute("newton:contactMargin"))  # from NewtonCollisionAPI
         self.assertTrue(self.prim.HasAttribute("newton:contactGap"))  # from NewtonCollisionAPI
+        self.assertTrue(self.prim.HasAttribute("newton:contactStiffness"))  # from NewtonCollisionAPI
+        self.assertTrue(self.prim.HasAttribute("newton:contactDamping"))  # from NewtonCollisionAPI
+        self.assertTrue(self.prim.HasAttribute("newton:contactFrictionStiffness"))  # from NewtonCollisionAPI
+        self.assertTrue(self.prim.HasAttribute("newton:contactAdhesion"))  # from NewtonCollisionAPI
         # SDF/hydro attrs should NOT be present on bare NewtonCollisionAPI
         self.assertFalse(self.prim.HasAttribute("newton:sdfMaxResolution"))
         self.assertFalse(self.prim.HasAttribute("newton:hydroelasticStiffness"))
@@ -79,6 +83,86 @@ class TestNewtonCollisionAPI(unittest.TestCase):
             self.assertTrue(hard.IsValid())
             self.assertAlmostEqual(hard.GetMinimum(), 0.0)
             self.assertIsNone(hard.GetMaximum())
+
+    def test_contact_stiffness(self):
+        self.assertFalse(self.prim.HasAttribute("newton:contactStiffness"))
+
+        self.prim.ApplyAPI("NewtonCollisionAPI")
+        attr = self.prim.GetAttribute("newton:contactStiffness")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 2500.0)
+
+        success = attr.Set(5000.0)
+        self.assertTrue(success)
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 5000.0)
+
+        if USD_HAS_LIMITS:
+            soft = attr.GetSoftLimits()
+            self.assertTrue(soft.IsValid())
+            self.assertAlmostEqual(soft.GetMinimum(), 0.0)
+            self.assertIsNone(soft.GetMaximum())
+
+    def test_contact_damping(self):
+        self.assertFalse(self.prim.HasAttribute("newton:contactDamping"))
+
+        self.prim.ApplyAPI("NewtonCollisionAPI")
+        attr = self.prim.GetAttribute("newton:contactDamping")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 100.0)
+
+        success = attr.Set(200.0)
+        self.assertTrue(success)
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 200.0)
+
+        if USD_HAS_LIMITS:
+            soft = attr.GetSoftLimits()
+            self.assertTrue(soft.IsValid())
+            self.assertAlmostEqual(soft.GetMinimum(), 0.0)
+            self.assertIsNone(soft.GetMaximum())
+
+    def test_contact_friction_stiffness(self):
+        self.assertFalse(self.prim.HasAttribute("newton:contactFrictionStiffness"))
+
+        self.prim.ApplyAPI("NewtonCollisionAPI")
+        attr = self.prim.GetAttribute("newton:contactFrictionStiffness")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 1000.0)
+
+        success = attr.Set(2000.0)
+        self.assertTrue(success)
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 2000.0)
+
+        if USD_HAS_LIMITS:
+            soft = attr.GetSoftLimits()
+            self.assertTrue(soft.IsValid())
+            self.assertAlmostEqual(soft.GetMinimum(), 0.0)
+            self.assertIsNone(soft.GetMaximum())
+
+    def test_contact_adhesion(self):
+        self.assertFalse(self.prim.HasAttribute("newton:contactAdhesion"))
+
+        self.prim.ApplyAPI("NewtonCollisionAPI")
+        attr = self.prim.GetAttribute("newton:contactAdhesion")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.0)
+
+        success = attr.Set(0.05)
+        self.assertTrue(success)
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.05)
+
+        if USD_HAS_LIMITS:
+            soft = attr.GetSoftLimits()
+            self.assertTrue(soft.IsValid())
+            self.assertAlmostEqual(soft.GetMinimum(), 0.0)
+            self.assertIsNone(soft.GetMaximum())
 
 
 class TestNewtonSDFCollisionAPI(unittest.TestCase):
