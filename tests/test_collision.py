@@ -106,7 +106,7 @@ class TestNewtonSDFCollisionAPI(unittest.TestCase):
         self.assertTrue(self.prim.HasAttribute("newton:sdfNarrowBandInner"))
         self.assertTrue(self.prim.HasAttribute("newton:sdfNarrowBandOuter"))
         self.assertTrue(self.prim.HasAttribute("newton:sdfTextureFormat"))
-        self.assertTrue(self.prim.HasAttribute("newton:sdfMargin"))
+        self.assertTrue(self.prim.HasAttribute("newton:sdfPadding"))
         # Hydroelastic attrs are folded into this API
         self.assertTrue(self.prim.HasAttribute("newton:hydroelasticEnabled"))
         self.assertTrue(self.prim.HasAttribute("newton:hydroelasticStiffness"))
@@ -197,9 +197,9 @@ class TestNewtonSDFCollisionAPI(unittest.TestCase):
         self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "float32")
 
-    def test_sdf_margin(self):
+    def test_sdf_padding(self):
         self.prim.ApplyAPI("NewtonSDFCollisionAPI")
-        attr = self.prim.GetAttribute("newton:sdfMargin")
+        attr = self.prim.GetAttribute("newton:sdfPadding")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), -math.inf)

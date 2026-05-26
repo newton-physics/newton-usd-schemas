@@ -496,19 +496,13 @@ class NewtonSDFCollisionAPI "NewtonSDFCollisionAPI" (
         (half the memory of `"float32"`). `"float32"` stores full-precision values.
         `"uint8"` uses 8-bit textures for minimum memory."""
     )
-    uniform float newton:sdfMargin = -inf (
-        doc = """SDF boundary margin.
+    uniform float newton:sdfPadding = -inf (
+        doc = """SDF AABB padding.
 
-        Enlarges the SDF boundary beyond the mesh AABB by this distance,
-        enabling precise distance queries slightly outside the geometry.
+        Enlarges the SDF's bounding box beyond the mesh AABB by this distance,
+        extending the spatial domain in which distance queries are valid.
 
-        This is separate from `newton:contactMargin` which controls collision
-        detection inflation.
-
-        If `newton:sdfMargin` is set to `-inf`, `newton:contactMargin + newton:contactGap`
-        is used as the SDF margin fallback. Since broad-phase collision detection considers
-        pairs within `margin + gap` of the surface and an SDF only provides accurate distances
-        within its own margin, this fallback ensures the SDF covers the broad-phase reach.
+        If `newton:sdfPadding` is set to `-inf`, Newton's builder default should be used instead.
 
         Range: (0, inf)
         Units: distance"""
