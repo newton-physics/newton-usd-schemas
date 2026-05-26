@@ -474,10 +474,12 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
             }
         }
     )
-    float newton:contactStiffness = 2500 (
+    float newton:contactStiffness = -inf (
         doc = """Spring constant of the penalty contact model.
 
         Higher values produce stiffer contacts at the cost of requiring smaller time steps.
+
+        If `newton:contactStiffness` is set to `-inf`, the engine's default should be used instead.
 
         Range: [0, inf)
         Units: force/distance"""
@@ -487,10 +489,12 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
             }
         }
     )
-    float newton:contactDamping = 100 (
+    float newton:contactDamping = -inf (
         doc = """Damping coefficient of the penalty contact model.
 
         Dissipates energy during contact to reduce bouncing.
+
+        If `newton:contactDamping` is set to `-inf`, the engine's default should be used instead.
 
         Range: [0, inf)
         Units: force * time / distance"""
@@ -500,12 +504,14 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
             }
         }
     )
-    float newton:contactFrictionStiffness = 1000 (
+    float newton:contactFrictionStiffness = -inf (
         doc = """Stiffness of the tangential friction response.
 
         At low sliding speeds, friction force equals `kf * velocity` (viscous regime); at high speeds
         it is clamped to the Coulomb limit `mu * normal_force`.
 
+        If `newton:contactFrictionStiffness` is set to `-inf`, the engine's default should be used instead.
+
         Range: [0, inf)
         Units: force * time / distance"""
         limits = {
@@ -514,11 +520,13 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
             }
         }
     )
-    float newton:contactAdhesion = 0 (
+    float newton:contactAdhesion = -inf (
         doc = """Contact adhesion distance.
 
         When two surfaces are within this distance, an attractive force pulls them together.
         A value of 0 disables adhesion.
+
+        If `newton:contactAdhesion` is set to `-inf`, the engine's default should be used instead.
 
         Range: [0, inf)
         Units: distance"""

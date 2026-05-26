@@ -91,7 +91,7 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         attr = self.prim.GetAttribute("newton:contactStiffness")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertAlmostEqual(attr.Get(), 2500.0)
+        self.assertAlmostEqual(attr.Get(), -math.inf)
 
         success = attr.Set(5000.0)
         self.assertTrue(success)
@@ -111,7 +111,7 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         attr = self.prim.GetAttribute("newton:contactDamping")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertAlmostEqual(attr.Get(), 100.0)
+        self.assertAlmostEqual(attr.Get(), -math.inf)
 
         success = attr.Set(200.0)
         self.assertTrue(success)
@@ -131,7 +131,7 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         attr = self.prim.GetAttribute("newton:contactFrictionStiffness")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertAlmostEqual(attr.Get(), 1000.0)
+        self.assertAlmostEqual(attr.Get(), -math.inf)
 
         success = attr.Set(2000.0)
         self.assertTrue(success)
@@ -151,7 +151,7 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         attr = self.prim.GetAttribute("newton:contactAdhesion")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertAlmostEqual(attr.Get(), 0.0)
+        self.assertAlmostEqual(attr.Get(), -math.inf)
 
         success = attr.Set(0.05)
         self.assertTrue(success)
