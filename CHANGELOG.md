@@ -1,10 +1,25 @@
-# Unreleased
+# 0.3.0b1
 
 ## Features
 
+- Added `NewtonSiteAPI`, which can be applied to Gprims to declare a non-colliding, massless reference shape used for sensing, attachment, or coordinate queries.
+  - `NewtonSiteAPI` and `NewtonCollisionAPI` are mutually exclusive; sites cannot be colliders
+- Added `NewtonMassAPI`, which extends `PhysicsMassAPI`.
+  - Author the double precision `newton:inertia` tensor to override `physics:diagonalInertia` / `physics:principalAxes`.
+  - Author the `newton:massModel` mode as "shell", along with `newton:shellThickness`, when computing implicit mass & inertia of thin shells (hollow geometry). The default "solid" matches current UsdPhysics implicit mass expectations.
+  - Applying `NewtonMassAPI` implicitly applies `PhysicsMassAPI` as well.
 - Added `NewtonSDFCollisionAPI`, which extends `NewtonCollisionAPI` with attributes that configure SDF-based collision and optional hydroelastic contact.
   - Hydroelastic contact is opt-in via `newton:hydroelasticEnabled` (default `false`) on the same API; no separate hydroelastic API is required.
   - Applying `NewtonSDFCollisionAPI` implicitly applies `NewtonCollisionAPI` and `PhysicsCollisionAPI` as well.
+
+## Fixes
+
+- Removed unused dev dependencies
+
+## Documentation
+
+- Add Experimental Status notice to README.md
+  - This project is currently in a v0.x development phase. The schemas are considered experimental & could change in future releases
 
 # 0.2.0
 
