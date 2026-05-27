@@ -34,7 +34,7 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         self.assertTrue(self.prim.HasAttribute("newton:contactGap"))  # from NewtonCollisionAPI
         self.assertTrue(self.prim.HasAttribute("newton:contactStiffness"))  # from NewtonCollisionAPI
         self.assertTrue(self.prim.HasAttribute("newton:contactDamping"))  # from NewtonCollisionAPI
-        self.assertTrue(self.prim.HasAttribute("newton:contactFrictionStiffness"))  # from NewtonCollisionAPI
+        self.assertTrue(self.prim.HasAttribute("newton:contactFrictionDamping"))  # from NewtonCollisionAPI
         self.assertTrue(self.prim.HasAttribute("newton:contactAdhesion"))  # from NewtonCollisionAPI
         # SDF/hydro attrs should NOT be present on bare NewtonCollisionAPI
         self.assertFalse(self.prim.HasAttribute("newton:sdfMaxResolution"))
@@ -124,11 +124,11 @@ class TestNewtonCollisionAPI(unittest.TestCase):
             self.assertAlmostEqual(soft.GetMinimum(), 0.0)
             self.assertIsNone(soft.GetMaximum())
 
-    def test_contact_friction_stiffness(self):
-        self.assertFalse(self.prim.HasAttribute("newton:contactFrictionStiffness"))
+    def test_contact_friction_damping(self):
+        self.assertFalse(self.prim.HasAttribute("newton:contactFrictionDamping"))
 
         self.prim.ApplyAPI("NewtonCollisionAPI")
-        attr = self.prim.GetAttribute("newton:contactFrictionStiffness")
+        attr = self.prim.GetAttribute("newton:contactFrictionDamping")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), -math.inf)
