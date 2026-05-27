@@ -3,7 +3,7 @@
 )
 
 class NewtonSceneAPI "NewtonSceneAPI" (
-    doc = "NewtonSceneAPI applies on top of a PhysicsScene Prim, providing attributes to control a Newton Solver."
+    doc = "`NewtonSceneAPI` applies on top of a `PhysicsScene` prim, providing attributes to control a Newton solver."
 )
 {
     uniform int newton:maxSolverIterations = -1 (
@@ -434,7 +434,7 @@ class NewtonMassAPI "NewtonMassAPI" (
 
 class NewtonCollisionAPI "NewtonCollisionAPI" (
     apiSchemas = ["PhysicsCollisionAPI"]
-    doc = """NewtonCollisionAPI applies on top of a Gprim, providing extra collision attributes for Newton.
+    doc = """`NewtonCollisionAPI` applies on top of a `Gprim`, providing extra collision attributes for Newton.
 
     By applying this schema, the prim also inherits the `PhysicsCollisionAPI` schema."""
 )
@@ -478,7 +478,7 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
 
 class NewtonMeshCollisionAPI "NewtonMeshCollisionAPI" (
     apiSchemas = ["NewtonCollisionAPI", "PhysicsMeshCollisionAPI"]
-    doc = """NewtonMeshCollisionAPI applies on top of a Mesh, providing extra mesh collision attributes for Newton.
+    doc = """`NewtonMeshCollisionAPI` applies on top of a `Mesh`, providing extra mesh collision attributes for Newton.
 
     By applying this schema, the prim also inherits the `PhysicsCollisionAPI`, `NewtonCollisionAPI` and `PhysicsMeshCollisionAPI` schemas."""
 )
@@ -617,18 +617,18 @@ class NewtonSDFCollisionAPI "NewtonSDFCollisionAPI" (
 }
 
 class NewtonSiteAPI "NewtonSiteAPI" (
-    doc = """NewtonSiteAPI applies on top of a Gprim, marking it as a non-colliding, massless
+    doc = """`NewtonSiteAPI` applies on top of a `Gprim`, marking it as a non-colliding, massless
     reference frame used for sensing, attachment, or coordinate queries.
 
-    Mutually exclusive with NewtonCollisionAPI. A site cannot also be a collider — tools that
-    enumerate colliders via PhysicsCollisionAPI should exclude sites & vice versa."""
+    Mutually exclusive with `NewtonCollisionAPI`. A site cannot also be a collider — tools that
+    enumerate colliders via `PhysicsCollisionAPI` should exclude sites & vice versa."""
 )
 {
 }
 
 class NewtonMaterialAPI "NewtonMaterialAPI" (
     apiSchemas = ["PhysicsMaterialAPI"]
-    doc = """NewtonMaterialAPI applies on top of a Material, providing extra physical material attributes for Newton.
+    doc = """`NewtonMaterialAPI` applies on top of a `Material`, providing extra physical material attributes for Newton.
 
     By applying this schema, the prim also inherits the `PhysicsMaterialAPI` schema."""
 )
@@ -659,7 +659,7 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
 }
 
 class NewtonMimicAPI "NewtonMimicAPI" (
-    doc = """NewtonMimicAPI applies on top of a PhysicsJoint, adding additional constraints to mimic the DOFs of another joint.
+    doc = """`NewtonMimicAPI` applies on top of a `PhysicsJoint`, adding additional constraints to mimic the DOFs of another joint.
 
     A mimic constraint enforces that `joint0 = coef0 + coef1 * joint1` for the joint DOFs,
     where `joint0` is this joint (the follower) and `joint1` (the leader) is specified via the `newton:mimicJoint` relationship.
@@ -711,18 +711,18 @@ class NewtonActuator "NewtonActuator" (
     defaults, and composition rules may change without notice in subsequent releases.
 
     An actuator computes effort (i.e. force/torque for linear/rotational actuators) to apply
-    to a PhysicsRevoluteJoint or PhysicsPrismaticJoint specified via the `newton:targets`
+    to a `PhysicsRevoluteJoint` or `PhysicsPrismaticJoint` specified via the `newton:targets`
     relationship. Future versions may expand the set of valid target types.
 
-    Actuators must provide a single control law by applying a NewtonActuatorControlBaseAPI derived schema (e.g. NewtonPDControlAPI).
+    Actuators must provide a single control law by applying a `NewtonActuatorControlBaseAPI` derived schema (e.g. `NewtonPDControlAPI`).
 
-    Actuator command input delay can be included by applying NewtonActuatorDelayAPI. This is useful to model actuator communication or processing lag.
+    Actuator command input delay can be included by applying `NewtonActuatorDelayAPI`. This is useful to model actuator communication or processing lag.
 
-    Additional effort clamping behaviors can be added by applying any number of NewtonActuatorClampingBaseAPI
-    derived schemas (e.g. NewtonMaxEffortClampingAPI). The order of clamping is not guaranteed to be preserved thus
+    Additional effort clamping behaviors can be added by applying any number of `NewtonActuatorClampingBaseAPI`
+    derived schemas (e.g. `NewtonMaxEffortClampingAPI`). The order of clamping is not guaranteed to be preserved thus
     clamping operations must be order independent.
 
-    Note: Newton actuators use radians, diverging from UsdPhysicsDriveAPI which uses degrees.
+    Note: Newton actuators use radians, diverging from `UsdPhysicsDriveAPI` which uses degrees.
     Actuator attributes are also documented in joint space, though this is not enforced,
     and users may scale attributes to fit their own convention by updating their parser
     and/or integration code accordingly.
@@ -738,7 +738,7 @@ class NewtonActuator "NewtonActuator" (
         Currently only the first target is honored, and it must identify either a
         `PhysicsRevoluteJoint` or `PhysicsPrismaticJoint`.
         
-        Multi-DOF PhysicsJoints are not supported, even when locked via LimitAPIs to a single axis.
+        Multi-DOF `PhysicsJoint` prims are not supported, even when locked via `LimitAPI` to a single axis.
         """
     )
 }
@@ -749,7 +749,7 @@ class NewtonActuatorDelayAPI "NewtonActuatorDelayAPI" (
     Command inputs such as control targets and feedforward terms are delayed by the specified
     number of actuator timesteps before being used by the controller.
 
-    When DelayAPI is applied, command inputs to the controller are always defined.
+    When `DelayAPI` is applied, command inputs to the controller are always defined.
     If the delay buffer is empty (e.g. right after reset) or an actuator has
     `newton:delaySteps == 0`, current command inputs are used. If the requested delay
     exceeds the available history, the oldest available command input in the buffer is used.
@@ -777,14 +777,14 @@ class NewtonActuatorControlBaseAPI "NewtonActuatorControlBaseAPI" (
     Control laws compute actuator output effort (i.e. force/torque for linear/rotational actuators)
     from authored controller parameters, commanded inputs such as control targets and optional
     feedforward terms, and simulation and actuator state. This output may still be constrained by
-    one or more applied NewtonActuatorClampingBaseAPI derived schemas.
+    one or more applied `NewtonActuatorClampingBaseAPI` derived schemas.
 
-    Actuators must provide a single control law by applying a NewtonActuatorControlBaseAPI derived schema (e.g. NewtonPDControlAPI).
+    Actuators must provide a single control law by applying a `NewtonActuatorControlBaseAPI` derived schema (e.g. `NewtonPDControlAPI`).
 
     Applying any control law API (e.g. PD, PID, Network) automatically applies this base.
-    Check prim.HasAPI('NewtonActuatorControlBaseAPI') to detect whether any control law is present.
+    Check `prim.HasAPI('NewtonActuatorControlBaseAPI')` to detect whether any control law is present.
 
-    Only one control law API should be applied to a given NewtonActuator prim."""
+    Only one control law API should be applied to a given `NewtonActuator` prim."""
 )
 {
 }
@@ -793,7 +793,7 @@ class NewtonPDControlAPI "NewtonPDControlAPI" (
     apiSchemas = ["NewtonActuatorControlBaseAPI"]
     doc = """Stateless PD (Proportional-Derivative) controller.
 
-    Control law: effort = constEffort + feedforward + kp*(target_pos - q) + kd*(target_vel - v)"""
+    Control law: `effort = constEffort + feedforward + kp*(target_pos - q) + kd*(target_vel - v)`"""
 )
 {
     float newton:constEffort = 0 (
@@ -841,7 +841,7 @@ class NewtonPIDControlAPI "NewtonPIDControlAPI" (
     Includes proportional, integral, and derivative terms for steady-state
     error elimination.
 
-    Control law: effort = constEffort + feedforward + kp*(target_pos - q) + ki*integral(target_pos - q) + kd*(target_vel - v)"""
+    Control law: `effort = constEffort + feedforward + kp*(target_pos - q) + ki*integral(target_pos - q) + kd*(target_vel - v)`"""
 )
 {
     float newton:constEffort = 0 (
@@ -931,12 +931,12 @@ class NewtonNeuralControlAPI "NewtonNeuralControlAPI" (
 class NewtonActuatorClampingBaseAPI "NewtonActuatorClampingBaseAPI" (
     doc = """Base API for all actuator clamping strategies.
 
-    Any number of NewtonActuatorClampingBaseAPI derived schemas (e.g. NewtonMaxEffortClampingAPI) may be
-    applied to a NewtonActuator to constrain actuator output effort (i.e. force/torque for linear/rotational actuators). The order of clamping
+    Any number of `NewtonActuatorClampingBaseAPI` derived schemas (e.g. `NewtonMaxEffortClampingAPI`) may be
+    applied to a `NewtonActuator` to constrain actuator output effort (i.e. force/torque for linear/rotational actuators). The order of clamping
     is not guaranteed to be preserved thus clamping operations must be order independent.
 
-    Applying any clamping API (e.g. NewtonMaxEffortClampingAPI, NewtonDCMotorClampingAPI, NewtonPositionBasedClampingAPI) automatically
-    applies this base. Check prim.HasAPI('NewtonActuatorClampingBaseAPI') to detect whether any clamping is present.
+    Applying any clamping API (e.g. `NewtonMaxEffortClampingAPI`, `NewtonDCMotorClampingAPI`, `NewtonPositionBasedClampingAPI`) automatically
+    applies this base. Check `prim.HasAPI('NewtonActuatorClampingBaseAPI')` to detect whether any clamping is present.
     """
 )
 {
@@ -971,11 +971,11 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
 
     A four-quadrant effort clamp based on the DC motor effort-speed characteristic:
 
-        effort_max(vel) = min(saturationEffort * (1 - vel / velocityLimit),  maxMotorEffort)
-        effort_min(vel) = max(saturationEffort * (-1 - vel / velocityLimit), -maxMotorEffort)
+        `effort_max(vel) = min(saturationEffort * (1 - vel / velocityLimit),  maxMotorEffort)`
+        `effort_min(vel) = max(saturationEffort * (-1 - vel / velocityLimit), -maxMotorEffort)`
 
-    At zero velocity the motor can produce up to saturationEffort (capped by maxMotorEffort).
-    As velocity approaches velocityLimit, available effort drops to zero in both directions.
+    At zero velocity the motor can produce up to `saturationEffort` (capped by `maxMotorEffort`).
+    As velocity approaches `velocityLimit`, available effort drops to zero in both directions.
     """
 )
 {
@@ -997,7 +997,7 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
         doc = """Peak motor effort at stall (zero velocity).
 
         This is the maximum effort the motor can produce when not spinning,
-        before being capped by maxMotorEffort.
+        before being capped by `maxMotorEffort`.
 
         Range: [0, inf)
         Units: force or torque"""
@@ -1034,8 +1034,8 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
 
     Sampling rules:
     - Inputs strictly between adjacent (position, effort) entries are linearly interpolated.
-    - Inputs at or below newton:lookupPositions[0] clamp to newton:lookupEfforts[0].
-    - Inputs at or above newton:lookupPositions[-1] clamp to newton:lookupEfforts[-1].
+    - Inputs at or below `newton:lookupPositions[0]` clamp to `newton:lookupEfforts[0]`.
+    - Inputs at or above `newton:lookupPositions[-1]` clamp to `newton:lookupEfforts[-1]`.
     - For rotational actuators, positions do not wrap periodically.
     """
 )
@@ -1043,15 +1043,15 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
     float[] newton:lookupPositions = [] (
         doc = """Sorted joint positions for the effort lookup table.
 
-        Must be monotonically increasing and the same length as newton:lookupEfforts.
+        Must be monotonically increasing and the same length as `newton:lookupEfforts`.
 
         Units: distance or radians"""
     )
 
     float[] newton:lookupEfforts = [] (
-        doc = """Maximum output effort values corresponding to each entry in newton:lookupPositions.
+        doc = """Maximum output effort values corresponding to each entry in `newton:lookupPositions`.
 
-        Must be the same length as newton:lookupPositions.
+        Must be the same length as `newton:lookupPositions`.
 
         Units: force or torque"""
     )
