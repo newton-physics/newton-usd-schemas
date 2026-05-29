@@ -464,7 +464,7 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
 
         Increasing `newton:contactGap` helps avoid tunneling by detecting contacts earlier.
 
-        If `newton:contactGap` is set to `-inf`, Newton's builder default should be used instead.
+        If `newton:contactGap` is set to `-inf`, the engine's default should be used instead.
 
         Range: [0, inf)
         Units: distance"""
@@ -581,7 +581,7 @@ class NewtonSDFCollisionAPI "NewtonSDFCollisionAPI" (
         Enlarges the SDF's bounding box beyond the mesh AABB by this distance,
         extending the spatial domain in which distance queries are valid.
 
-        If `newton:sdfPadding` is set to `-inf`, Newton's builder default should be used instead.
+        If `newton:sdfPadding` is set to `-inf`, the engine's default should be used instead.
 
         Range: (0, inf)
         Units: distance"""
