@@ -691,13 +691,15 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
         }
     )
 
-    float newton:contactFrictionStiffness = -inf (
-        doc = """Stiffness of the tangential friction response.
+    float newton:contactFrictionGain = -inf (
+        doc = """Friction gain controlling resistance to tangential slip.
 
-        At low sliding speeds, friction force equals `contactFrictionStiffness * velocity`
-        (viscous regime); at high speeds it is clamped to the Coulomb limit `mu * normal_force`.
+        Controls the slope of the friction force with respect to tangential slip velocity
+        in the sticking regime. Larger values produce stronger resistance to small relative
+        motion and more closely approximate ideal Coulomb sticking. At high speeds the
+        friction force is clamped to the Coulomb limit `mu * normal_force`.
 
-        If `newton:contactFrictionStiffness` is set to `-inf`, the engine's default should be used instead.
+        If `newton:contactFrictionGain` is set to `-inf`, the engine's default should be used instead.
 
         Range: [0, inf)
         Units: force * time / distance"""

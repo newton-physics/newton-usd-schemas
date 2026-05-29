@@ -1,3 +1,9 @@
+# 0.3.1
+
+## Fixes
+
+- Renamed `newton:contactFrictionStiffness` to `newton:contactFrictionGain` on `NewtonMaterialAPI`; the parameter is a velocity-dependent friction gain, not a tangential stiffness
+
 # 0.3.0
 
 ## Features

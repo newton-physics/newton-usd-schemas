@@ -33,7 +33,7 @@ class TestNewtonMaterialAPI(unittest.TestCase):
         self.assertTrue(self.material.HasAttribute("newton:torsionalFriction"))  # from NewtonMaterialAPI
         self.assertTrue(self.material.HasAttribute("newton:contactStiffness"))  # from NewtonMaterialAPI
         self.assertTrue(self.material.HasAttribute("newton:contactDamping"))  # from NewtonMaterialAPI
-        self.assertTrue(self.material.HasAttribute("newton:contactFrictionStiffness"))  # from NewtonMaterialAPI
+        self.assertTrue(self.material.HasAttribute("newton:contactFrictionGain"))  # from NewtonMaterialAPI
         self.assertTrue(self.material.HasAttribute("newton:contactAdhesion"))  # from NewtonMaterialAPI
 
     def test_api_limitations(self):
@@ -121,10 +121,10 @@ class TestNewtonMaterialAPI(unittest.TestCase):
             self.assertIsNone(soft.GetMaximum())
 
     def test_contact_friction_stiffness(self):
-        self.assertFalse(self.material.HasAttribute("newton:contactFrictionStiffness"))
+        self.assertFalse(self.material.HasAttribute("newton:contactFrictionGain"))
 
         self.material.ApplyAPI("NewtonMaterialAPI")
-        attr = self.material.GetAttribute("newton:contactFrictionStiffness")
+        attr = self.material.GetAttribute("newton:contactFrictionGain")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), -math.inf)
