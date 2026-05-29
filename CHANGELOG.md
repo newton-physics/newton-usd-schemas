@@ -1,7 +1,8 @@
-# 0.3.0b1
+# 0.3.0
 
 ## Features
 
+- Add contact response attributes (`contactStiffness`, `contactDamping`, `contactFrictionStiffness`, `contactAdhesion`) to `NewtonMaterialAPI` for describing how a material behaves on contact.
 - Added `NewtonSiteAPI`, which can be applied to Gprims to declare a non-colliding, massless reference shape used for sensing, attachment, or coordinate queries.
   - `NewtonSiteAPI` and `NewtonCollisionAPI` are mutually exclusive; sites cannot be colliders
 - Added `NewtonMassAPI`, which extends `PhysicsMassAPI`.

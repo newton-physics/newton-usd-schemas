@@ -656,6 +656,74 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
             }
         }
     )
+
+    float newton:contactStiffness = -inf (
+        doc = """Normal stiffness of the contact response.
+
+        Controls how rigid or compliant the material feels on contact. Higher values
+        produce stiffer contacts at the cost of requiring smaller time steps.
+
+        If `newton:contactStiffness` is set to `-inf`, Newton's builder default should be used instead.
+
+        Range: [0, inf)
+        Units: force/distance"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:contactDamping = -inf (
+        doc = """Normal damping of the contact response.
+
+        Controls how much energy the material absorbs during contact. Higher values
+        reduce bouncing.
+
+        If `newton:contactDamping` is set to `-inf`, Newton's builder default should be used instead.
+
+        Range: [0, inf)
+        Units: force * time / distance"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:contactFrictionStiffness = -inf (
+        doc = """Stiffness of the tangential friction response.
+
+        At low sliding speeds, friction force equals `contactFrictionStiffness * velocity`
+        (viscous regime); at high speeds it is clamped to the Coulomb limit `mu * normal_force`.
+
+        If `newton:contactFrictionStiffness` is set to `-inf`, Newton's builder default should be used instead.
+
+        Range: [0, inf)
+        Units: force * time / distance"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:contactAdhesion = -inf (
+        doc = """Contact adhesion distance.
+
+        When two surfaces are within this distance, an attractive force pulls them together.
+        A value of 0 or less disables adhesion.
+
+        If `newton:contactAdhesion` is set to `-inf`, Newton's builder default should be used instead.
+
+        Range: [0, inf)
+        Units: distance"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
 }
 
 class NewtonMimicAPI "NewtonMimicAPI" (
