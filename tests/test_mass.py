@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
-import math
 import unittest
 
 from pxr import Plug, Usd, UsdGeom, Vt
@@ -74,12 +73,18 @@ class TestNewtonMassAPI(unittest.TestCase):
         attr = self.shape_prim.GetAttribute("newton:shellThickness")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         success = attr.Set(0.002)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.002)
+
+        # to set the default/fallback, we must block instead of Set(None)
+        # which means there will be no authored value
+        attr.Block()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), None)
 
         if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()
