@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
-import math
 import unittest
 
 from pxr import Plug, Usd, UsdGeom
@@ -67,7 +66,7 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         attr = self.prim.GetAttribute("newton:contactGap")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         success = attr.Set(0.1)
         self.assertTrue(success)
@@ -140,7 +139,7 @@ class TestNewtonSDFCollisionAPI(unittest.TestCase):
         attr = self.prim.GetAttribute("newton:sdfTargetVoxelSize")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         attr.Set(0.005)
         self.assertTrue(attr.HasAuthoredValue())
@@ -202,7 +201,7 @@ class TestNewtonSDFCollisionAPI(unittest.TestCase):
         attr = self.prim.GetAttribute("newton:sdfPadding")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         attr.Set(0.05)
         self.assertTrue(attr.HasAuthoredValue())
