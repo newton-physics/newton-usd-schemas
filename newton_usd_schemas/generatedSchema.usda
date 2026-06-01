@@ -692,12 +692,10 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
     )
 
     float newton:contactFrictionGain = -inf (
-        doc = """Friction gain controlling resistance to tangential slip.
+        doc = """Gain of the tangential friction response.
 
-        Controls the slope of the friction force with respect to tangential slip velocity
-        in the sticking regime. Larger values produce stronger resistance to small relative
-        motion and more closely approximate ideal Coulomb sticking. At high speeds the
-        friction force is clamped to the Coulomb limit `mu * normal_force`.
+        Friction force equals `contactFrictionGain * slip_velocity`, clamped to the
+        Coulomb limit `mu * normal_force`.
 
         If `newton:contactFrictionGain` is set to `-inf`, the engine's default should be used instead.
 
