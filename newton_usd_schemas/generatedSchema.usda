@@ -695,7 +695,8 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
         doc = """Gain of the tangential friction response.
 
         Friction force equals `contactFrictionGain * slip_velocity`, clamped to the
-        Coulomb limit `mu * normal_force`.
+        Coulomb limit `mu * normal_force`. Larger values produce stronger resistance
+        to small relative motion and more closely approximate ideal Coulomb sticking.
 
         If `newton:contactFrictionGain` is set to `-inf`, the engine's default should be used instead.
 
