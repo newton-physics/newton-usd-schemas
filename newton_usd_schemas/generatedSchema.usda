@@ -1399,12 +1399,12 @@ class NewtonRodAttachmentAPI "NewtonRodAttachmentAPI" (
     doc = """`NewtonRodAttachmentAPI` describes a single fixed attachment between a rod node
     and an external rigid body prim.
 
-    Apply this schema to a child prim of the `BasisCurves` prim that carries `NewtonRodAPI`.
+    Apply this schema to a child prim of the `Xform` prim that carries `NewtonRodAPI`.
     Each child prim with this schema represents one attachment point. Multiple attachments
     are expressed as multiple child prims, one per connection.
 
     Example layout:
-        /World/cable/curve_0          (BasisCurves + NewtonRodAPI)
+        /World/cable/rod_0            (Xform + NewtonRodAPI)
             /attach_plug              (Xform + NewtonRodAttachmentAPI)
             /attach_interface         (Xform + NewtonRodAttachmentAPI)
 
