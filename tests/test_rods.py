@@ -13,7 +13,7 @@ USD_HAS_LIMITS = Usd.GetVersion() >= (0, 25, 11)
 class TestNewtonRodAPI(unittest.TestCase):
     def setUp(self):
         self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
-        self.curves = self.stage.DefinePrim("/Rod", "Xform")
+        self.rod = self.stage.DefinePrim("/Rod", "Xform")
 
     def test_api_registered(self):
         plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsRodAPI")
@@ -22,24 +22,24 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertEqual(schema_type, "NewtonRodAPI")
 
     def test_api_application(self):
-        self.assertFalse(self.curves.HasAPI("NewtonRodAPI"))
-        self.curves.ApplyAPI("NewtonRodAPI")
-        self.assertTrue(self.curves.HasAPI("NewtonRodAPI"))
+        self.assertFalse(self.rod.HasAPI("NewtonRodAPI"))
+        self.rod.ApplyAPI("NewtonRodAPI")
+        self.assertTrue(self.rod.HasAPI("NewtonRodAPI"))
 
-        self.assertTrue(self.curves.HasAttribute("newton:points"))
-        self.assertTrue(self.curves.HasAttribute("newton:radius"))
-        self.assertTrue(self.curves.HasAttribute("newton:fixedPoints"))
-        self.assertTrue(self.curves.HasAttribute("newton:stretchStiffness"))
-        self.assertTrue(self.curves.HasAttribute("newton:stretchDamping"))
-        self.assertTrue(self.curves.HasAttribute("newton:bendStiffness"))
-        self.assertTrue(self.curves.HasAttribute("newton:bendDamping"))
-        self.assertTrue(self.curves.HasAttribute("newton:twistStiffness"))
-        self.assertTrue(self.curves.HasAttribute("newton:twistDamping"))
-        self.assertTrue(self.curves.HasAttribute("newton:edges"))
-        self.assertTrue(self.curves.HasAttribute("newton:closed"))
-        self.assertTrue(self.curves.HasAttribute("newton:quaternions"))
-        self.assertTrue(self.curves.HasAttribute("newton:wrapInArticulation"))
-        self.assertTrue(self.curves.HasAttribute("newton:collisionFilterNeighborDistance"))
+        self.assertTrue(self.rod.HasAttribute("newton:points"))
+        self.assertTrue(self.rod.HasAttribute("newton:radius"))
+        self.assertTrue(self.rod.HasAttribute("newton:fixedPoints"))
+        self.assertTrue(self.rod.HasAttribute("newton:stretchStiffness"))
+        self.assertTrue(self.rod.HasAttribute("newton:stretchDamping"))
+        self.assertTrue(self.rod.HasAttribute("newton:bendStiffness"))
+        self.assertTrue(self.rod.HasAttribute("newton:bendDamping"))
+        self.assertTrue(self.rod.HasAttribute("newton:twistStiffness"))
+        self.assertTrue(self.rod.HasAttribute("newton:twistDamping"))
+        self.assertTrue(self.rod.HasAttribute("newton:edges"))
+        self.assertTrue(self.rod.HasAttribute("newton:closed"))
+        self.assertTrue(self.rod.HasAttribute("newton:quaternions"))
+        self.assertTrue(self.rod.HasAttribute("newton:wrapInArticulation"))
+        self.assertTrue(self.rod.HasAttribute("newton:collisionFilterNeighborDistance"))
 
     def test_api_limitations(self):
         # API may only be applied to Xform, not BasisCurves or arbitrary prims
@@ -55,24 +55,24 @@ class TestNewtonRodAPI(unittest.TestCase):
     # --- scalar defaults ---
 
     def test_points_roundtrip(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:points")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:points")
         self.assertFalse(attr.HasAuthoredValue())
         attr.Set(Vt.Vec3fArray([Gf.Vec3f(0, 0, 0), Gf.Vec3f(0, 0, 1), Gf.Vec3f(0, 0, 2)]))
         self.assertEqual(len(attr.Get()), 3)
         self.assertAlmostEqual(attr.Get()[2][2], 2.0)
 
     def test_radius_default(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:radius")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:radius")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.005)
         attr.Set(0.003)
         self.assertAlmostEqual(attr.Get(), 0.003)
 
     def test_wrap_in_articulation_default(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:wrapInArticulation")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:wrapInArticulation")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertTrue(attr.Get())
 
@@ -82,18 +82,18 @@ class TestNewtonRodAPI(unittest.TestCase):
 
     def test_junction_collision_filter_default(self):
         # junctionCollisionFilter is removed; use collisionFilterNeighborDistance
-        self.curves.ApplyAPI("NewtonRodAPI")
-        self.assertFalse(self.curves.HasAttribute("newton:junctionCollisionFilter"))
+        self.rod.ApplyAPI("NewtonRodAPI")
+        self.assertFalse(self.rod.HasAttribute("newton:junctionCollisionFilter"))
 
     def test_collision_filter_neighbor_distance_default(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:collisionFilterNeighborDistance")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:collisionFilterNeighborDistance")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), 1)
 
     def test_collision_filter_neighbor_distance_roundtrip(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:collisionFilterNeighborDistance")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:collisionFilterNeighborDistance")
 
         # 0 = no filtering
         attr.Set(0)
@@ -116,8 +116,8 @@ class TestNewtonRodAPI(unittest.TestCase):
     # --- array attributes (no schema-level defaults; engine fills them in) ---
 
     def test_fixed_points_roundtrip(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:fixedPoints")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:fixedPoints")
         self.assertFalse(attr.HasAuthoredValue())
 
         attr.Set(Vt.IntArray([0, 5, 10]))
@@ -125,8 +125,8 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertEqual(list(attr.Get()), [0, 5, 10])
 
     def test_youngs_modulus_default(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:youngsModulus")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:youngsModulus")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), -1.0)  # sentinel = unset
 
@@ -134,8 +134,8 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertAlmostEqual(attr.Get(), 2.1e9)
 
     def test_poisson_ratio_default(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:poissonRatio")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:poissonRatio")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), -1.0)  # sentinel = unset
 
@@ -143,8 +143,8 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertAlmostEqual(attr.Get(), 0.3)
 
     def test_armature_default(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:armature")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:armature")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.0)
 
@@ -158,8 +158,8 @@ class TestNewtonRodAPI(unittest.TestCase):
             self.assertIsNone(hard.GetMaximum())
 
     def test_stretch_stiffness_roundtrip(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:stretchStiffness")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:stretchStiffness")
         self.assertFalse(attr.HasAuthoredValue())
 
         # length-1: uniform scalar applied to all segments
@@ -173,16 +173,16 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertAlmostEqual(attr.Get()[1], 2e5)
 
     def test_stretch_damping_roundtrip(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:stretchDamping")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:stretchDamping")
         self.assertFalse(attr.HasAuthoredValue())
 
         attr.Set(Vt.FloatArray([0.0, 0.0]))
         self.assertEqual(list(attr.Get()), [0.0, 0.0])
 
     def test_bend_stiffness_roundtrip(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:bendStiffness")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:bendStiffness")
         self.assertFalse(attr.HasAuthoredValue())
 
         attr.Set(Vt.FloatArray([1e5, 2e5]))
@@ -191,8 +191,8 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertAlmostEqual(result[1], 2e5)
 
     def test_bend_damping_roundtrip(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:bendDamping")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:bendDamping")
         self.assertFalse(attr.HasAuthoredValue())
 
         attr.Set(Vt.FloatArray([1e-3, 1e-3]))
@@ -200,8 +200,8 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertAlmostEqual(result[0], 1e-3)
 
     def test_twist_stiffness_roundtrip(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:twistStiffness")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:twistStiffness")
         self.assertFalse(attr.HasAuthoredValue())
 
         # length-1: uniform
@@ -215,8 +215,8 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertAlmostEqual(attr.Get()[1], 1200.0)
 
     def test_twist_damping_roundtrip(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:twistDamping")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:twistDamping")
         self.assertFalse(attr.HasAuthoredValue())
 
         attr.Set(Vt.FloatArray([0.05]))
@@ -228,8 +228,8 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertAlmostEqual(attr.Get()[2], 0.1)
 
     def test_closed_default(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:closed")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:closed")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertFalse(attr.Get())
 
@@ -238,8 +238,8 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertTrue(attr.Get())
 
     def test_edges_roundtrip(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:edges")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:edges")
         self.assertFalse(attr.HasAuthoredValue())
 
         # Y-junction: nodes 0,1,2,3 with edges (0,1),(1,2),(1,3)
@@ -250,8 +250,8 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertEqual(result[1], Gf.Vec2i(1, 2))
 
     def test_quaternions_roundtrip(self):
-        self.curves.ApplyAPI("NewtonRodAPI")
-        attr = self.curves.GetAttribute("newton:quaternions")
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:quaternions")
         self.assertFalse(attr.HasAuthoredValue())
 
         # Identity quaternion: (i=0, j=0, k=0, w=1)
@@ -265,10 +265,10 @@ class TestNewtonRodAPI(unittest.TestCase):
 class TestNewtonRodAttachmentAPI(unittest.TestCase):
     def setUp(self):
         self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
-        curves = UsdGeom.BasisCurves.Define(self.stage, "/Rod/curve_0")
-        curves.GetPrim().ApplyAPI("NewtonRodAPI")
+        rod = self.stage.DefinePrim("/Rod/rod_0", "Xform")
+        rod.ApplyAPI("NewtonRodAPI")
         # attachment child prim (plain Xform)
-        self.attach = self.stage.DefinePrim("/Rod/curve_0/attach_plug", "Xform")
+        self.attach = self.stage.DefinePrim("/Rod/rod_0/attach_plug", "Xform")
 
     def test_api_registered(self):
         plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsRodAttachmentAPI")
@@ -341,17 +341,17 @@ class TestNewtonRodAttachmentAPI(unittest.TestCase):
         self.assertFalse(attr.Get())
 
     def test_multiple_attachments(self):
-        # Two attachment child prims on the same BasisCurves
-        attach2 = self.stage.DefinePrim("/Rod/curve_0/attach_interface", "Xform")
+        # Two attachment child prims on the same NewtonRodAPI Xform
+        attach2 = self.stage.DefinePrim("/Rod/rod_0/attach_interface", "Xform")
         self.attach.ApplyAPI("NewtonRodAttachmentAPI")
         attach2.ApplyAPI("NewtonRodAttachmentAPI")
 
         self.attach.GetAttribute("newton:nodeIndex").Set(0)
         attach2.GetAttribute("newton:nodeIndex").Set(74)
 
-        curve = self.stage.GetPrimAtPath("/Rod/curve_0")
+        rod = self.stage.GetPrimAtPath("/Rod/rod_0")
         attachment_prims = [
-            c for c in curve.GetChildren()
+            c for c in rod.GetChildren()
             if c.HasAPI("NewtonRodAttachmentAPI")
         ]
         self.assertEqual(len(attachment_prims), 2)
