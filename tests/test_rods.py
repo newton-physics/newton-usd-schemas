@@ -48,10 +48,6 @@ class TestNewtonRodAPI(unittest.TestCase):
         xform = self.stage.DefinePrim("/OtherXform", "Xform")
         self.assertTrue(xform.CanApplyAPI("NewtonRodAPI"))
 
-    def test_api_limitations(self):
-        # already tested in test_api_application above
-        pass
-
     # --- scalar defaults ---
 
     def test_points_roundtrip(self):
@@ -350,10 +346,7 @@ class TestNewtonRodAttachmentAPI(unittest.TestCase):
         attach2.GetAttribute("newton:nodeIndex").Set(74)
 
         rod = self.stage.GetPrimAtPath("/Rod/rod_0")
-        attachment_prims = [
-            c for c in rod.GetChildren()
-            if c.HasAPI("NewtonRodAttachmentAPI")
-        ]
+        attachment_prims = [c for c in rod.GetChildren() if c.HasAPI("NewtonRodAttachmentAPI")]
         self.assertEqual(len(attachment_prims), 2)
         indices = sorted(c.GetAttribute("newton:nodeIndex").Get() for c in attachment_prims)
         self.assertEqual(indices, [0, 74])
