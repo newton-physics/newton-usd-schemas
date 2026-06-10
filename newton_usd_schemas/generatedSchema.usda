@@ -1142,9 +1142,17 @@ class NewtonRodAPI "NewtonRodAPI" (
     per-joint array attributes use E as their reference length.
 
     Visual representation:
-    Attach one or more `BasisCurves` child prims to this Xform for rendering. Each child
-    represents one connected strand of the graph (e.g. one branch). The engine does not
-    read geometry from the child BasisCurves — they are purely for visualization.
+    Attach one or more `BasisCurves` child prims, each carrying `NewtonRodVisualCurveAPI`,
+    to this Xform for rendering. Each curve represents one connected strand of the rod graph
+    (e.g. trunk, branch A, branch B). The `newton:rodPointIndices` attribute on each curve
+    maps its vertex positions to rod node indices, allowing an engine or tool to synchronize
+    the rendered curve with the simulated rod in real time.
+
+    Example layout for a branching graph:
+        /World/cable (Xform + NewtonRodAPI, 10 nodes)
+            /visual_trunk   (BasisCurves + NewtonRodVisualCurveAPI)  indices=[0,1,2,3,4]
+            /visual_branchA (BasisCurves + NewtonRodVisualCurveAPI)  indices=[2,5,6,7]
+            /visual_branchB (BasisCurves + NewtonRodVisualCurveAPI)  indices=[2,8,9]
 
     Contact material:
     Rod segment capsules inherit contact properties from the standard USD material binding
@@ -1161,18 +1169,19 @@ class NewtonRodAPI "NewtonRodAPI" (
         node pairs as defined by `newton:edges` (or implicitly for a linear chain)."""
     )
 
-    float newton:radius = 0.005 (
-        doc = """Uniform capsule radius for all rod segment bodies, in metres.
+    float[] newton:radius (
+        doc = """Capsule radii for rod segment bodies, in metres.
 
-        All E capsule bodies share this radius.
+        Array length semantics (E = number of edges / segments):
+        - Empty:    the engine uses a default of 0.005 for all E segments.
+        - Length 1: the single value is broadcast uniformly to all E segments.
+        - Length E: each entry sets the radius of the corresponding segment capsule body.
+
+        The visual representation width is derived from this attribute:
+            BasisCurves.widths[vertex] = 2 * newton:radius[segment]
 
         Range: (0, inf)
         Units: metres"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
     )
 
     int2[] newton:edges (
@@ -1457,5 +1466,56 @@ class NewtonRodAttachmentAPI "NewtonRodAttachmentAPI" (
 
         Set to false only if contact between the rod and the attached body is intentionally
         needed (e.g. the rod rests on a surface that it is also constrained to)."""
+    )
+}
+
+class NewtonRodVisualCurveAPI "NewtonRodVisualCurveAPI" (
+    doc = """`NewtonRodVisualCurveAPI` marks a `BasisCurves` prim as a visual representation
+    of a Newton rod strand.
+
+    Apply this schema to a `BasisCurves` child prim of an `Xform` that carries `NewtonRodAPI`.
+    The `newton:rodPointIndices` attribute maps each curve vertex to a node index in the parent
+    rod's `newton:points` array.
+
+    At each simulation step, an engine or synchronization tool reads the rod's current node
+    positions and writes:
+        curve.points[i] = rod.newton:points[newton:rodPointIndices[i]]
+
+    Multiple `BasisCurves` children can carry this schema, each representing one connected
+    strand of the rod graph (e.g. trunk, branch A, branch B). Nodes may be shared between
+    strands — a junction node (degree > 2) appears as the first vertex of each branch curve
+    and also as a vertex in the trunk curve, so the rendered strands visually connect.
+
+    Example (branching graph with junction at node 2):
+        /World/cable (Xform + NewtonRodAPI, 10 nodes)
+            /visual_trunk   (BasisCurves + NewtonRodVisualCurveAPI)
+                int[] newton:rodPointIndices = [0, 1, 2, 3, 4]
+            /visual_branchA (BasisCurves + NewtonRodVisualCurveAPI)
+                int[] newton:rodPointIndices = [2, 5, 6, 7]
+            /visual_branchB (BasisCurves + NewtonRodVisualCurveAPI)
+                int[] newton:rodPointIndices = [2, 8, 9]
+
+    For a simple linear chain with N nodes, a single child curve suffices:
+        /visual (BasisCurves + NewtonRodVisualCurveAPI)
+            int[] newton:rodPointIndices = [0, 1, 2, ..., N-1]"""
+)
+{
+    int[] newton:rodPointIndices (
+        doc = """Mapping from curve vertex positions to rod node indices.
+
+        Length must equal the total number of vertices in this `BasisCurves` prim
+        (i.e. the sum of `curveVertexCounts`). Each entry `i` specifies which rod node
+        (index into `newton:points` on the parent `Xform`) provides the world-space
+        position for curve vertex `i`.
+
+        An engine or synchronization tool reads this attribute and writes:
+            curve.points[i] = rod.newton:points[newton:rodPointIndices[i]]
+
+        for all i in range(len(newton:rodPointIndices)).
+
+        Nodes may be referenced by multiple curves (e.g. a junction node shared by a trunk
+        curve and a branch curve). Such sharing is valid and expected for graph topologies.
+
+        All indices must be valid within [0, len(newton:points) - 1] on the parent rod prim."""
     )
 }

@@ -62,9 +62,25 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.rod.ApplyAPI("NewtonRodAPI")
         attr = self.rod.GetAttribute("newton:radius")
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertAlmostEqual(attr.Get(), 0.005)
-        attr.Set(0.003)
-        self.assertAlmostEqual(attr.Get(), 0.003)
+        # No schema default — unset returns None
+        self.assertIsNone(attr.Get())
+
+    def test_radius_uniform(self):
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:radius")
+        # Length-1: uniform radius
+        attr.Set(Vt.FloatArray([0.003]))
+        self.assertEqual(len(attr.Get()), 1)
+        self.assertAlmostEqual(attr.Get()[0], 0.003)
+
+    def test_radius_per_segment(self):
+        self.rod.ApplyAPI("NewtonRodAPI")
+        attr = self.rod.GetAttribute("newton:radius")
+        # Length-E: per-segment radii (tapered)
+        attr.Set(Vt.FloatArray([0.008, 0.010, 0.010, 0.008]))
+        self.assertEqual(len(attr.Get()), 4)
+        self.assertAlmostEqual(attr.Get()[1], 0.010)
+        self.assertAlmostEqual(attr.Get()[3], 0.008)
 
     def test_wrap_in_articulation_default(self):
         self.rod.ApplyAPI("NewtonRodAPI")
@@ -350,6 +366,68 @@ class TestNewtonRodAttachmentAPI(unittest.TestCase):
         self.assertEqual(len(attachment_prims), 2)
         indices = sorted(c.GetAttribute("newton:nodeIndex").Get() for c in attachment_prims)
         self.assertEqual(indices, [0, 74])
+
+
+class TestNewtonRodVisualCurveAPI(unittest.TestCase):
+    def setUp(self):
+        self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
+        rod = self.stage.DefinePrim("/Rod", "Xform")
+        rod.ApplyAPI("NewtonRodAPI")
+        self.curves = UsdGeom.BasisCurves.Define(self.stage, "/Rod/visual").GetPrim()
+
+    def test_api_registered(self):
+        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsRodVisualCurveAPI")
+        self.assertEqual(plug_type.typeName, "NewtonPhysicsRodVisualCurveAPI")
+        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsRodVisualCurveAPI")
+        self.assertEqual(schema_type, "NewtonRodVisualCurveAPI")
+
+    def test_can_only_apply_to_basis_curves(self):
+        self.assertTrue(self.curves.CanApplyAPI("NewtonRodVisualCurveAPI"))
+        xform = self.stage.DefinePrim("/SomeXform", "Xform")
+        self.assertFalse(xform.CanApplyAPI("NewtonRodVisualCurveAPI"))
+
+    def test_api_application(self):
+        self.assertFalse(self.curves.HasAPI("NewtonRodVisualCurveAPI"))
+        self.curves.ApplyAPI("NewtonRodVisualCurveAPI")
+        self.assertTrue(self.curves.HasAPI("NewtonRodVisualCurveAPI"))
+        self.assertTrue(self.curves.HasAttribute("newton:rodPointIndices"))
+
+    def test_rod_point_indices_roundtrip(self):
+        self.curves.ApplyAPI("NewtonRodVisualCurveAPI")
+        attr = self.curves.GetAttribute("newton:rodPointIndices")
+        self.assertFalse(attr.HasAuthoredValue())
+
+        attr.Set(Vt.IntArray([0, 1, 2, 3, 4]))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(list(attr.Get()), [0, 1, 2, 3, 4])
+
+    def test_rod_point_indices_shared_node(self):
+        branch = UsdGeom.BasisCurves.Define(self.stage, "/Rod/visual_branch").GetPrim()
+        branch.ApplyAPI("NewtonRodVisualCurveAPI")
+        attr = branch.GetAttribute("newton:rodPointIndices")
+        attr.Set(Vt.IntArray([2, 5, 6, 7]))
+        self.assertEqual(list(attr.Get()), [2, 5, 6, 7])
+
+    def test_multiple_visual_curves_on_same_rod(self):
+        rod = self.stage.GetPrimAtPath("/Rod")
+        trunk = UsdGeom.BasisCurves.Define(self.stage, "/Rod/visual_trunk").GetPrim()
+        branch_a = UsdGeom.BasisCurves.Define(self.stage, "/Rod/visual_branchA").GetPrim()
+        branch_b = UsdGeom.BasisCurves.Define(self.stage, "/Rod/visual_branchB").GetPrim()
+
+        for p in (trunk, branch_a, branch_b):
+            p.ApplyAPI("NewtonRodVisualCurveAPI")
+
+        trunk.GetAttribute("newton:rodPointIndices").Set(Vt.IntArray([0, 1, 2, 3, 4, 5, 6]))
+        branch_a.GetAttribute("newton:rodPointIndices").Set(Vt.IntArray([2, 7, 8, 9]))
+        branch_b.GetAttribute("newton:rodPointIndices").Set(Vt.IntArray([2, 10, 11, 12]))
+
+        visual_children = [c for c in rod.GetChildren() if c.HasAPI("NewtonRodVisualCurveAPI")]
+        self.assertEqual(len(visual_children), 3)
+
+        all_indices = sorted(list(c.GetAttribute("newton:rodPointIndices").Get()) for c in visual_children)
+        self.assertEqual(all_indices[0], [0, 1, 2, 3, 4, 5, 6])
+        self.assertEqual(all_indices[1], [2, 7, 8, 9])
+        self.assertEqual(all_indices[2], [2, 10, 11, 12])
 
 
 if __name__ == "__main__":
