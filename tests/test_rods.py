@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
+import math
 import unittest
 
 from pxr import Gf, Plug, Usd, UsdGeom, Vt
@@ -28,7 +29,6 @@ class TestNewtonRodAPI(unittest.TestCase):
 
         self.assertTrue(self.rod.HasAttribute("newton:points"))
         self.assertTrue(self.rod.HasAttribute("newton:radius"))
-        self.assertTrue(self.rod.HasAttribute("newton:fixedPoints"))
         self.assertTrue(self.rod.HasAttribute("newton:stretchStiffness"))
         self.assertTrue(self.rod.HasAttribute("newton:stretchDamping"))
         self.assertTrue(self.rod.HasAttribute("newton:bendStiffness"))
@@ -36,8 +36,7 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertTrue(self.rod.HasAttribute("newton:twistStiffness"))
         self.assertTrue(self.rod.HasAttribute("newton:twistDamping"))
         self.assertTrue(self.rod.HasAttribute("newton:edges"))
-        self.assertTrue(self.rod.HasAttribute("newton:closed"))
-        self.assertTrue(self.rod.HasAttribute("newton:quaternions"))
+        self.assertTrue(self.rod.HasAttribute("newton:orientations"))
         self.assertTrue(self.rod.HasAttribute("newton:wrapInArticulation"))
         self.assertTrue(self.rod.HasAttribute("newton:collisionFilterNeighborDistance"))
 
@@ -127,20 +126,11 @@ class TestNewtonRodAPI(unittest.TestCase):
 
     # --- array attributes (no schema-level defaults; engine fills them in) ---
 
-    def test_fixed_points_roundtrip(self):
-        self.rod.ApplyAPI("NewtonRodAPI")
-        attr = self.rod.GetAttribute("newton:fixedPoints")
-        self.assertFalse(attr.HasAuthoredValue())
-
-        attr.Set(Vt.IntArray([0, 5, 10]))
-        self.assertTrue(attr.HasAuthoredValue())
-        self.assertEqual(list(attr.Get()), [0, 5, 10])
-
     def test_youngs_modulus_default(self):
         self.rod.ApplyAPI("NewtonRodAPI")
         attr = self.rod.GetAttribute("newton:youngsModulus")
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertAlmostEqual(attr.Get(), -1.0)  # sentinel = unset
+        self.assertEqual(attr.Get(), -math.inf)  # sentinel = unset
 
         attr.Set(2.1e9)  # steel ~2.1 GPa
         self.assertAlmostEqual(attr.Get(), 2.1e9)
@@ -149,10 +139,13 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.rod.ApplyAPI("NewtonRodAPI")
         attr = self.rod.GetAttribute("newton:poissonRatio")
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertAlmostEqual(attr.Get(), -1.0)  # sentinel = unset
+        self.assertEqual(attr.Get(), -math.inf)  # sentinel = unset
 
         attr.Set(0.3)  # steel ~0.3
         self.assertAlmostEqual(attr.Get(), 0.3)
+
+        attr.Set(-1.0)
+        self.assertAlmostEqual(attr.Get(), -1.0)
 
     def test_armature_default(self):
         self.rod.ApplyAPI("NewtonRodAPI")
@@ -239,16 +232,6 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertEqual(len(attr.Get()), 3)
         self.assertAlmostEqual(attr.Get()[2], 0.1)
 
-    def test_closed_default(self):
-        self.rod.ApplyAPI("NewtonRodAPI")
-        attr = self.rod.GetAttribute("newton:closed")
-        self.assertFalse(attr.HasAuthoredValue())
-        self.assertFalse(attr.Get())
-
-        attr.Set(True)
-        self.assertTrue(attr.HasAuthoredValue())
-        self.assertTrue(attr.Get())
-
     def test_edges_roundtrip(self):
         self.rod.ApplyAPI("NewtonRodAPI")
         attr = self.rod.GetAttribute("newton:edges")
@@ -261,9 +244,9 @@ class TestNewtonRodAPI(unittest.TestCase):
         self.assertEqual(len(result), 3)
         self.assertEqual(result[1], Gf.Vec2i(1, 2))
 
-    def test_quaternions_roundtrip(self):
+    def test_orientations_roundtrip(self):
         self.rod.ApplyAPI("NewtonRodAPI")
-        attr = self.rod.GetAttribute("newton:quaternions")
+        attr = self.rod.GetAttribute("newton:orientations")
         self.assertFalse(attr.HasAuthoredValue())
 
         # Identity quaternion: (i=0, j=0, k=0, w=1)
@@ -293,23 +276,23 @@ class TestNewtonRodAttachmentAPI(unittest.TestCase):
         self.attach.ApplyAPI("NewtonRodAttachmentAPI")
         self.assertTrue(self.attach.HasAPI("NewtonRodAttachmentAPI"))
 
-        self.assertTrue(self.attach.HasAttribute("newton:nodeIndex"))
+        self.assertTrue(self.attach.HasAttribute("newton:nodeIndices"))
         self.assertTrue(self.attach.HasAttribute("newton:localPos1"))
         self.assertTrue(self.attach.HasAttribute("newton:localRot0"))
         self.assertTrue(self.attach.HasAttribute("newton:localRot1"))
         self.assertTrue(self.attach.HasRelationship("newton:body"))
 
-    def test_node_index_roundtrip(self):
+    def test_node_indices_roundtrip(self):
         self.attach.ApplyAPI("NewtonRodAttachmentAPI")
-        attr = self.attach.GetAttribute("newton:nodeIndex")
+        attr = self.attach.GetAttribute("newton:nodeIndices")
         self.assertFalse(attr.HasAuthoredValue())
 
-        attr.Set(0)
+        attr.Set(Vt.IntArray([0]))
         self.assertTrue(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), 0)
+        self.assertEqual(list(attr.Get()), [0])
 
-        attr.Set(74)
-        self.assertEqual(attr.Get(), 74)
+        attr.Set(Vt.IntArray([0, 1, 2, 74]))
+        self.assertEqual(list(attr.Get()), [0, 1, 2, 74])
 
     def test_body_rel_roundtrip(self):
         self.attach.ApplyAPI("NewtonRodAttachmentAPI")
@@ -321,26 +304,32 @@ class TestNewtonRodAttachmentAPI(unittest.TestCase):
         self.assertEqual(len(targets), 1)
         self.assertEqual(str(targets[0]), "/World/Plug")
 
-    def test_local_pos1_default(self):
+    def test_local_pos1_array_roundtrip(self):
         self.attach.ApplyAPI("NewtonRodAttachmentAPI")
         attr = self.attach.GetAttribute("newton:localPos1")
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), Gf.Vec3f(0, 0, 0))
+        self.assertIsNone(attr.Get())
 
-        attr.Set(Gf.Vec3f(0.01, -0.02, 0.005))
+        attr.Set(Vt.Vec3fArray([Gf.Vec3f(0.01, -0.02, 0.005), Gf.Vec3f(0.02, 0, 0)]))
         self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(len(attr.Get()), 2)
 
-    def test_local_rot_defaults(self):
+    def test_local_rot_array_defaults(self):
         self.attach.ApplyAPI("NewtonRodAttachmentAPI")
         identity = Gf.Quatf(1.0, 0.0, 0.0, 0.0)
 
         rot0 = self.attach.GetAttribute("newton:localRot0")
         self.assertFalse(rot0.HasAuthoredValue())
-        self.assertAlmostEqual(rot0.Get().GetReal(), identity.GetReal())
+        self.assertEqual(len(rot0.Get()), 1)
+        self.assertAlmostEqual(rot0.Get()[0].GetReal(), identity.GetReal())
 
         rot1 = self.attach.GetAttribute("newton:localRot1")
         self.assertFalse(rot1.HasAuthoredValue())
-        self.assertAlmostEqual(rot1.Get().GetReal(), identity.GetReal())
+        self.assertEqual(len(rot1.Get()), 1)
+        self.assertAlmostEqual(rot1.Get()[0].GetReal(), identity.GetReal())
+
+        rot1.Set(Vt.QuatfArray([identity, Gf.Quatf(0.70710677, 0.0, 0.0, -0.70710677)]))
+        self.assertEqual(len(rot1.Get()), 2)
 
     def test_filter_attachment_collision_default(self):
         self.attach.ApplyAPI("NewtonRodAttachmentAPI")
@@ -358,14 +347,22 @@ class TestNewtonRodAttachmentAPI(unittest.TestCase):
         self.attach.ApplyAPI("NewtonRodAttachmentAPI")
         attach2.ApplyAPI("NewtonRodAttachmentAPI")
 
-        self.attach.GetAttribute("newton:nodeIndex").Set(0)
-        attach2.GetAttribute("newton:nodeIndex").Set(74)
+        self.attach.GetAttribute("newton:nodeIndices").Set(Vt.IntArray([0]))
+        attach2.GetAttribute("newton:nodeIndices").Set(Vt.IntArray([74]))
 
         rod = self.stage.GetPrimAtPath("/Rod/rod_0")
         attachment_prims = [c for c in rod.GetChildren() if c.HasAPI("NewtonRodAttachmentAPI")]
         self.assertEqual(len(attachment_prims), 2)
-        indices = sorted(c.GetAttribute("newton:nodeIndex").Get() for c in attachment_prims)
+        indices = sorted(c.GetAttribute("newton:nodeIndices").Get()[0] for c in attachment_prims)
         self.assertEqual(indices, [0, 74])
+
+    def test_multiple_node_indices_one_attachment(self):
+        self.attach.ApplyAPI("NewtonRodAttachmentAPI")
+        self.attach.GetAttribute("newton:nodeIndices").Set(Vt.IntArray([0, 1, 2]))
+        self.attach.GetAttribute("newton:localPos1").Set(Vt.Vec3fArray([Gf.Vec3f(-0.02, 0, 0), Gf.Vec3f(0, 0, 0), Gf.Vec3f(0.02, 0, 0)]))
+
+        self.assertEqual(list(self.attach.GetAttribute("newton:nodeIndices").Get()), [0, 1, 2])
+        self.assertEqual(len(self.attach.GetAttribute("newton:localPos1").Get()), 3)
 
 
 class TestNewtonRodVisualCurveAPI(unittest.TestCase):

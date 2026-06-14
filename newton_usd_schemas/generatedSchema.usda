@@ -806,7 +806,7 @@ class NewtonActuator "NewtonActuator" (
 
         Currently only the first target is honored, and it must identify either a
         `PhysicsRevoluteJoint` or `PhysicsPrismaticJoint`.
-        
+
         Multi-DOF `PhysicsJoint` prims are not supported, even when locked via `LimitAPI` to a single axis.
         """
     )
@@ -1133,13 +1133,13 @@ class NewtonRodAPI "NewtonRodAPI" (
     `newton:points` (N node positions) and `newton:radius` (uniform capsule radius).
 
     Topology:
-    - If `newton:edges` is empty, the engine assumes a linear chain of E = N-1 segments:
-      edges (0,1), (1,2), ..., (N-2, N-1). The rod is built via `add_rod`.
-    - If `newton:edges` is non-empty with E entries, each entry (u,v) defines one capsule body.
-      Branching and junction topologies are supported via `add_rod_graph`.
+    `newton:edges` is the required topology attribute for all rods. Each entry (u, v)
+    defines one segment between two nodes in `newton:points`. Linear rods should author
+    explicit edges such as (0,1), (1,2), ..., (N-2, N-1); closed loops and branching
+    junctions are expressed by the same edge list.
 
-    In both cases E is the number of rod segments (capsule bodies). All per-segment and
-    per-joint array attributes use E as their reference length.
+    E is the number of authored edges / rod segments. All per-segment and per-joint array
+    attributes use E as their reference length.
 
     Visual representation:
     Attach one or more `BasisCurves` child prims, each carrying `NewtonRodVisualCurveAPI`,
@@ -1166,54 +1166,34 @@ class NewtonRodAPI "NewtonRodAPI" (
         doc = """World-space positions of the N rod nodes.
 
         Each node is a vertex in the rod graph. Segment bodies are created between connected
-        node pairs as defined by `newton:edges` (or implicitly for a linear chain)."""
+        node pairs as defined by `newton:edges`."""
     )
 
     float[] newton:radius (
         doc = """Capsule radii for rod segment bodies, in metres.
 
         Array length semantics (E = number of edges / segments):
-        - Empty:    the engine uses a default of 0.005 for all E segments.
+        - Empty:    the engine uses its default radius for all E segments.
         - Length 1: the single value is broadcast uniformly to all E segments.
         - Length E: each entry sets the radius of the corresponding segment capsule body.
-
-        The visual representation width is derived from this attribute:
-            BasisCurves.widths[vertex] = 2 * newton:radius[segment]
 
         Range: (0, inf)
         Units: metres"""
     )
 
     int2[] newton:edges (
-        doc = """Edge list defining the rod graph topology as (u, v) node index pairs.
+        doc = """Required edge list defining the rod graph topology as (u, v) node index pairs.
 
         Each entry references indices into `newton:points`. Each edge creates one capsule body
         oriented so its local +Z points from node u to node v. The total number of edges E
         determines the number of rod segments.
 
-        If empty, the engine assumes a linear chain with E = N-1 segments.
-        If non-empty, branching and junction topologies are supported via `add_rod_graph`."""
-    )
-    
-
-    int[] newton:fixedPoints (
-        doc = """Indices into `newton:points` identifying nodes that are pinned (kinematic) in the simulation.
-
-        All capsule bodies whose start or end node is listed here are set kinematic:
-        their positions are not updated by the solver and they remain anchored in world space
-        at their initial positions.
-
-        Note: once any node is fixed, the rod is effectively constrained to the world.
-        The articulation chain rooted at a kinematic body cannot translate or rotate freely
-        as a whole — only the non-fixed segments can deform relative to the fixed anchor.
-
-        An empty array means no nodes are pinned and the entire rod is free to move under
-        gravity and other forces."""
+        Linear rods, closed loops, branching rods, and junction rods are all expressed with
+        explicit edges."""
     )
 
 
-
-    float newton:youngsModulus = -1.0 (
+    float newton:youngsModulus = -inf (
         doc = """Young's modulus of the rod material (E), in Pa.
 
         When set to a positive value, the engine derives per-segment stiffness coefficients
@@ -1229,10 +1209,10 @@ class NewtonRodAPI "NewtonRodAPI" (
         Explicit per-segment `newton:stretchStiffness` or `newton:bendStiffness` arrays
         take precedence over the derived values if authored.
 
-        A value of -1 (default sentinel) means the attribute is unset; the engine uses
+        A value of `-inf` means the attribute is unset; the engine uses
         `newton:stretchStiffness` and `newton:bendStiffness` directly.
 
-        Range: (0, inf) when active; -1 as sentinel for "unset"
+        Range: (0, inf) when active; `-inf` as sentinel for "unset"
         Units: Pa (N/m²)"""
         limits = {
             dictionary soft = {
@@ -1241,7 +1221,7 @@ class NewtonRodAPI "NewtonRodAPI" (
         }
     )
 
-    float newton:poissonRatio = -1.0 (
+    float newton:poissonRatio = -inf (
         doc = """Poisson's ratio of the rod material (nu), dimensionless.
 
         Used together with `newton:youngsModulus` (E) to derive the shear modulus G and
@@ -1256,9 +1236,9 @@ class NewtonRodAPI "NewtonRodAPI" (
 
         Only meaningful when `newton:youngsModulus` is also set to a positive value.
 
-        A value of -1 (default sentinel) means the attribute is unset.
+        A value of `-inf` means the attribute is unset.
 
-        Range: (-1, 0.5] when active; -1 as sentinel for "unset"
+        Range: [-1, 0.5] when active; `-inf` as sentinel for "unset"
         Units: dimensionless"""
         limits = {
             dictionary soft = {
@@ -1286,7 +1266,7 @@ class NewtonRodAPI "NewtonRodAPI" (
             }
         }
     )
-    
+
     float[] newton:stretchStiffness (
         doc = """Stretch stiffness coefficients controlling resistance to elongation along each segment.
 
@@ -1353,18 +1333,10 @@ class NewtonRodAPI "NewtonRodAPI" (
         - Length E: each entry is associated with the corresponding segment/edge."""
     )
 
-    bool newton:closed = false (
-        doc = """Whether to connect the last segment back to the first to form a closed loop.
+    quatf[] newton:orientations (
+        doc = """Per-edge rest-pose orientations.
 
-        Only meaningful for linear chain topology (when `newton:edges` is empty).
-        When true, an extra loop-closing joint is added between segment E-1 and segment 0.
-        This joint is intentionally excluded from the articulation tree (articulations must be acyclic).
-
-        Ignored when `newton:edges` is non-empty."""
-    )
-
-    quatf[] newton:quaternions (
-        doc = """Per-edge rest-pose orientations as unit quaternions (w, xi, yj, zk).
+        Orientations are represented as unit quaternions (w, xi, yj, zk).
 
         Length must be 0 or E (number of edges / segments):
         - Empty:    the engine derives each segment's orientation from the edge direction
@@ -1405,61 +1377,67 @@ class NewtonRodAPI "NewtonRodAPI" (
 }
 
 class NewtonRodAttachmentAPI "NewtonRodAttachmentAPI" (
-    doc = """`NewtonRodAttachmentAPI` describes a single fixed attachment between a rod node
-    and an external rigid body prim.
+    doc = """`NewtonRodAttachmentAPI` describes one or more fixed attachments between rod nodes
+    and either one external rigid body prim or the world frame.
 
     Apply this schema to a child prim of the `Xform` prim that carries `NewtonRodAPI`.
-    Each child prim with this schema represents one attachment point. Multiple attachments
-    are expressed as multiple child prims, one per connection.
+    Each child prim with this schema represents one attachment group. Multiple nodes can
+    be attached to the same target by authoring multiple entries in `newton:nodeIndices`.
 
     Example layout:
         /World/cable/rod_0            (Xform + NewtonRodAPI)
-            /attach_plug              (Xform + NewtonRodAttachmentAPI)
-            /attach_interface         (Xform + NewtonRodAttachmentAPI)
+            /attach_world             (Xform + NewtonRodAttachmentAPI, no body target)
+            /attach_plug              (Xform + NewtonRodAttachmentAPI, rel newton:body)
 
-    The engine reads `newton:nodeIndex` to identify the rod capsule body directly,
-    eliminating the need to search for the nearest point at runtime."""
+    If `newton:body` is not authored, the listed nodes are fixed to the world frame.
+    If `newton:body` targets a rigid body, each listed node is attached to that same body.
+    Runtime importers expand the attachment group into per-node fixed constraints."""
 )
 {
-    int newton:nodeIndex (
-        doc = """Index into the rod's `points` array identifying the node to attach.
+    int[] newton:nodeIndices (
+        doc = """Indices into the rod's `points` array identifying nodes to attach.
 
-        The engine maps this index to the corresponding capsule body created by `add_rod`
-        or `add_rod_graph`. Must be a valid index in [0, len(points) - 1]."""
+        The engine maps each index to the corresponding rod segment body created from the
+        authored edge graph. Each value must be a valid index in [0, len(points) - 1]."""
     )
 
     rel newton:body (
-        doc = """The external rigid body prim to attach to.
+        doc = """Optional external rigid body prim to attach to.
 
-        This is the `physics:body1` side of the generated fixed joint.
-        The prim must carry a rigid body API (e.g. `PhysicsRigidBodyAPI`)."""
+        If omitted, the listed rod nodes are fixed to the world frame. If authored, the
+        relationship must have one target carrying a rigid body API (e.g.
+        `PhysicsRigidBodyAPI`), and every listed node is attached to that same target."""
     )
 
-    point3f newton:localPos1 = (0, 0, 0) (
-        doc = """Anchor position in the external body's local frame.
+    point3f[] newton:localPos1 (
+        doc = """Optional body-side anchor positions in the external body's local frame.
 
-        Corresponds to `physics:localPos1` on a `PhysicsFixedJoint`.
-        Units: distance"""
+        Used only when `newton:body` is authored. Empty means the importer should derive
+        each body-local anchor from the initial rod node world position. Length 1
+        broadcasts to all `newton:nodeIndices`; length N maps one-to-one to N node
+        indices. Other lengths are invalid."""
     )
 
-    quatf newton:localRot0 = (1, 0, 0, 0) (
-        doc = """Anchor orientation on the rod node side, in the rod capsule body's local frame.
+    quatf[] newton:localRot0 = [(1, 0, 0, 0)] (
+        doc = """Optional rod-side anchor orientations in each rod capsule body's local frame.
 
-        Corresponds to `physics:localRot0` on a `PhysicsFixedJoint`.
-        The position on the rod side is taken directly from `points[newton:nodeIndex]`."""
+        Length 1 broadcasts to all `newton:nodeIndices`; length N maps one-to-one to N
+        node indices. Other authored lengths are invalid."""
     )
 
-    quatf newton:localRot1 = (1, 0, 0, 0) (
-        doc = """Anchor orientation on the external body side, in the external body's local frame.
+    quatf[] newton:localRot1 = [(1, 0, 0, 0)] (
+        doc = """Optional body-side anchor orientations in the external body's local frame.
 
-        Corresponds to `physics:localRot1` on a `PhysicsFixedJoint`."""
+        Used only when `newton:body` is authored. Length 1 broadcasts to all
+        `newton:nodeIndices`; length N maps one-to-one to N node indices. Other authored
+        lengths are invalid."""
     )
 
     bool newton:filterAttachmentCollision = true (
         doc = """Whether to suppress collisions between the attached rod segment body and the
         external body referenced by `newton:body`.
 
-        When true (default), the rod capsule body at `newton:nodeIndex` and all shapes of
+        When true (default), each rod capsule body incident to `newton:nodeIndices` and all shapes of
         the external body are added to the collision filter, preventing contact generation
         between them. This avoids solver instability caused by the fixed joint constraint
         fighting against penetration forces at the attachment point.
