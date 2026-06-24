@@ -65,9 +65,7 @@ class TestNewtonVbdSceneAPI(unittest.TestCase):
             attr = self.scene.GetAttribute(name)
             self.assertIsNotNone(attr, name)
             value = attr.Get()
-            if isinstance(default, bool):
-                self.assertEqual(value, default, name)
-            elif isinstance(default, int):
+            if isinstance(default, (bool, int)):
                 self.assertEqual(value, default, name)
             elif default == float("-inf"):
                 self.assertEqual(float(value), default, name)
