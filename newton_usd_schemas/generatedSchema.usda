@@ -416,7 +416,7 @@ class "NewtonVbdSceneAPI" (
         once before and once after initialization. A value n >= 1 runs it before every n iterations.
         Only consulted when `newton:vbd:particle:selfContactEnabled` is true.
 
-        Range: (-inf, inf)
+        Range: [-1, inf)
         Units: dimensionless"""
     )
 
@@ -515,14 +515,15 @@ class "NewtonVbdSceneAPI" (
         doc = """Penalty stiffness ramp rate for AVBD constraints.
 
         Each iteration the penalty stiffness is incremented by this rate times the constraint
-        violation, then clamped to its stiffness ceiling. A value of 0 disables ramping (fixed
-        penalty stiffness). This single value feeds both the linear and angular ramps, which have
-        different units (force / (distance * distance) and torque / (radian * radian)), so it
-        carries no single physical unit. Use `newton:vbd:rigid:avbdLinearBeta` and
-        `newton:vbd:rigid:avbdAngularBeta` for unit-correct tuning.
+        violation, then clamped to its stiffness ceiling (k = min(k_max, k + beta * |C|)). A value
+        of 0 disables ramping (fixed penalty stiffness). This single value feeds both the linear and
+        angular ramps, which have different units (force / (distance * distance) and
+        torque / (radian * radian)), so it carries no single physical unit. Use
+        `newton:vbd:rigid:avbdLinearBeta` and `newton:vbd:rigid:avbdAngularBeta` for unit-correct
+        tuning.
 
         Range: [0, inf)
-        Units: see description"""
+        Units: mixed (feeds both linear and angular ramps)"""
         limits = {
             dictionary hard = {
                 float minimum = 0

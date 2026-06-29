@@ -30,92 +30,398 @@ class TestNewtonVbdSceneAPI(unittest.TestCase):
         prim: Usd.Prim = self.stage.DefinePrim("/NotScene", "Xform")
         self.assertFalse(prim.CanApplyAPI("NewtonVbdSceneAPI"))
 
-    def test_attribute_defaults(self):
-        self.scene.ApplyAPI("NewtonVbdSceneAPI")
-        expected = {
-            "newton:vbd:frictionEpsilon": 0.01,
-            "newton:vbd:particle:selfContactEnabled": False,
-            "newton:vbd:particle:selfContactRadius": 0.2,
-            "newton:vbd:particle:selfContactMargin": 0.2,
-            "newton:vbd:particle:conservativeBoundRelaxation": 0.85,
-            "newton:vbd:particle:collisionDetectionInterval": 0,
-            "newton:vbd:particle:edgeParallelEpsilon": 1e-5,
-            "newton:vbd:particle:topologicalContactFilterThreshold": 2,
-            "newton:vbd:particle:restShapeContactExclusionRadius": 0.0,
-            "newton:vbd:rigid:avbdAlpha": 0.95,
-            "newton:vbd:rigid:avbdJointAlpha": float("-inf"),
-            "newton:vbd:rigid:avbdContactAlpha": float("-inf"),
-            "newton:vbd:rigid:avbdBeta": 0.0,
-            "newton:vbd:rigid:avbdLinearBeta": float("-inf"),
-            "newton:vbd:rigid:avbdAngularBeta": float("-inf"),
-            "newton:vbd:rigid:avbdGamma": 0.999,
-            "newton:vbd:rigid:contactHistory": False,
-            "newton:vbd:rigid:contactStickMotionEps": 1e-4,
-            "newton:vbd:rigid:contactStickFreezeTranslationEps": 1e-4,
-            "newton:vbd:rigid:contactStickFreezeAngularEps": 1e-4,
-            "newton:vbd:rigid:contactKStart": 100.0,
-            "newton:vbd:rigid:jointLinearKe": 100000.0,
-            "newton:vbd:rigid:jointAngularKe": 100000.0,
-            "newton:vbd:rigid:jointLinearKStart": 100.0,
-            "newton:vbd:rigid:jointAngularKStart": 10.0,
-            "newton:vbd:rigid:jointLinearKd": 0.0,
-            "newton:vbd:rigid:jointAngularKd": 0.0,
-        }
-        for name, default in expected.items():
-            attr = self.scene.GetAttribute(name)
-            self.assertIsNotNone(attr, name)
-            value = attr.Get()
-            if isinstance(default, (bool, int)):
-                self.assertEqual(value, default, name)
-            elif default == float("-inf"):
-                self.assertEqual(float(value), default, name)
-            else:
-                self.assertAlmostEqual(float(value), float(default), places=5, msg=name)
+    # -- common -------------------------------------------------------------
 
-    def test_attribute_set(self):
+    def test_friction_epsilon(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:frictionEpsilon")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 0.01, places=7)
+
+        self.assertTrue(attr.Set(0.05))
+        self.assertAlmostEqual(attr.Get(), 0.05, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    # -- particle -----------------------------------------------------------
+
+    def test_particle_self_contact_enabled(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:particle:selfContactEnabled")
+        self.assertIsNotNone(attr)
+        self.assertEqual(attr.Get(), False)
+
+        self.assertTrue(attr.Set(True))
+        self.assertEqual(attr.Get(), True)
+
+    def test_particle_self_contact_radius(self):
         self.scene.ApplyAPI("NewtonVbdSceneAPI")
         attr = self.scene.GetAttribute("newton:vbd:particle:selfContactRadius")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 0.2, places=7)
+
         self.assertTrue(attr.Set(0.5))
-        self.assertAlmostEqual(attr.Get(), 0.5, places=5)
+        self.assertAlmostEqual(attr.Get(), 0.5, places=7)
 
-        flag = self.scene.GetAttribute("newton:vbd:particle:selfContactEnabled")
-        self.assertTrue(flag.Set(True))
-        self.assertEqual(flag.Get(), True)
-
-        count = self.scene.GetAttribute("newton:vbd:particle:topologicalContactFilterThreshold")
-        self.assertTrue(count.Set(3))
-        self.assertEqual(count.Get(), 3)
-
-    @unittest.skipUnless(USD_HAS_LIMITS, "USD build does not expose attribute limits")
-    def test_hard_limits(self):
-        self.scene.ApplyAPI("NewtonVbdSceneAPI")
-        # (attribute, minimum, maximum)
-        cases = [
-            ("newton:vbd:frictionEpsilon", 0.0, None),
-            ("newton:vbd:particle:selfContactRadius", 0.0, None),
-            ("newton:vbd:particle:conservativeBoundRelaxation", 0.0, 1.0),
-            ("newton:vbd:rigid:avbdAlpha", 0.0, 1.0),
-            ("newton:vbd:rigid:avbdGamma", 0.0, 1.0),
-            ("newton:vbd:rigid:jointLinearKe", 0.0, None),
-        ]
-        for name, minimum, maximum in cases:
-            attr = self.scene.GetAttribute(name)
+        if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()
-            self.assertTrue(hard.IsValid(), name)
-            self.assertAlmostEqual(hard.GetMinimum(), minimum, msg=name)
-            if maximum is None:
-                self.assertIsNone(hard.GetMaximum(), name)
-            else:
-                self.assertAlmostEqual(hard.GetMaximum(), maximum, msg=name)
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
 
-    @unittest.skipUnless(USD_HAS_LIMITS, "USD build does not expose attribute limits")
-    def test_soft_limits_on_sentinel_overrides(self):
+    def test_particle_self_contact_margin(self):
         self.scene.ApplyAPI("NewtonVbdSceneAPI")
-        for name in ("newton:vbd:rigid:avbdJointAlpha", "newton:vbd:rigid:avbdLinearBeta"):
-            attr = self.scene.GetAttribute(name)
+        attr = self.scene.GetAttribute("newton:vbd:particle:selfContactMargin")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 0.2, places=7)
+
+        self.assertTrue(attr.Set(0.5))
+        self.assertAlmostEqual(attr.Get(), 0.5, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_particle_conservative_bound_relaxation(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:particle:conservativeBoundRelaxation")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 0.85, places=7)
+
+        self.assertTrue(attr.Set(0.5))
+        self.assertAlmostEqual(attr.Get(), 0.5, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
+
+    def test_particle_collision_detection_interval(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:particle:collisionDetectionInterval")
+        self.assertIsNotNone(attr)
+        self.assertEqual(attr.Get(), 0)
+
+        self.assertTrue(attr.Set(5))
+        self.assertEqual(attr.Get(), 5)
+
+    def test_particle_edge_parallel_epsilon(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:particle:edgeParallelEpsilon")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 1e-5, places=7)
+
+        self.assertTrue(attr.Set(1e-4))
+        self.assertAlmostEqual(attr.Get(), 1e-4, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_particle_topological_contact_filter_threshold(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:particle:topologicalContactFilterThreshold")
+        self.assertIsNotNone(attr)
+        self.assertEqual(attr.Get(), 2)
+
+        self.assertTrue(attr.Set(3))
+        self.assertEqual(attr.Get(), 3)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertEqual(hard.GetMinimum(), 0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_particle_rest_shape_contact_exclusion_radius(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:particle:restShapeContactExclusionRadius")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 0.0, places=7)
+
+        self.assertTrue(attr.Set(0.1))
+        self.assertAlmostEqual(attr.Get(), 0.1, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    # -- rigid / AVBD -------------------------------------------------------
+
+    def test_rigid_avbd_alpha(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:avbdAlpha")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 0.95, places=7)
+
+        self.assertTrue(attr.Set(0.5))
+        self.assertAlmostEqual(attr.Get(), 0.5, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
+
+    def test_rigid_avbd_joint_alpha(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:avbdJointAlpha")
+        self.assertIsNotNone(attr)
+        self.assertEqual(attr.Get(), float("-inf"))
+
+        self.assertTrue(attr.Set(0.5))
+        self.assertAlmostEqual(attr.Get(), 0.5, places=7)
+
+        if USD_HAS_LIMITS:
             soft = attr.GetSoftLimits()
-            self.assertTrue(soft.IsValid(), name)
-            self.assertAlmostEqual(soft.GetMinimum(), 0.0, msg=name)
+            self.assertTrue(soft.IsValid())
+            self.assertAlmostEqual(soft.GetMinimum(), 0.0)
+            self.assertAlmostEqual(soft.GetMaximum(), 1.0)
+
+    def test_rigid_avbd_contact_alpha(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:avbdContactAlpha")
+        self.assertIsNotNone(attr)
+        self.assertEqual(attr.Get(), float("-inf"))
+
+        self.assertTrue(attr.Set(0.5))
+        self.assertAlmostEqual(attr.Get(), 0.5, places=7)
+
+        if USD_HAS_LIMITS:
+            soft = attr.GetSoftLimits()
+            self.assertTrue(soft.IsValid())
+            self.assertAlmostEqual(soft.GetMinimum(), 0.0)
+            self.assertAlmostEqual(soft.GetMaximum(), 1.0)
+
+    def test_rigid_avbd_beta(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:avbdBeta")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 0.0, places=7)
+
+        self.assertTrue(attr.Set(1e5))
+        self.assertAlmostEqual(attr.Get(), 1e5, places=3)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_rigid_avbd_linear_beta(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:avbdLinearBeta")
+        self.assertIsNotNone(attr)
+        self.assertEqual(attr.Get(), float("-inf"))
+
+        self.assertTrue(attr.Set(1e5))
+        self.assertAlmostEqual(attr.Get(), 1e5, places=3)
+
+        if USD_HAS_LIMITS:
+            soft = attr.GetSoftLimits()
+            self.assertTrue(soft.IsValid())
+            self.assertAlmostEqual(soft.GetMinimum(), 0.0)
+            self.assertIsNone(soft.GetMaximum())
+
+    def test_rigid_avbd_angular_beta(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:avbdAngularBeta")
+        self.assertIsNotNone(attr)
+        self.assertEqual(attr.Get(), float("-inf"))
+
+        self.assertTrue(attr.Set(1e5))
+        self.assertAlmostEqual(attr.Get(), 1e5, places=3)
+
+        if USD_HAS_LIMITS:
+            soft = attr.GetSoftLimits()
+            self.assertTrue(soft.IsValid())
+            self.assertAlmostEqual(soft.GetMinimum(), 0.0)
+            self.assertIsNone(soft.GetMaximum())
+
+    def test_rigid_avbd_gamma(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:avbdGamma")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 0.999, places=7)
+
+        self.assertTrue(attr.Set(0.5))
+        self.assertAlmostEqual(attr.Get(), 0.5, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
+
+    def test_rigid_contact_history(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:contactHistory")
+        self.assertIsNotNone(attr)
+        self.assertEqual(attr.Get(), False)
+
+        self.assertTrue(attr.Set(True))
+        self.assertEqual(attr.Get(), True)
+
+    def test_rigid_contact_stick_motion_eps(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:contactStickMotionEps")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 1e-4, places=7)
+
+        self.assertTrue(attr.Set(1e-3))
+        self.assertAlmostEqual(attr.Get(), 1e-3, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_rigid_contact_stick_freeze_translation_eps(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:contactStickFreezeTranslationEps")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 1e-4, places=7)
+
+        self.assertTrue(attr.Set(1e-3))
+        self.assertAlmostEqual(attr.Get(), 1e-3, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_rigid_contact_stick_freeze_angular_eps(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:contactStickFreezeAngularEps")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 1e-4, places=7)
+
+        self.assertTrue(attr.Set(1e-3))
+        self.assertAlmostEqual(attr.Get(), 1e-3, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_rigid_contact_k_start(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:contactKStart")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 100.0, places=4)
+
+        self.assertTrue(attr.Set(200.0))
+        self.assertAlmostEqual(attr.Get(), 200.0, places=4)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_rigid_joint_linear_ke(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:jointLinearKe")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 100000.0, places=1)
+
+        self.assertTrue(attr.Set(50000.0))
+        self.assertAlmostEqual(attr.Get(), 50000.0, places=1)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_rigid_joint_angular_ke(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:jointAngularKe")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 100000.0, places=1)
+
+        self.assertTrue(attr.Set(50000.0))
+        self.assertAlmostEqual(attr.Get(), 50000.0, places=1)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_rigid_joint_linear_k_start(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:jointLinearKStart")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 100.0, places=4)
+
+        self.assertTrue(attr.Set(200.0))
+        self.assertAlmostEqual(attr.Get(), 200.0, places=4)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_rigid_joint_angular_k_start(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:jointAngularKStart")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 10.0, places=5)
+
+        self.assertTrue(attr.Set(20.0))
+        self.assertAlmostEqual(attr.Get(), 20.0, places=5)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_rigid_joint_linear_kd(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:jointLinearKd")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 0.0, places=7)
+
+        self.assertTrue(attr.Set(1.0))
+        self.assertAlmostEqual(attr.Get(), 1.0, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_rigid_joint_angular_kd(self):
+        self.scene.ApplyAPI("NewtonVbdSceneAPI")
+        attr = self.scene.GetAttribute("newton:vbd:rigid:jointAngularKd")
+        self.assertIsNotNone(attr)
+        self.assertAlmostEqual(attr.Get(), 0.0, places=7)
+
+        self.assertTrue(attr.Set(1.0))
+        self.assertAlmostEqual(attr.Get(), 1.0, places=7)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
 
 
 if __name__ == "__main__":
