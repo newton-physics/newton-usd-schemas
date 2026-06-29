@@ -455,14 +455,16 @@ class NewtonJointAPI "NewtonJointAPI" (
         a restoring effort is applied: `effort = limitStiffness * penetration`,
         where penetration is the signed distance beyond the limit boundary.
 
-        Not all solvers use soft limit springs. Position-based solvers may
-        enforce limits as hard positional constraints and ignore this attribute.
+        A value of `inf` is interpreted as a hard limit: solvers that support
+        both soft and hard limits enforce the limit as a rigid positional
+        constraint (no spring). Position-based solvers always enforce hard
+        positional constraints regardless of this attribute.
 
         A value of `-inf` means the engine's own default stiffness is used.
 
         The value is broadcast to all DOFs of the joint.
 
-        Range: [0, inf) when authored (sentinel `-inf` defers to engine default).
+        Range: [0, inf] when authored (sentinel `-inf` defers to engine default).
         Units: effort / degrees (angular DOFs) or effort / distance (linear DOFs)."""
     )
 
@@ -473,8 +475,9 @@ class NewtonJointAPI "NewtonJointAPI" (
         a velocity-dependent dissipative effort is applied:
         `effort = -limitDamping * velocity`.
 
-        Not all solvers use soft limit springs. Position-based solvers may
-        enforce limits as hard positional constraints and ignore this attribute.
+        Ignored when `limitStiffness` is `inf` (hard limit): a hard limit has
+        no spring to damp. Position-based solvers always enforce hard positional
+        constraints regardless of this attribute.
 
         A value of `-inf` means the engine's own default damping is used.
 
