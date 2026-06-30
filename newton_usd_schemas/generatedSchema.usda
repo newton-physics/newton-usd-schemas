@@ -377,7 +377,9 @@ class NewtonJointAPI "NewtonJointAPI" (
 )
 {
     float newton:armature = 0 (
-        doc = """Artificial inertia added to each degree of freedom for solver stability.
+        doc = """Additional diagonal inertia added to each degree of freedom,
+        representing reflected inertia from co-rotating elements (gears,
+        rotors, transmissions) and/or solver regularization.
 
         In reduced-coordinate solvers this augments the joint-space mass
         matrix diagonal. In maximal-coordinate solvers it regularizes the
@@ -416,8 +418,9 @@ class NewtonJointAPI "NewtonJointAPI" (
         doc = """Dry (Coulomb) friction effort opposing joint motion.
 
         A constant resistive effort that opposes the direction of motion,
-        independent of velocity magnitude. The joint must be moving for
-        this effort to apply.
+        independent of velocity magnitude. Solvers that implement this as
+        a constraint may also resist motion at zero velocity (static
+        friction up to the specified magnitude).
 
         The value is broadcast to all DOFs of the joint.
 
@@ -457,8 +460,8 @@ class NewtonJointAPI "NewtonJointAPI" (
 
         A value of `inf` is interpreted as a hard limit: solvers that support
         both soft and hard limits enforce the limit as a rigid positional
-        constraint (no spring). Position-based solvers always enforce hard
-        positional constraints regardless of this attribute.
+        constraint (no spring). Note: some solvers may ignore this attribute
+        and always enforce hard positional constraints.
 
         A value of `-inf` means the engine's own default stiffness is used.
 
@@ -472,12 +475,14 @@ class NewtonJointAPI "NewtonJointAPI" (
         doc = """Damping of the joint limit spring.
 
         When a DOF's position exceeds the range defined by the joint limits,
-        a velocity-dependent dissipative effort is applied:
-        `effort = -limitDamping * velocity`.
+        a velocity-dependent dissipative effort is applied in any direction:
+        `effort = -limitDamping * velocity`. This damps all joint velocity
+        while the limit is exceeded, not only velocity in the penetrating
+        direction.
 
         Ignored when `limitStiffness` is `inf` (hard limit): a hard limit has
-        no spring to damp. Position-based solvers always enforce hard positional
-        constraints regardless of this attribute.
+        no spring to damp. Note: some solvers may ignore this attribute and
+        always enforce hard positional constraints.
 
         A value of `-inf` means the engine's own default damping is used.
 
