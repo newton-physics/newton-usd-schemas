@@ -3,7 +3,7 @@
 ## Features
 
 - Added `NewtonVbdSceneAPI`, which extends `NewtonSceneAPI` with configuration for Newton's VBD (Vertex Block Descent) solver.
-  - Exposes common (`newton:vbd:`), particle (`newton:vbd:particle:`), and rigid/AVBD (`newton:vbd:rigid:`) solver parameters.
+  - Exposes a minimal rigid/AVBD attribute set under `newton:vbd:rigid:` (`contactHistory`, joint stiffness, joint damping).
   - Applying `NewtonVbdSceneAPI` implicitly applies `NewtonSceneAPI` as well.
 
 # 0.3.1

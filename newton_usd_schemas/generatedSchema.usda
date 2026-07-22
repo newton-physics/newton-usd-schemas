@@ -344,301 +344,11 @@ class "NewtonVbdSceneAPI" (
     doc = "Provides Newton's VBD (Vertex Block Descent) solver configuration."
 )
 {
-    uniform float newton:vbd:frictionEpsilon = 0.01 (
-        doc = """Threshold to smooth small relative velocities in friction computation.
-
-        Applied to both particle and rigid body contacts. Larger values smooth friction over a
-        wider range of small relative velocities.
-
-        Range: [0, inf)
-        Units: distance / seconds"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform bool newton:vbd:particle:selfContactEnabled = false (
-        doc = """Whether to enable self-contact detection for particles.
-
-        The other `newton:vbd:particle:` self-contact attributes are only consulted when this is true."""
-    )
-
-    uniform float newton:vbd:particle:selfContactRadius = 0.2 (
-        doc = """Distance at which vertex-triangle and edge-edge pairs begin to interact.
-
-        Only consulted when `newton:vbd:particle:selfContactEnabled` is true.
-
-        Range: [0, inf)
-        Units: distance"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:particle:selfContactMargin = 0.2 (
-        doc = """Distance at which vertex-triangle and edge-edge pairs are considered for contact generation.
-
-        Should be larger than `newton:vbd:particle:selfContactRadius` to avoid missing contacts.
-        Only consulted when `newton:vbd:particle:selfContactEnabled` is true.
-
-        Range: [0, inf)
-        Units: distance"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:particle:conservativeBoundRelaxation = 0.85 (
-        doc = """Relaxation factor for conservative penetration-free projection.
-
-        Lower values improve stability but slow convergence.
-
-        Range: [0, 1]
-        Units: dimensionless"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-                float maximum = 1
-            }
-        }
-    )
-
-    uniform int newton:vbd:particle:collisionDetectionInterval = 0 (
-        doc = """Frequency of particle self-contact detection.
-
-        A value less than 0 runs detection once before initialization. A value of 0 runs it twice:
-        once before and once after initialization. A value n >= 1 runs it before every n iterations.
-        Only consulted when `newton:vbd:particle:selfContactEnabled` is true.
-
-        Range: [-1, inf)
-        Units: dimensionless"""
-    )
-
-    uniform float newton:vbd:particle:edgeParallelEpsilon = 1e-5 (
-        doc = """Threshold to detect near-parallel edges in edge-edge collision handling.
-
-        Only consulted when `newton:vbd:particle:selfContactEnabled` is true.
-
-        Range: [0, inf)
-        Units: dimensionless"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform int newton:vbd:particle:topologicalContactFilterThreshold = 2 (
-        doc = """Maximum topological distance, in rings, under which candidate self-contacts are discarded.
-
-        Higher values tolerate contacts between more closely connected mesh elements. Values larger
-        than 3 significantly increase computation time. Only consulted when
-        `newton:vbd:particle:selfContactEnabled` is true.
-
-        Range: [0, inf)
-        Units: dimensionless"""
-        limits = {
-            dictionary hard = {
-                int minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:particle:restShapeContactExclusionRadius = 0.0 (
-        doc = """Rest separation below which topologically close candidate contacts are ignored.
-
-        Evaluated in the rest configuration. Only consulted when
-        `newton:vbd:particle:selfContactEnabled` is true.
-
-        Range: [0, inf)
-        Units: distance"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:avbdAlpha = 0.95 (
-        doc = """C0 stabilization strength for AVBD constraints (C_stab = C - alpha * C0).
-
-        Used as the default for joints and body-body contacts unless overridden by
-        `newton:vbd:rigid:avbdJointAlpha` or `newton:vbd:rigid:avbdContactAlpha`.
-
-        Range: [0, 1]
-        Units: dimensionless"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-                float maximum = 1
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:avbdJointAlpha = -inf (
-        doc = """Joint-specific override for the AVBD C0 stabilization strength.
-
-        If set to -inf, `newton:vbd:rigid:avbdAlpha` is used instead.
-
-        Range: [0, 1]
-        Units: dimensionless"""
-        limits = {
-            dictionary soft = {
-                float minimum = 0
-                float maximum = 1
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:avbdContactAlpha = -inf (
-        doc = """Body-body contact override for the AVBD C0 stabilization strength.
-
-        If set to -inf, `newton:vbd:rigid:avbdAlpha` is used instead.
-
-        Range: [0, 1]
-        Units: dimensionless"""
-        limits = {
-            dictionary soft = {
-                float minimum = 0
-                float maximum = 1
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:avbdBeta = 0.0 (
-        doc = """Penalty stiffness ramp rate for AVBD constraints.
-
-        Each iteration the penalty stiffness is incremented by this rate times the constraint
-        violation, then clamped to its stiffness ceiling (k = min(k_max, k + beta * |C|)). A value
-        of 0 disables ramping (fixed penalty stiffness). This single value feeds both the linear and
-        angular ramps, which have different units (force / (distance * distance) and
-        torque / (radian * radian)), so it carries no single physical unit. Use
-        `newton:vbd:rigid:avbdLinearBeta` and `newton:vbd:rigid:avbdAngularBeta` for unit-correct
-        tuning.
-
-        Range: [0, inf)
-        Units: mixed (feeds both linear and angular ramps)"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:avbdLinearBeta = -inf (
-        doc = """Linear override for the AVBD penalty ramp rate.
-
-        The linear penalty stiffness is incremented each iteration by this rate times the linear
-        constraint violation. If set to -inf, `newton:vbd:rigid:avbdBeta` is used instead.
-
-        Range: [0, inf)
-        Units: force / (distance * distance)"""
-        limits = {
-            dictionary soft = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:avbdAngularBeta = -inf (
-        doc = """Angular override for the AVBD penalty ramp rate.
-
-        The angular penalty stiffness is incremented each iteration by this rate times the angular
-        constraint violation. If set to -inf, `newton:vbd:rigid:avbdBeta` is used instead.
-
-        Range: [0, inf)
-        Units: torque / (radian * radian)"""
-        limits = {
-            dictionary soft = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:avbdGamma = 0.999 (
-        doc = """Per-step decay factor for penalty stiffness and persisted hard-mode lambda.
-
-        Lower values decay faster, improving stability at the cost of slower convergence.
-
-        Range: [0, 1]
-        Units: dimensionless"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-                float maximum = 1
-            }
-        }
-    )
-
     uniform bool newton:vbd:rigid:contactHistory = false (
         doc = """Whether to persist body-body contact state across steps for warm-starting."""
     )
 
-    uniform float newton:vbd:rigid:contactStickMotionEps = 1e-4 (
-        doc = """Tangential contact residual threshold for marking body-body contacts as sticking.
-
-        A value of 0 disables sticky flags while preserving penalty warm-starting.
-
-        Range: [0, inf)
-        Units: distance"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:contactStickFreezeTranslationEps = 1e-4 (
-        doc = """World-space translation threshold for the deadzone snap on sticking contacts.
-
-        A value of 0 disables translation snapping.
-
-        Range: [0, inf)
-        Units: distance"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:contactStickFreezeAngularEps = 1e-4 (
-        doc = """Angular threshold for the deadzone snap on sticking contacts.
-
-        A value of 0 disables angular snapping.
-
-        Range: [0, inf)
-        Units: radians"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:contactKStart = 100.0 (
-        doc = """Body-body and body-particle contact penalty seed for AVBD ramping.
-
-        Inert unless the linear beta (`newton:vbd:rigid:avbdLinearBeta`, or the
-        `newton:vbd:rigid:avbdBeta` fallback) is greater than zero; otherwise the penalty stiffness
-        is fixed at the contact stiffness.
-
-        Range: [0, inf)
-        Units: force / distance"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:jointLinearKe = 100000.0 (
+    uniform float newton:vbd:rigid:jointLinearStiffness = 100000.0 (
         doc = """Penalty stiffness ceiling for structural linear joint constraints.
 
         Range: [0, inf)
@@ -650,7 +360,7 @@ class "NewtonVbdSceneAPI" (
         }
     )
 
-    uniform float newton:vbd:rigid:jointAngularKe = 100000.0 (
+    uniform float newton:vbd:rigid:jointAngularStiffness = 100000.0 (
         doc = """Penalty stiffness ceiling for structural angular joint constraints.
 
         Range: [0, inf)
@@ -662,14 +372,11 @@ class "NewtonVbdSceneAPI" (
         }
     )
 
-    uniform float newton:vbd:rigid:jointLinearKStart = 100.0 (
-        doc = """Linear joint penalty seed for AVBD ramping.
-
-        Inert unless the linear beta is greater than zero; otherwise the penalty stiffness is fixed
-        at `newton:vbd:rigid:jointLinearKe`.
+    uniform float newton:vbd:rigid:jointLinearDamping = 0.0 (
+        doc = """Absolute damping coefficient for linear joint constraints.
 
         Range: [0, inf)
-        Units: force / distance"""
+        Units: force * time / distance"""
         limits = {
             dictionary hard = {
                 float minimum = 0
@@ -677,42 +384,11 @@ class "NewtonVbdSceneAPI" (
         }
     )
 
-    uniform float newton:vbd:rigid:jointAngularKStart = 10.0 (
-        doc = """Angular joint penalty seed for AVBD ramping.
-
-        Inert unless the angular beta is greater than zero; otherwise the penalty stiffness is fixed
-        at `newton:vbd:rigid:jointAngularKe`.
+    uniform float newton:vbd:rigid:jointAngularDamping = 0.0 (
+        doc = """Absolute damping coefficient for angular joint constraints.
 
         Range: [0, inf)
-        Units: torque / radian"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:jointLinearKd = 0.0 (
-        doc = """Stiffness-proportional Rayleigh damping coefficient for linear joint constraints.
-
-        Scales the linear penalty stiffness to form the damping term, so it has units of time.
-
-        Range: [0, inf)
-        Units: seconds"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    uniform float newton:vbd:rigid:jointAngularKd = 0.0 (
-        doc = """Stiffness-proportional Rayleigh damping coefficient for angular joint constraints.
-
-        Scales the angular penalty stiffness to form the damping term, so it has units of time.
-
-        Range: [0, inf)
-        Units: seconds"""
+        Units: torque * time / radian"""
         limits = {
             dictionary hard = {
                 float minimum = 0
