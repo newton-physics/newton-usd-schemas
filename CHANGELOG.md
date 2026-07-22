@@ -1,3 +1,20 @@
+# 0.5.0
+
+## Features
+
+- Added `NewtonMPMSceneAPI` for implicit MPM solver, grid, transfer, and basis configuration on a `PhysicsScene`
+  - Applying this schema implicitly applies `NewtonSceneAPI`; MPM uses the shared `newton:maxSolverIterations` attribute.
+- Added `NewtonMPMParticleAPI` for marking authored `UsdGeomPoints` as simulated MPM particles
+  - The API is an attribute-free marker: standard `points`, `velocities`, `widths`, and `ids` carry particle geometry and kinematics. Generic `ACTIVE` and runtime-only experimental `PROXY` flags are intentionally not authored here.
+  - Per-particle mass is deliberately not declared in the Newton MPM namespace; density-derived mass is supported while a generic point-mass representation is designed separately.
+  - A single `Points` prim may use physics-purpose, point-element `GeomSubset` material bindings for discrete particle materials.
+  - The core schema stores actual particles and does not include procedural grid or emitter recipes.
+- Added `NewtonMPMMaterialAPI` for MPM constitutive parameters on a bound `Material`
+  - Applying this schema implicitly applies `PhysicsMaterialAPI`, whose standard `physics:density` can participate in particle mass derivation.
+  - Scalar material values broadcast to Newton's internal per-particle arrays after binding resolution; point `GeomSubset` bindings express discrete heterogeneity, while arbitrary per-point overrides remain out of scope pending a generic USD design.
+  - Young's modulus and Poisson's ratio remain Newton-namespaced with explicit Newton MPM semantics while the AOUSD deformables proposal does not cover `UsdGeomPoints`; a future standard mapping will need defined precedence and migration rules.
+- Added an authored `sand.usda` fixture demonstrating the scene, material, particle, and physics-purpose material-binding schemas together.
+
 # 0.4.0
 
 ## Features

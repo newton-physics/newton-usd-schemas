@@ -1,0 +1,50 @@
+#usda 1.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def PhysicsScene "PhysicsScene" (
+        prepend apiSchemas = ["NewtonMPMSceneAPI"]
+    )
+    {
+        float physics:gravityMagnitude = 9.81
+        vector3f physics:gravityDirection = (0, 0, -1)
+        int newton:maxSolverIterations = 100
+        token[] newton:mpm:rheologySolvers = ["cg", "gs"]
+        float newton:mpm:voxelSize = 0.05
+    }
+
+    def Material "SandMaterial" (
+        prepend apiSchemas = ["NewtonMPMMaterialAPI"]
+    )
+    {
+        float physics:density = 1600
+        float newton:mpm:friction = 0.68
+        float newton:mpm:poissonRatio = 0.3
+        float newton:mpm:youngModulus = 1e7
+        float newton:mpm:yieldPressure = 1e5
+    }
+
+    def Points "Sand" (
+        prepend apiSchemas = ["MaterialBindingAPI", "NewtonMPMParticleAPI"]
+    )
+    {
+        int64[] ids = [0, 1, 2, 3]
+        point3f[] points = [
+            (-0.025, -0.025, 0.5),
+            (0.025, -0.025, 0.5),
+            (-0.025, 0.025, 0.5),
+            (0.025, 0.025, 0.5)
+        ]
+        vector3f[] velocities = [(0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0)]
+        float[] widths = [0.05, 0.05, 0.05, 0.05]
+
+        rel material:binding:physics = </World/SandMaterial>
+    }
+}

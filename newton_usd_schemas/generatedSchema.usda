@@ -339,6 +339,211 @@ class "NewtonKaminoSceneAPI" (
     )
 }
 
+class "NewtonMPMSceneAPI" (
+    apiSchemas = ["NewtonSceneAPI"]
+    doc = """Provides configuration for Newton's implicit Material Point Method (MPM) solver.
+
+    Applying this schema also applies `NewtonSceneAPI`. The inherited
+    `newton:maxSolverIterations` attribute controls the maximum rheology solver
+    iteration count; its `-1` fallback asks the engine to use its solver default."""
+)
+{
+    uniform float newton:mpm:tolerance = 1e-4 (
+        doc = """Convergence tolerance for the rheology solver.
+
+        Range: (0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform token[] newton:mpm:rheologySolvers = ["auto"] (
+        allowedTokens = ["auto", "gs", "gauss-seidel", "gs-soa", "gauss-seidel-soa", "gs-batched", "gauss-seidel-batched", "jacobi", "cg", "cr", "gmres"]
+        doc = """Ordered rheology solver sequence.
+
+        A sequence with more than one entry warm-starts solvers from left to
+        right. The "auto" mode selects an implementation based on the velocity
+        basis. At least one solver must be provided."""
+    )
+
+    uniform token newton:mpm:warmstartMode = "auto" (
+        allowedTokens = ["none", "auto", "particles", "grid", "smoothed"]
+        doc = """State used to warm-start the rheology solve.
+
+        The "auto" mode lets the engine select a mode compatible with the grid
+        topology and strain basis."""
+    )
+
+    uniform token newton:mpm:colliderVelocityMode = "forward" (
+        allowedTokens = ["forward", "backward"]
+        doc = """Method used to compute collider velocity.
+
+        "forward" uses the current body velocity. "backward" derives velocity
+        from the previous time-step position."""
+    )
+
+    uniform float newton:mpm:voxelSize = 0.1 (
+        doc = """MPM background-grid voxel size.
+
+        Range: (0, inf)
+        Units: distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform token newton:mpm:gridType = "sparse" (
+        allowedTokens = ["sparse", "dense", "fixed"]
+        doc = """Background-grid allocation strategy.
+
+        "sparse" rebuilds a sparse grid as particles move, "dense" allocates a
+        dense grid, and "fixed" keeps a fixed sparse topology."""
+    )
+
+    uniform int newton:mpm:gridPadding = 0 (
+        doc = """Number of empty cells allocated around the particle bounds.
+
+        Range: [0, inf)
+        Units: cells"""
+        limits = {
+            dictionary hard = {
+                int minimum = 0
+            }
+        }
+    )
+
+    uniform int newton:mpm:maxActiveCellCount = -1 (
+        doc = """Maximum number of active grid cells.
+
+        A positive value reserves persistent sparse-grid capacity and bounds
+        active subsets of dense grids. A value of -1 asks the engine to use
+        unbounded or dynamically allocated capacity.
+
+        Range: {-1} or [1, inf)
+        Units: cells"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
+    )
+
+    uniform int newton:mpm:maxLeafNodeCount = -1 (
+        doc = """Maximum NanoVDB leaf-node count for a rebuildable sparse grid.
+
+        A value of -1 asks the engine to derive the capacity from
+        `newton:mpm:maxActiveCellCount`.
+
+        Range: {-1} or [1, inf)
+        Units: nodes"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
+    )
+
+    uniform int newton:mpm:maxLowerNodeCount = -1 (
+        doc = """Maximum NanoVDB lower internal-node count.
+
+        A value of -1 asks the engine to estimate capacity from the initial
+        topology and resolved leaf-node capacity.
+
+        Range: {-1} or [1, inf)
+        Units: nodes"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
+    )
+
+    uniform int newton:mpm:maxUpperNodeCount = -1 (
+        doc = """Maximum NanoVDB upper internal-node count.
+
+        A value of -1 asks the engine to estimate capacity from the initial
+        topology and resolved lower-node capacity.
+
+        Range: {-1} or [1, inf)
+        Units: nodes"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
+    )
+
+    uniform token newton:mpm:transferScheme = "apic" (
+        allowedTokens = ["apic", "pic"]
+        doc = "Particle-grid transfer scheme."
+    )
+
+    uniform token newton:mpm:integrationScheme = "pic" (
+        allowedTokens = ["pic", "gimp"]
+        doc = "Integration scheme controlling shape-function support."
+    )
+
+    uniform float newton:mpm:criticalFraction = 0 (
+        doc = """Particle volume fraction below which the yield surface collapses.
+
+        A value of zero disables the critical-fraction response.
+
+        Range: [0, 1]
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
+    )
+
+    uniform float newton:mpm:airDrag = 1 (
+        doc = """Numerical drag coefficient for background air.
+
+        Range: [0, inf)
+        Units: mass / time"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform bool newton:mpm:colliderNormalFromSdfGradient = false (
+        doc = """Whether collider normals are computed from the signed-distance-field gradient.
+
+        When false, the solver uses the closest-point normal."""
+    )
+
+    uniform token newton:mpm:colliderBasis = "S2" (
+        doc = """Basis function used to sample colliders.
+
+        Common values are "Q1", "S2", "pic", "pic8", and "pic27". Engines
+        may accept any "picN" token where N is a positive integer, so this
+        attribute intentionally has no closed `allowedTokens` list."""
+    )
+
+    uniform token newton:mpm:strainBasis = "P0" (
+        doc = """Basis function used to represent strain.
+
+        Common values are "P0", "P1d", "Q1", "Q1d", "pic", "pic8", and
+        "pic27". Engines may accept any "picN" token where N is a positive
+        integer, so this attribute intentionally has no closed `allowedTokens`
+        list."""
+    )
+
+    uniform token newton:mpm:velocityBasis = "Q1" (
+        allowedTokens = ["Q1", "B2", "B3"]
+        doc = "Basis function used to represent grid velocity."
+    )
+}
+
 class NewtonArticulationRootAPI "NewtonArticulationRootAPI" (
     apiSchemas = ["PhysicsArticulationRootAPI"]
     doc = """NewtonArticulationRootAPI extends the `PhysicsArticulationRootAPI` with additional attributes for Newton.
@@ -765,6 +970,36 @@ class NewtonSiteAPI "NewtonSiteAPI" (
 {
 }
 
+class NewtonMPMParticleAPI "NewtonMPMParticleAPI" (
+    doc = """`NewtonMPMParticleAPI` applies on top of a `Points` prim, marking its
+    authored points as particles simulated by an MPM solver.
+
+    Particle positions, velocities, widths, and stable identifiers use the
+    standard `UsdGeomPoints` `points`, `velocities`, `widths`, and `ids`
+    attributes. Width is the particle diameter and maps to a Newton collision
+    radius of `width / 2`.
+
+    This is intentionally a marker API and declares no particle attributes.
+    Newton's `ACTIVE` particle flag is solver-generic, so importers treat
+    authored points as active by default. The experimental `PROXY` flag is
+    runtime solver-coupling state and is not authored by this schema.
+
+    Per-particle mass is likewise not MPM-specific and is deliberately not
+    declared in the Newton MPM namespace. Importers can derive mass from
+    particle size and a bound material's `physics:density`; an authored
+    per-point mass representation should be standardized independently.
+
+    Bind a material carrying `NewtonMPMMaterialAPI` using the standard
+    `material:binding:physics` relationship. A single `Points` prim can assign
+    discrete materials through direct-child `GeomSubset` prims whose
+    `elementType` is "point" and whose `familyName` is "materialBind". Bind each
+    subset for the "physics" material purpose and use a non-overlapping family
+    (or a partition); points not assigned to a subset inherit the parent
+    binding."""
+)
+{
+}
+
 class NewtonMaterialAPI "NewtonMaterialAPI" (
     apiSchemas = ["PhysicsMaterialAPI"]
     doc = """`NewtonMaterialAPI` applies on top of a `Material`, providing extra physical material attributes for Newton.
@@ -861,6 +1096,185 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
         limits = {
             dictionary soft = {
                 float minimum = 0
+            }
+        }
+    )
+}
+
+class NewtonMPMMaterialAPI "NewtonMPMMaterialAPI" (
+    apiSchemas = ["PhysicsMaterialAPI"]
+    doc = """`NewtonMPMMaterialAPI` applies on top of a `Material`, providing
+    constitutive parameters for Newton's implicit MPM solver.
+
+    Applying this schema also applies `PhysicsMaterialAPI`. Its standard
+    `physics:density` attribute can participate in particle mass derivation.
+    MPM friction is an internal, pressure-dependent material response and is
+    distinct from the standard surface-contact friction attributes.
+
+    Each attribute is scalar on the material. After resolving the physics
+    material binding, an importer broadcasts the selected values to Newton's
+    internal per-particle arrays. Use point-element material `GeomSubset`
+    bindings for discrete material variation within one `Points` prim.
+    Arbitrary continuous per-point overrides are intentionally out of scope
+    until a generic USD representation and precedence rules are agreed.
+
+    Several concepts here, notably Young's modulus and Poisson's ratio, are
+    useful beyond MPM. The AOUSD deformables proposal uses
+    `physics:youngsModulus` and `physics:poissonsRatio` for volume-deformable
+    materials, but its simulation geometries do not currently include
+    `UsdGeomPoints`. These attributes remain Newton-namespaced because this API
+    defines Newton's exact implicit-MPM constitutive semantics; importers should
+    define explicit precedence and migration rules if a standard representation
+    becomes applicable to Points."""
+)
+{
+    float newton:mpm:youngModulus = 1e15 (
+        doc = """Young's modulus.
+
+        Range: (0, inf)
+        Units: pressure"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:mpm:poissonRatio = 0.3 (
+        doc = """Poisson's ratio for the elastic response.
+
+        Range: (-1, 0.5)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = -1
+                float maximum = 0.5
+            }
+        }
+    )
+
+    float newton:mpm:damping = 0 (
+        doc = """Elastic damping relaxation time.
+
+        Range: [0, inf)
+        Units: time"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:mpm:friction = 0.5 (
+        doc = """Pressure-dependent internal friction coefficient.
+
+        This controls the MPM yield response rather than surface contact.
+
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:mpm:yieldPressure = 1e15 (
+        doc = """Compressive pressure at which the material yields.
+
+        Range: [0, inf)
+        Units: pressure"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:mpm:tensileYieldRatio = 0 (
+        doc = """Ratio of tensile to compressive yield pressure.
+
+        Range: [0, 1]
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
+    )
+
+    float newton:mpm:yieldStress = 0 (
+        doc = """Deviatoric yield stress.
+
+        Range: [0, inf)
+        Units: pressure"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:mpm:viscosity = 0 (
+        doc = """Plastic viscosity.
+
+        Range: [0, inf)
+        Units: pressure * time"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:mpm:hardening = 0 (
+        doc = """Isotropic hardening coefficient applied to the yield surface.
+
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:mpm:hardeningRate = 1 (
+        doc = """Plastic-volume update rate under compression.
+
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:mpm:softeningRate = 1 (
+        doc = """Plastic-volume update rate under expansion.
+
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:mpm:dilatancy = 0 (
+        doc = """Dilatancy coefficient coupling shear flow to volume change.
+
+        Zero selects non-dilatant flow and one selects associated flow.
+
+        Range: [0, 1]
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
             }
         }
     )
