@@ -30,14 +30,14 @@ class TestNewtonMPMMaterialAPI(unittest.TestCase):
         prim: Usd.Prim = self.stage.DefinePrim("/NotMaterial", "Xform")
         self.assertFalse(prim.CanApplyAPI("NewtonMPMMaterialAPI"))
 
-    def test_fallbacks_match_solver_material_attributes(self):
+    def test_fallbacks_and_engine_default_sentinels(self):
         self.material.ApplyAPI("NewtonMPMMaterialAPI")
         expected = {
-            "newton:mpm:youngModulus": 1.0e15,
-            "newton:mpm:poissonRatio": 0.3,
-            "newton:mpm:damping": 0.0,
-            "newton:mpm:friction": 0.5,
-            "newton:mpm:yieldPressure": 1.0e15,
+            "newton:mpm:youngsModulus": float("-inf"),
+            "newton:mpm:poissonsRatio": 0.3,
+            "newton:mpm:elasticDampingTime": 0.0,
+            "newton:mpm:internalFriction": 0.5,
+            "newton:mpm:yieldPressure": float("-inf"),
             "newton:mpm:tensileYieldRatio": 0.0,
             "newton:mpm:yieldStress": 0.0,
             "newton:mpm:viscosity": 0.0,
@@ -51,7 +51,10 @@ class TestNewtonMPMMaterialAPI(unittest.TestCase):
                 attr = self.material.GetAttribute(name)
                 self.assertTrue(attr)
                 self.assertFalse(attr.HasAuthoredValue())
-                self.assertTrue(math.isclose(attr.Get(), value, rel_tol=1.0e-6, abs_tol=1.0e-8))
+                if math.isinf(value):
+                    self.assertEqual(attr.Get(), value)
+                else:
+                    self.assertTrue(math.isclose(attr.Get(), value, rel_tol=1.0e-6, abs_tol=1.0e-8))
 
         density = self.material.GetAttribute("physics:density")
         self.assertFalse(density.HasAuthoredValue())

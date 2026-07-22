@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 (
     defaultPrim = "World"
+    kilogramsPerUnit = 1
     metersPerUnit = 1
     upAxis = "Z"
 )
@@ -25,10 +26,22 @@ def Xform "World"
     )
     {
         float physics:density = 1600
-        float newton:mpm:friction = 0.68
-        float newton:mpm:poissonRatio = 0.3
-        float newton:mpm:youngModulus = 1e7
+        float newton:mpm:internalFriction = 0.68
+        float newton:mpm:poissonsRatio = 0.3
+        float newton:mpm:youngsModulus = 1e7
         float newton:mpm:yieldPressure = 1e5
+    }
+
+    def Material "DenseSandMaterial" (
+        prepend apiSchemas = ["NewtonMPMMaterialAPI"]
+    )
+    {
+        float physics:density = 1900
+        float newton:mpm:elasticDampingTime = 0.02
+        float newton:mpm:internalFriction = 0.8
+        float newton:mpm:poissonsRatio = 0.25
+        float newton:mpm:youngsModulus = 2e7
+        float newton:mpm:yieldPressure = 2e5
     }
 
     def Points "Sand" (
@@ -44,7 +57,18 @@ def Xform "World"
         ]
         vector3f[] velocities = [(0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0)]
         float[] widths = [0.05, 0.05, 0.05, 0.05]
+        uniform token subsetFamily:materialBind:familyType = "nonOverlapping"
 
         rel material:binding:physics = </World/SandMaterial>
+
+        def GeomSubset "DenseSand" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "materialBind"
+            int[] indices = [2, 3]
+            rel material:binding:physics = </World/DenseSandMaterial>
+        }
     }
 }

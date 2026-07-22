@@ -385,13 +385,16 @@ class "NewtonMPMSceneAPI" (
         from the previous time-step position."""
     )
 
-    uniform float newton:mpm:voxelSize = 0.1 (
+    uniform float newton:mpm:voxelSize = -inf (
         doc = """MPM background-grid voxel size.
 
-        Range: (0, inf)
+        A value of `-inf` asks the engine to use its own default. Any authored
+        numeric value is interpreted in the stage's distance units.
+
+        Range: {-inf} or (0, inf)
         Units: distance"""
         limits = {
-            dictionary hard = {
+            dictionary soft = {
                 float minimum = 0
             }
         }
@@ -503,13 +506,16 @@ class "NewtonMPMSceneAPI" (
         }
     )
 
-    uniform float newton:mpm:airDrag = 1 (
+    uniform float newton:mpm:airDrag = -inf (
         doc = """Numerical drag coefficient for background air.
 
-        Range: [0, inf)
+        A value of `-inf` asks the engine to use its own default. Any authored
+        numeric value is interpreted in the stage's derived mass/time units.
+
+        Range: {-inf} or [0, inf)
         Units: mass / time"""
         limits = {
-            dictionary hard = {
+            dictionary soft = {
                 float minimum = 0
             }
         }
@@ -971,13 +977,16 @@ class NewtonSiteAPI "NewtonSiteAPI" (
 }
 
 class NewtonMPMParticleAPI "NewtonMPMParticleAPI" (
-    doc = """`NewtonMPMParticleAPI` applies on top of a `Points` prim, marking its
-    authored points as particles simulated by an MPM solver.
+    doc = """`NewtonMPMParticleAPI` is a set-level simulation-geometry marker.
+    It applies to a `Points` prim as a whole and marks all authored point
+    elements on that prim as particles simulated by an MPM solver; it does not
+    express per-point enablement.
 
     Particle positions, velocities, widths, and stable identifiers use the
     standard `UsdGeomPoints` `points`, `velocities`, `widths`, and `ids`
-    attributes. Width is the particle diameter and maps to a Newton collision
-    radius of `width / 2`.
+    attributes. Newton's v1 importer interprets width as a particle diameter
+    and maps it to a collision radius of `width / 2`. This is a Newton import
+    convention, not a generic USD rule for deriving particle mass or volume.
 
     This is intentionally a marker API and declares no particle attributes.
     Newton's `ACTIVE` particle flag is solver-generic, so importers treat
@@ -986,16 +995,26 @@ class NewtonMPMParticleAPI "NewtonMPMParticleAPI" (
 
     Per-particle mass is likewise not MPM-specific and is deliberately not
     declared in the Newton MPM namespace. Importers can derive mass from
-    particle size and a bound material's `physics:density`; an authored
-    per-point mass representation should be standardized independently.
+    particle size and a bound material's `physics:density` according to an
+    engine-defined volume convention; an authored per-point mass
+    representation should be standardized independently.
 
-    Bind a material carrying `NewtonMPMMaterialAPI` using the standard
-    `material:binding:physics` relationship. A single `Points` prim can assign
-    discrete materials through direct-child `GeomSubset` prims whose
-    `elementType` is "point" and whose `familyName` is "materialBind". Bind each
+    Bind a physics material using the standard `material:binding:physics`
+    relationship. Apply `NewtonMPMMaterialAPI` when Newton-specific MPM
+    constitutive parameters are needed; a binding carrying only compatible
+    standard physics or deformable-material APIs can still supply standard
+    properties such as density, Young's modulus, and Poisson's ratio. A single
+    `Points` prim can assign discrete materials through direct-child
+    `GeomSubset` prims whose `elementType` is "point" and whose `familyName` is
+    "materialBind". Bind each
     subset for the "physics" material purpose and use a non-overlapping family
     (or a partition); points not assigned to a subset inherit the parent
-    binding."""
+    binding.
+
+    The initial v1 contract resolves one active `NewtonMPMSceneAPI`
+    configuration for all marked `Points` prims in an imported model. Explicit
+    per-set scene relationships and an MPM body/object grouping API such as a
+    future `NewtonMPMBodyAPI` are deferred."""
 )
 {
 }
@@ -1108,7 +1127,7 @@ class NewtonMPMMaterialAPI "NewtonMPMMaterialAPI" (
 
     Applying this schema also applies `PhysicsMaterialAPI`. Its standard
     `physics:density` attribute can participate in particle mass derivation.
-    MPM friction is an internal, pressure-dependent material response and is
+    MPM internal friction is a pressure-dependent material response and is
     distinct from the standard surface-contact friction attributes.
 
     Each attribute is scalar on the material. After resolving the physics
@@ -1116,31 +1135,44 @@ class NewtonMPMMaterialAPI "NewtonMPMMaterialAPI" (
     internal per-particle arrays. Use point-element material `GeomSubset`
     bindings for discrete material variation within one `Points` prim.
     Arbitrary continuous per-point overrides are intentionally out of scope
-    until a generic USD representation and precedence rules are agreed.
+    for v1. Kaolin's point-sampled physics schemas demonstrate the related need
+    for continuously varying Young's modulus, Poisson's ratio, and density, but
+    their independent cubature samples are not material bindings or necessarily
+    the MPM particle points. A generic point-field representation will be
+    coordinated with Kaolin and AOUSD before Newton adopts it. Such a design
+    must define cardinality, units, and time-sampling semantics; its intended
+    resolution order is pointwise override, subset-bound material,
+    parent-bound material, then schema or engine default.
 
     Several concepts here, notably Young's modulus and Poisson's ratio, are
     useful beyond MPM. The AOUSD deformables proposal uses
     `physics:youngsModulus` and `physics:poissonsRatio` for volume-deformable
     materials, but its simulation geometries do not currently include
     `UsdGeomPoints`. These attributes remain Newton-namespaced because this API
-    defines Newton's exact implicit-MPM constitutive semantics; importers should
-    define explicit precedence and migration rules if a standard representation
-    becomes applicable to Points."""
+    defines Newton's exact implicit-MPM constitutive semantics. When the
+    canonical standard attributes are authored under a recognized standard
+    deformable-material API, Newton importers give them precedence over the
+    corresponding Newton attributes and warn when both authored values
+    conflict. The Newton attributes remain the compatibility path until the
+    standard representation applies directly to Points."""
 )
 {
-    float newton:mpm:youngModulus = 1e15 (
+    float newton:mpm:youngsModulus = -inf (
         doc = """Young's modulus.
 
-        Range: (0, inf)
+        A value of `-inf` asks the engine to use its own default. Any authored
+        numeric value is interpreted in the stage's derived pressure units.
+
+        Range: {-inf} or (0, inf)
         Units: pressure"""
         limits = {
-            dictionary hard = {
+            dictionary soft = {
                 float minimum = 0
             }
         }
     )
 
-    float newton:mpm:poissonRatio = 0.3 (
+    float newton:mpm:poissonsRatio = 0.3 (
         doc = """Poisson's ratio for the elastic response.
 
         Range: (-1, 0.5)
@@ -1153,7 +1185,7 @@ class NewtonMPMMaterialAPI "NewtonMPMMaterialAPI" (
         }
     )
 
-    float newton:mpm:damping = 0 (
+    float newton:mpm:elasticDampingTime = 0 (
         doc = """Elastic damping relaxation time.
 
         Range: [0, inf)
@@ -1165,7 +1197,7 @@ class NewtonMPMMaterialAPI "NewtonMPMMaterialAPI" (
         }
     )
 
-    float newton:mpm:friction = 0.5 (
+    float newton:mpm:internalFriction = 0.5 (
         doc = """Pressure-dependent internal friction coefficient.
 
         This controls the MPM yield response rather than surface contact.
@@ -1179,13 +1211,16 @@ class NewtonMPMMaterialAPI "NewtonMPMMaterialAPI" (
         }
     )
 
-    float newton:mpm:yieldPressure = 1e15 (
+    float newton:mpm:yieldPressure = -inf (
         doc = """Compressive pressure at which the material yields.
 
-        Range: [0, inf)
+        A value of `-inf` asks the engine to use its own default. Any authored
+        numeric value is interpreted in the stage's derived pressure units.
+
+        Range: {-inf} or [0, inf)
         Units: pressure"""
         limits = {
-            dictionary hard = {
+            dictionary soft = {
                 float minimum = 0
             }
         }

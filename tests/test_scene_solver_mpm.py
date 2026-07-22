@@ -29,7 +29,7 @@ class TestNewtonMPMSceneAPI(unittest.TestCase):
         prim: Usd.Prim = self.stage.DefinePrim("/NotScene", "Xform")
         self.assertFalse(prim.CanApplyAPI("NewtonMPMSceneAPI"))
 
-    def test_fallbacks_match_solver_config(self):
+    def test_fallbacks_and_engine_default_sentinels(self):
         self.scene.ApplyAPI("NewtonMPMSceneAPI")
 
         expected = {
@@ -37,7 +37,7 @@ class TestNewtonMPMSceneAPI(unittest.TestCase):
             "newton:mpm:rheologySolvers": Vt.TokenArray(["auto"]),
             "newton:mpm:warmstartMode": "auto",
             "newton:mpm:colliderVelocityMode": "forward",
-            "newton:mpm:voxelSize": 0.1,
+            "newton:mpm:voxelSize": float("-inf"),
             "newton:mpm:gridType": "sparse",
             "newton:mpm:gridPadding": 0,
             "newton:mpm:maxActiveCellCount": -1,
@@ -47,7 +47,7 @@ class TestNewtonMPMSceneAPI(unittest.TestCase):
             "newton:mpm:transferScheme": "apic",
             "newton:mpm:integrationScheme": "pic",
             "newton:mpm:criticalFraction": 0.0,
-            "newton:mpm:airDrag": 1.0,
+            "newton:mpm:airDrag": float("-inf"),
             "newton:mpm:colliderNormalFromSdfGradient": False,
             "newton:mpm:colliderBasis": "S2",
             "newton:mpm:strainBasis": "P0",
@@ -58,7 +58,9 @@ class TestNewtonMPMSceneAPI(unittest.TestCase):
                 attr = self.scene.GetAttribute(name)
                 self.assertTrue(attr)
                 self.assertFalse(attr.HasAuthoredValue())
-                if isinstance(value, float):
+                if isinstance(value, float) and math.isinf(value):
+                    self.assertEqual(attr.Get(), value)
+                elif isinstance(value, float):
                     self.assertTrue(math.isclose(attr.Get(), value, rel_tol=1.0e-6, abs_tol=1.0e-8))
                 else:
                     self.assertEqual(attr.Get(), value)
