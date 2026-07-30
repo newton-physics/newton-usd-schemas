@@ -1,6 +1,4 @@
 #usda 1.0
-# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
-# SPDX-License-Identifier: Apache-2.0
 (
     defaultPrim = "World"
     kilogramsPerUnit = 1
@@ -11,58 +9,49 @@
 def Xform "World"
 {
     def PhysicsScene "PhysicsScene" (
-        prepend apiSchemas = ["NewtonMPMSceneAPI"]
+        apiSchemas = ["NewtonMPMSceneAPI"]
     )
     {
-        float physics:gravityMagnitude = 9.81
+        uniform int newton:maxSolverIterations = 100
+        uniform token[] newton:mpm:rheologySolvers = ["cg", "gauss-seidel"]
+        uniform float newton:mpm:voxelSize = 0.05
         vector3f physics:gravityDirection = (0, 0, -1)
-        int newton:maxSolverIterations = 100
-        token[] newton:mpm:rheologySolvers = ["cg", "gs"]
-        float newton:mpm:voxelSize = 0.05
+        float physics:gravityMagnitude = 9.81
     }
 
     def Material "SandMaterial" (
-        prepend apiSchemas = ["NewtonMPMMaterialAPI"]
+        apiSchemas = ["NewtonMPMMaterialAPI"]
     )
     {
-        float physics:density = 1600
         float newton:mpm:internalFriction = 0.68
-        float newton:mpm:poissonsRatio = 0.3
-        float newton:mpm:youngsModulus = 1e7
-        float newton:mpm:yieldPressure = 1e5
+        float newton:mpm:yieldPressure = 100000
+        float physics:density = 1600
     }
 
     def Material "DenseSandMaterial" (
-        prepend apiSchemas = ["NewtonMPMMaterialAPI"]
+        apiSchemas = ["NewtonMPMMaterialAPI"]
     )
     {
-        float physics:density = 1900
         float newton:mpm:elasticDampingTime = 0.02
         float newton:mpm:internalFriction = 0.8
-        float newton:mpm:poissonsRatio = 0.25
-        float newton:mpm:youngsModulus = 2e7
-        float newton:mpm:yieldPressure = 2e5
+        float newton:mpm:yieldPressure = 200000
+        float physics:density = 1900
     }
 
     def Points "Sand" (
-        prepend apiSchemas = ["MaterialBindingAPI", "NewtonMPMParticleAPI"]
+        apiSchemas = ["MaterialBindingAPI", "NewtonParticleAPI"]
     )
     {
         int64[] ids = [0, 1, 2, 3]
-        point3f[] points = [
-            (-0.025, -0.025, 0.5),
-            (0.025, -0.025, 0.5),
-            (-0.025, 0.025, 0.5),
-            (0.025, 0.025, 0.5)
-        ]
+        rel material:binding:physics = </World/SandMaterial>
+        rel physics:simulationOwner = </World/PhysicsScene>
+        point3f[] points = [(-0.025, -0.025, 0.5), (0.025, -0.025, 0.5), (-0.025, 0.025, 0.5), (0.025, 0.025, 0.5)]
+        uniform token subsetFamily:materialBind:familyType = "nonOverlapping"
         vector3f[] velocities = [(0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0)]
         float[] widths = [0.05, 0.05, 0.05, 0.05]
-        uniform token subsetFamily:materialBind:familyType = "nonOverlapping"
-
-        rel material:binding:physics = </World/SandMaterial>
 
         def GeomSubset "DenseSand" (
-            prepend apiSchemas = ["MaterialBindingAPI"]
+            apiSchemas = ["MaterialBindingAPI"]
         )
         {
             uniform token elementType = "point"

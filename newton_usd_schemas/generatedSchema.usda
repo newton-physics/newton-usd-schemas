@@ -361,28 +361,12 @@ class "NewtonMPMSceneAPI" (
     )
 
     uniform token[] newton:mpm:rheologySolvers = ["auto"] (
-        allowedTokens = ["auto", "gs", "gauss-seidel", "gs-soa", "gauss-seidel-soa", "gs-batched", "gauss-seidel-batched", "jacobi", "cg", "cr", "gmres"]
+        allowedTokens = ["auto", "gauss-seidel", "gauss-seidel-soa", "gauss-seidel-batched", "jacobi", "cg", "cr", "gmres"]
         doc = """Ordered rheology solver sequence.
 
         A sequence with more than one entry warm-starts solvers from left to
         right. The "auto" mode selects an implementation based on the velocity
         basis. At least one solver must be provided."""
-    )
-
-    uniform token newton:mpm:warmstartMode = "auto" (
-        allowedTokens = ["none", "auto", "particles", "grid", "smoothed"]
-        doc = """State used to warm-start the rheology solve.
-
-        The "auto" mode lets the engine select a mode compatible with the grid
-        topology and strain basis."""
-    )
-
-    uniform token newton:mpm:colliderVelocityMode = "forward" (
-        allowedTokens = ["forward", "backward"]
-        doc = """Method used to compute collider velocity.
-
-        "forward" uses the current body velocity. "backward" derives velocity
-        from the previous time-step position."""
     )
 
     uniform float newton:mpm:voxelSize = -inf (
@@ -391,7 +375,7 @@ class "NewtonMPMSceneAPI" (
         A value of `-inf` asks the engine to use its own default. Any authored
         numeric value is interpreted in the stage's distance units.
 
-        Range: {-inf} or (0, inf)
+        Range: (0, inf)
         Units: distance"""
         limits = {
             dictionary soft = {
@@ -427,53 +411,8 @@ class "NewtonMPMSceneAPI" (
         active subsets of dense grids. A value of -1 asks the engine to use
         unbounded or dynamically allocated capacity.
 
-        Range: {-1} or [1, inf)
+        Range: [1, inf)
         Units: cells"""
-        limits = {
-            dictionary hard = {
-                int minimum = -1
-            }
-        }
-    )
-
-    uniform int newton:mpm:maxLeafNodeCount = -1 (
-        doc = """Maximum NanoVDB leaf-node count for a rebuildable sparse grid.
-
-        A value of -1 asks the engine to derive the capacity from
-        `newton:mpm:maxActiveCellCount`.
-
-        Range: {-1} or [1, inf)
-        Units: nodes"""
-        limits = {
-            dictionary hard = {
-                int minimum = -1
-            }
-        }
-    )
-
-    uniform int newton:mpm:maxLowerNodeCount = -1 (
-        doc = """Maximum NanoVDB lower internal-node count.
-
-        A value of -1 asks the engine to estimate capacity from the initial
-        topology and resolved leaf-node capacity.
-
-        Range: {-1} or [1, inf)
-        Units: nodes"""
-        limits = {
-            dictionary hard = {
-                int minimum = -1
-            }
-        }
-    )
-
-    uniform int newton:mpm:maxUpperNodeCount = -1 (
-        doc = """Maximum NanoVDB upper internal-node count.
-
-        A value of -1 asks the engine to estimate capacity from the initial
-        topology and resolved lower-node capacity.
-
-        Range: {-1} or [1, inf)
-        Units: nodes"""
         limits = {
             dictionary hard = {
                 int minimum = -1
@@ -512,7 +451,7 @@ class "NewtonMPMSceneAPI" (
         A value of `-inf` asks the engine to use its own default. Any authored
         numeric value is interpreted in the stage's derived mass/time units.
 
-        Range: {-inf} or [0, inf)
+        Range: [0, inf)
         Units: mass / time"""
         limits = {
             dictionary soft = {
@@ -521,27 +460,46 @@ class "NewtonMPMSceneAPI" (
         }
     )
 
-    uniform bool newton:mpm:colliderNormalFromSdfGradient = false (
-        doc = """Whether collider normals are computed from the signed-distance-field gradient.
-
-        When false, the solver uses the closest-point normal."""
+    uniform token newton:mpm:colliderBasisType = "serendipity" (
+        allowedTokens = ["linear", "trilinear", "bspline", "serendipity", "particle"]
+        doc = "Basis function type used to sample colliders."
     )
 
-    uniform token newton:mpm:colliderBasis = "S2" (
-        doc = """Basis function used to sample colliders.
+    uniform int newton:mpm:colliderBasisOrder = 2 (
+        doc = """Order of the collider sampling basis.
 
-        Common values are "Q1", "S2", "pic", "pic8", and "pic27". Engines
-        may accept any "picN" token where N is a positive integer, so this
-        attribute intentionally has no closed `allowedTokens` list."""
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = 0
+            }
+        }
     )
 
-    uniform token newton:mpm:strainBasis = "P0" (
-        doc = """Basis function used to represent strain.
+    uniform bool newton:mpm:colliderDiscontinuousBasis = false (
+        doc = "Whether the collider sampling basis is discontinuous."
+    )
 
-        Common values are "P0", "P1d", "Q1", "Q1d", "pic", "pic8", and
-        "pic27". Engines may accept any "picN" token where N is a positive
-        integer, so this attribute intentionally has no closed `allowedTokens`
-        list."""
+    uniform token newton:mpm:strainBasisType = "linear" (
+        allowedTokens = ["linear", "trilinear", "bspline", "serendipity", "particle"]
+        doc = "Basis function type used to represent strain."
+    )
+
+    uniform int newton:mpm:strainBasisOrder = 0 (
+        doc = """Order of the strain basis.
+
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = 0
+            }
+        }
+    )
+
+    uniform bool newton:mpm:strainDiscontinuousBasis = false (
+        doc = "Whether the strain basis is discontinuous."
     )
 
     uniform token newton:mpm:velocityBasis = "Q1" (
@@ -976,47 +934,22 @@ class NewtonSiteAPI "NewtonSiteAPI" (
 {
 }
 
-class NewtonMPMParticleAPI "NewtonMPMParticleAPI" (
-    doc = """`NewtonMPMParticleAPI` is a set-level simulation-geometry marker.
-    It applies to a `Points` prim as a whole and marks all authored point
-    elements on that prim as particles simulated by an MPM solver; it does not
-    express per-point enablement.
+class NewtonParticleAPI "NewtonParticleAPI" (
+    doc = """Applies to a `UsdGeomPoints` prim and marks it as particles driven
+    by a simulation.
 
-    Particle positions, velocities, widths, and stable identifiers use the
-    standard `UsdGeomPoints` `points`, `velocities`, `widths`, and `ids`
-    attributes. Newton's v1 importer interprets width as a particle diameter
-    and maps it to a collision radius of `width / 2`. This is a Newton import
-    convention, not a generic USD rule for deriving particle mass or volume.
-
-    This is intentionally a marker API and declares no particle attributes.
-    Newton's `ACTIVE` particle flag is solver-generic, so importers treat
-    authored points as active by default. The experimental `PROXY` flag is
-    runtime solver-coupling state and is not authored by this schema.
-
-    Per-particle mass is likewise not MPM-specific and is deliberately not
-    declared in the Newton MPM namespace. Importers can derive mass from
-    particle size and a bound material's `physics:density` according to an
-    engine-defined volume convention; an authored per-point mass
-    representation should be standardized independently.
-
-    Bind a physics material using the standard `material:binding:physics`
-    relationship. Apply `NewtonMPMMaterialAPI` when Newton-specific MPM
-    constitutive parameters are needed; a binding carrying only compatible
-    standard physics or deformable-material APIs can still supply standard
-    properties such as density, Young's modulus, and Poisson's ratio. A single
-    `Points` prim can assign discrete materials through direct-child
-    `GeomSubset` prims whose `elementType` is "point" and whose `familyName` is
-    "materialBind". Bind each
-    subset for the "physics" material purpose and use a non-overlapping family
-    (or a partition); points not assigned to a subset inherit the parent
-    binding.
-
-    The initial v1 contract resolves one active `NewtonMPMSceneAPI`
-    configuration for all marked `Points` prims in an imported model. Explicit
-    per-set scene relationships and an MPM body/object grouping API such as a
-    future `NewtonMPMBodyAPI` are deferred."""
+    Particle positions, velocities, widths, including `primvars:widths`, and
+    stable identifiers use the standard `UsdGeomPoints` attributes. Widths
+    specify particle diameters. Particle mass can be derived from particle
+    size and bound material density."""
 )
 {
+    rel physics:simulationOwner (
+        doc = """Physics scene that simulates these particles.
+
+        When un-authored, the engine uses the first `PhysicsScene` found during
+        standard stage traversal."""
+    )
 }
 
 class NewtonMaterialAPI "NewtonMaterialAPI" (
@@ -1122,69 +1055,11 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
 
 class NewtonMPMMaterialAPI "NewtonMPMMaterialAPI" (
     apiSchemas = ["PhysicsMaterialAPI"]
-    doc = """`NewtonMPMMaterialAPI` applies on top of a `Material`, providing
-    constitutive parameters for Newton's implicit MPM solver.
+    doc = """Provides MPM-specific constitutive parameters on a `Material`.
 
-    Applying this schema also applies `PhysicsMaterialAPI`. Its standard
-    `physics:density` attribute can participate in particle mass derivation.
-    MPM internal friction is a pressure-dependent material response and is
-    distinct from the standard surface-contact friction attributes.
-
-    Each attribute is scalar on the material. After resolving the physics
-    material binding, an importer broadcasts the selected values to Newton's
-    internal per-particle arrays. Use point-element material `GeomSubset`
-    bindings for discrete material variation within one `Points` prim.
-    Arbitrary continuous per-point overrides are intentionally out of scope
-    for v1. Kaolin's point-sampled physics schemas demonstrate the related need
-    for continuously varying Young's modulus, Poisson's ratio, and density, but
-    their independent cubature samples are not material bindings or necessarily
-    the MPM particle points. A generic point-field representation will be
-    coordinated with Kaolin and AOUSD before Newton adopts it. Such a design
-    must define cardinality, units, and time-sampling semantics; its intended
-    resolution order is pointwise override, subset-bound material,
-    parent-bound material, then schema or engine default.
-
-    Several concepts here, notably Young's modulus and Poisson's ratio, are
-    useful beyond MPM. The AOUSD deformables proposal uses
-    `physics:youngsModulus` and `physics:poissonsRatio` for volume-deformable
-    materials, but its simulation geometries do not currently include
-    `UsdGeomPoints`. These attributes remain Newton-namespaced because this API
-    defines Newton's exact implicit-MPM constitutive semantics. When the
-    canonical standard attributes are authored under a recognized standard
-    deformable-material API, Newton importers give them precedence over the
-    corresponding Newton attributes and warn when both authored values
-    conflict. The Newton attributes remain the compatibility path until the
-    standard representation applies directly to Points."""
+    Applying this schema also applies `PhysicsMaterialAPI`."""
 )
 {
-    float newton:mpm:youngsModulus = -inf (
-        doc = """Young's modulus.
-
-        A value of `-inf` asks the engine to use its own default. Any authored
-        numeric value is interpreted in the stage's derived pressure units.
-
-        Range: {-inf} or (0, inf)
-        Units: pressure"""
-        limits = {
-            dictionary soft = {
-                float minimum = 0
-            }
-        }
-    )
-
-    float newton:mpm:poissonsRatio = 0.3 (
-        doc = """Poisson's ratio for the elastic response.
-
-        Range: (-1, 0.5)
-        Units: dimensionless"""
-        limits = {
-            dictionary hard = {
-                float minimum = -1
-                float maximum = 0.5
-            }
-        }
-    )
-
     float newton:mpm:elasticDampingTime = 0 (
         doc = """Elastic damping relaxation time.
 
@@ -1217,8 +1092,8 @@ class NewtonMPMMaterialAPI "NewtonMPMMaterialAPI" (
         A value of `-inf` asks the engine to use its own default. Any authored
         numeric value is interpreted in the stage's derived pressure units.
 
-        Range: {-inf} or [0, inf)
-        Units: pressure"""
+        Range: [0, inf)
+        Units: force / (distance * distance)"""
         limits = {
             dictionary soft = {
                 float minimum = 0
@@ -1243,7 +1118,7 @@ class NewtonMPMMaterialAPI "NewtonMPMMaterialAPI" (
         doc = """Deviatoric yield stress.
 
         Range: [0, inf)
-        Units: pressure"""
+        Units: force / (distance * distance)"""
         limits = {
             dictionary hard = {
                 float minimum = 0
@@ -1255,7 +1130,7 @@ class NewtonMPMMaterialAPI "NewtonMPMMaterialAPI" (
         doc = """Plastic viscosity.
 
         Range: [0, inf)
-        Units: pressure * time"""
+        Units: force * time / (distance * distance)"""
         limits = {
             dictionary hard = {
                 float minimum = 0
