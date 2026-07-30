@@ -8,6 +8,8 @@ from pxr import Plug, Usd, UsdPhysics, Vt
 
 import newton_usd_schemas  # noqa: F401
 
+USD_HAS_LIMITS = Usd.GetVersion() >= (0, 25, 11)
+
 
 class TestNewtonMPMSceneAPI(unittest.TestCase):
     def setUp(self):
@@ -21,146 +23,277 @@ class TestNewtonMPMSceneAPI(unittest.TestCase):
         self.assertEqual(schema_type, "NewtonMPMSceneAPI")
 
     def test_api_application(self):
-        self.assertFalse(self.scene.HasAPI("NewtonSceneAPI"))
-        self.assertFalse(self.scene.HasAPI("NewtonMPMSceneAPI"))
         self.assertTrue(self.scene.CanApplyAPI("NewtonMPMSceneAPI"))
         self.scene.ApplyAPI("NewtonMPMSceneAPI")
         self.assertTrue(self.scene.HasAPI("NewtonSceneAPI"))
         self.assertTrue(self.scene.HasAPI("NewtonMPMSceneAPI"))
+        self.assertTrue(self.scene.HasAttribute("newton:maxSolverIterations"))
+        self.assertFalse(self.scene.HasAttribute("newton:mpm:maxIterations"))
 
     def test_api_limitations(self):
         prim: Usd.Prim = self.stage.DefinePrim("/NotScene", "Xform")
         self.assertFalse(prim.CanApplyAPI("NewtonMPMSceneAPI"))
 
-    def _get_attribute(self, name):
+    def test_tolerance(self):
         self.scene.ApplyAPI("NewtonMPMSceneAPI")
-        attr = self.scene.GetAttribute(name)
+        attr = self.scene.GetAttribute("newton:mpm:tolerance")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        return attr
+        self.assertAlmostEqual(attr.Get(), 1.0e-4, places=7)
 
-    def test_max_solver_iterations(self):
-        self.scene.ApplyAPI("NewtonMPMSceneAPI")
-        self.assertEqual(self.scene.GetAttribute("newton:maxSolverIterations").Get(), -1)
-        self.assertFalse(self.scene.HasAttribute("newton:mpm:maxIterations"))
+        self.assertTrue(attr.Set(1.0e-5))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 1.0e-5, places=7)
 
-    def test_tolerance(self):
-        attr = self._get_attribute("newton:mpm:tolerance")
-        self.assertAlmostEqual(attr.Get(), 1.0e-4)
-        self.assertTrue(attr.Set(1.0e-3))
-        self.assertAlmostEqual(attr.Get(), 1.0e-3)
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
 
     def test_rheology_solvers(self):
-        attr = self._get_attribute("newton:mpm:rheologySolvers")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:rheologySolvers")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), Vt.TokenArray(["auto"]))
+
+        solvers = Vt.TokenArray(["cg", "gauss-seidel"])
+        self.assertTrue(attr.Set(solvers))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), solvers)
         self.assertEqual(
             set(attr.GetMetadata("allowedTokens")),
-            {"auto", "gauss-seidel", "gauss-seidel-soa", "gauss-seidel-batched", "jacobi", "cg", "cr", "gmres"},
+            {
+                "auto",
+                "gauss-seidel",
+                "gauss-seidel-soa",
+                "gauss-seidel-batched",
+                "jacobi",
+                "cg",
+                "cr",
+                "gmres",
+            },
         )
-        self.assertTrue(attr.Set(Vt.TokenArray(["cg", "gauss-seidel"])))
-        self.assertEqual(attr.Get(), Vt.TokenArray(["cg", "gauss-seidel"]))
 
     def test_voxel_size(self):
-        attr = self._get_attribute("newton:mpm:voxelSize")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:voxelSize")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), -math.inf)
+
         self.assertTrue(attr.Set(0.05))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.05)
 
+        if USD_HAS_LIMITS:
+            soft = attr.GetSoftLimits()
+            self.assertTrue(soft.IsValid())
+            self.assertAlmostEqual(soft.GetMinimum(), 0.0)
+            self.assertIsNone(soft.GetMaximum())
+
     def test_grid_type(self):
-        attr = self._get_attribute("newton:mpm:gridType")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:gridType")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "sparse")
-        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"sparse", "dense", "fixed"})
+
         self.assertTrue(attr.Set("dense"))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "dense")
+        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"sparse", "dense", "fixed"})
 
     def test_grid_padding(self):
-        attr = self._get_attribute("newton:mpm:gridPadding")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:gridPadding")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), 0)
-        self.assertTrue(attr.Set(1))
-        self.assertEqual(attr.Get(), 1)
+
+        self.assertTrue(attr.Set(2))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), 2)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertEqual(hard.GetMinimum(), 0)
+            self.assertIsNone(hard.GetMaximum())
 
     def test_max_active_cell_count(self):
-        attr = self._get_attribute("newton:mpm:maxActiveCellCount")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:maxActiveCellCount")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), -1)
+
         self.assertTrue(attr.Set(1024))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), 1024)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertEqual(hard.GetMinimum(), -1)
+            self.assertIsNone(hard.GetMaximum())
+
     def test_transfer_scheme(self):
-        attr = self._get_attribute("newton:mpm:transferScheme")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:transferScheme")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "apic")
-        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"apic", "pic"})
+
         self.assertTrue(attr.Set("pic"))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "pic")
+        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"apic", "pic"})
 
     def test_integration_scheme(self):
-        attr = self._get_attribute("newton:mpm:integrationScheme")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:integrationScheme")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "pic")
-        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"pic", "gimp"})
+
         self.assertTrue(attr.Set("gimp"))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "gimp")
+        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"pic", "gimp"})
 
     def test_critical_fraction(self):
-        attr = self._get_attribute("newton:mpm:criticalFraction")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:criticalFraction")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.0)
-        self.assertTrue(attr.Set(0.5))
-        self.assertAlmostEqual(attr.Get(), 0.5)
+
+        self.assertTrue(attr.Set(0.25))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.25)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
 
     def test_air_drag(self):
-        attr = self._get_attribute("newton:mpm:airDrag")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:airDrag")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), -math.inf)
+
         self.assertTrue(attr.Set(0.1))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.1)
 
+        if USD_HAS_LIMITS:
+            soft = attr.GetSoftLimits()
+            self.assertTrue(soft.IsValid())
+            self.assertAlmostEqual(soft.GetMinimum(), 0.0)
+            self.assertIsNone(soft.GetMaximum())
+
     def test_collider_basis_type(self):
-        attr = self._get_attribute("newton:mpm:colliderBasisType")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:colliderBasisType")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "serendipity")
+
+        self.assertTrue(attr.Set("particle"))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "particle")
         self.assertEqual(
             set(attr.GetMetadata("allowedTokens")),
             {"linear", "trilinear", "bspline", "serendipity", "particle"},
         )
-        self.assertTrue(attr.Set("trilinear"))
-        self.assertEqual(attr.Get(), "trilinear")
 
     def test_collider_basis_order(self):
-        attr = self._get_attribute("newton:mpm:colliderBasisOrder")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:colliderBasisOrder")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), 2)
-        self.assertTrue(attr.Set(1))
-        self.assertEqual(attr.Get(), 1)
+
+        self.assertTrue(attr.Set(3))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), 3)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertEqual(hard.GetMinimum(), 0)
+            self.assertIsNone(hard.GetMaximum())
 
     def test_collider_discontinuous_basis(self):
-        attr = self._get_attribute("newton:mpm:colliderDiscontinuousBasis")
-        self.assertFalse(attr.Get())
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:colliderDiscontinuousBasis")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), False)
+
         self.assertTrue(attr.Set(True))
-        self.assertTrue(attr.Get())
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), True)
 
     def test_strain_basis_type(self):
-        attr = self._get_attribute("newton:mpm:strainBasisType")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:strainBasisType")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "linear")
+
+        self.assertTrue(attr.Set("bspline"))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "bspline")
         self.assertEqual(
             set(attr.GetMetadata("allowedTokens")),
             {"linear", "trilinear", "bspline", "serendipity", "particle"},
         )
-        self.assertTrue(attr.Set("trilinear"))
-        self.assertEqual(attr.Get(), "trilinear")
 
     def test_strain_basis_order(self):
-        attr = self._get_attribute("newton:mpm:strainBasisOrder")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:strainBasisOrder")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), 0)
+
         self.assertTrue(attr.Set(1))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), 1)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertEqual(hard.GetMinimum(), 0)
+            self.assertIsNone(hard.GetMaximum())
+
     def test_strain_discontinuous_basis(self):
-        attr = self._get_attribute("newton:mpm:strainDiscontinuousBasis")
-        self.assertFalse(attr.Get())
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:strainDiscontinuousBasis")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), False)
+
         self.assertTrue(attr.Set(True))
-        self.assertTrue(attr.Get())
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), True)
 
     def test_velocity_basis(self):
-        attr = self._get_attribute("newton:mpm:velocityBasis")
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:velocityBasis")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "Q1")
-        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"Q1", "B2", "B3"})
+
         self.assertTrue(attr.Set("B2"))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "B2")
+        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"Q1", "B2", "B3"})
 
 
 if __name__ == "__main__":

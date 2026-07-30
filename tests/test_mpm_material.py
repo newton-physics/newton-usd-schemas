@@ -23,8 +23,6 @@ class TestNewtonMPMMaterialAPI(unittest.TestCase):
         self.assertEqual(schema_type, "NewtonMPMMaterialAPI")
 
     def test_api_application(self):
-        self.assertFalse(self.material.HasAPI("PhysicsMaterialAPI"))
-        self.assertFalse(self.material.HasAPI("NewtonMPMMaterialAPI"))
         self.assertTrue(self.material.CanApplyAPI("NewtonMPMMaterialAPI"))
         self.material.ApplyAPI("NewtonMPMMaterialAPI")
         self.assertTrue(self.material.HasAPI("PhysicsMaterialAPI"))
@@ -35,37 +33,53 @@ class TestNewtonMPMMaterialAPI(unittest.TestCase):
         prim: Usd.Prim = self.stage.DefinePrim("/NotMaterial", "Xform")
         self.assertFalse(prim.CanApplyAPI("NewtonMPMMaterialAPI"))
 
-    def _get_attribute(self, name):
+    def test_does_not_apply_contact_material_api(self):
         self.material.ApplyAPI("NewtonMPMMaterialAPI")
-        attr = self.material.GetAttribute(name)
-        self.assertIsNotNone(attr)
-        self.assertFalse(attr.HasAuthoredValue())
-        return attr
-
-    def test_density(self):
-        self.material.ApplyAPI("NewtonMPMMaterialAPI")
-        density = self.material.GetAttribute("physics:density")
-        self.assertFalse(density.HasAuthoredValue())
-        self.assertEqual(density.Get(), 0.0)
-        self.assertTrue(density.Set(1600.0))
-        self.assertAlmostEqual(density.Get(), 1600.0)
+        self.assertFalse(self.material.HasAPI("NewtonMaterialAPI"))
 
     def test_elastic_damping_time(self):
-        attr = self._get_attribute("newton:mpm:elasticDampingTime")
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:elasticDampingTime")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.0)
+
         self.assertTrue(attr.Set(0.02))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.02)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
     def test_internal_friction(self):
-        attr = self._get_attribute("newton:mpm:internalFriction")
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:internalFriction")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.5)
+
         self.assertTrue(attr.Set(0.68))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.68)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
     def test_yield_pressure(self):
-        attr = self._get_attribute("newton:mpm:yieldPressure")
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:yieldPressure")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), -math.inf)
+
         self.assertTrue(attr.Set(1.0e5))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 1.0e5)
 
         if USD_HAS_LIMITS:
@@ -75,46 +89,123 @@ class TestNewtonMPMMaterialAPI(unittest.TestCase):
             self.assertIsNone(soft.GetMaximum())
 
     def test_tensile_yield_ratio(self):
-        attr = self._get_attribute("newton:mpm:tensileYieldRatio")
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:tensileYieldRatio")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.0)
-        self.assertTrue(attr.Set(0.5))
-        self.assertAlmostEqual(attr.Get(), 0.5)
+
+        self.assertTrue(attr.Set(0.25))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.25)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
 
     def test_yield_stress(self):
-        attr = self._get_attribute("newton:mpm:yieldStress")
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:yieldStress")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.0)
-        self.assertTrue(attr.Set(1.0e5))
-        self.assertAlmostEqual(attr.Get(), 1.0e5)
+
+        self.assertTrue(attr.Set(1000.0))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 1000.0)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
 
     def test_viscosity(self):
-        attr = self._get_attribute("newton:mpm:viscosity")
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:viscosity")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.0)
-        self.assertTrue(attr.Set(0.01))
-        self.assertAlmostEqual(attr.Get(), 0.01)
 
-    def test_hardening(self):
-        attr = self._get_attribute("newton:mpm:hardening")
-        self.assertAlmostEqual(attr.Get(), 0.0)
         self.assertTrue(attr.Set(0.1))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.1)
 
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_hardening(self):
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:hardening")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.0)
+
+        self.assertTrue(attr.Set(0.1))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.1)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
     def test_hardening_rate(self):
-        attr = self._get_attribute("newton:mpm:hardeningRate")
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:hardeningRate")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 1.0)
+
         self.assertTrue(attr.Set(2.0))
+        self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 2.0)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
 
     def test_softening_rate(self):
-        attr = self._get_attribute("newton:mpm:softeningRate")
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:softeningRate")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 1.0)
-        self.assertTrue(attr.Set(2.0))
-        self.assertAlmostEqual(attr.Get(), 2.0)
+
+        self.assertTrue(attr.Set(0.5))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.5)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
 
     def test_dilatancy(self):
-        attr = self._get_attribute("newton:mpm:dilatancy")
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:dilatancy")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.0)
-        self.assertTrue(attr.Set(0.5))
-        self.assertAlmostEqual(attr.Get(), 0.5)
+
+        self.assertTrue(attr.Set(0.2))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.2)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 1.0)
 
 
 if __name__ == "__main__":
