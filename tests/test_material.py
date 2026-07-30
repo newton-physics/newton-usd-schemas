@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
-import math
 import unittest
 
 from pxr import Plug, Usd, UsdPhysics, UsdShade
@@ -87,12 +86,16 @@ class TestNewtonMaterialAPI(unittest.TestCase):
         attr = self.material.GetAttribute("newton:contactStiffness")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         success = attr.Set(5000.0)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 5000.0)
+
+        attr.Block()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), None)
 
         if USD_HAS_LIMITS:
             soft = attr.GetSoftLimits()
@@ -107,12 +110,16 @@ class TestNewtonMaterialAPI(unittest.TestCase):
         attr = self.material.GetAttribute("newton:contactDamping")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         success = attr.Set(200.0)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 200.0)
+
+        attr.Block()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), None)
 
         if USD_HAS_LIMITS:
             soft = attr.GetSoftLimits()
@@ -120,19 +127,23 @@ class TestNewtonMaterialAPI(unittest.TestCase):
             self.assertAlmostEqual(soft.GetMinimum(), 0.0)
             self.assertIsNone(soft.GetMaximum())
 
-    def test_contact_friction_stiffness(self):
+    def test_contact_friction_gain(self):
         self.assertFalse(self.material.HasAttribute("newton:contactFrictionGain"))
 
         self.material.ApplyAPI("NewtonMaterialAPI")
         attr = self.material.GetAttribute("newton:contactFrictionGain")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         success = attr.Set(2000.0)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 2000.0)
+
+        attr.Block()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), None)
 
         if USD_HAS_LIMITS:
             soft = attr.GetSoftLimits()
@@ -147,12 +158,16 @@ class TestNewtonMaterialAPI(unittest.TestCase):
         attr = self.material.GetAttribute("newton:contactAdhesion")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         success = attr.Set(0.05)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.05)
+
+        attr.Block()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), None)
 
         if USD_HAS_LIMITS:
             soft = attr.GetSoftLimits()

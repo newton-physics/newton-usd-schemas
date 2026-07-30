@@ -36,17 +36,21 @@ class TestNewtonSceneAPI(unittest.TestCase):
         attr = self.scene.GetAttribute("newton:maxSolverIterations")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -1)
+        self.assertEqual(attr.Get(), None)
 
         success = attr.Set(10)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), 10)
 
+        attr.Block()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), None)
+
         if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()
             self.assertTrue(hard.IsValid())
-            self.assertEqual(hard.GetMinimum(), -1)
+            self.assertEqual(hard.GetMinimum(), 1)
             self.assertIsNone(hard.GetMaximum())
 
     def test_time_steps_per_second(self):

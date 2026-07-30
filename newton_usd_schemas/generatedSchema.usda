@@ -6,16 +6,16 @@ class NewtonSceneAPI "NewtonSceneAPI" (
     doc = "`NewtonSceneAPI` applies on top of a `PhysicsScene` prim, providing attributes to control a Newton solver."
 )
 {
-    uniform int newton:maxSolverIterations = -1 (
+    uniform int newton:maxSolverIterations = None (
         doc = """Maximum number of iterations of the physics solver.
 
-        If set to -1, each solver is free to choose an appropriate default.
+        If unset, each solver is free to choose an appropriate default.
 
-        Range: [-1, inf)
+        Range: [1, inf)
         Units: dimensionless"""
         limits = {
             dictionary hard = {
-                int minimum = -1
+                int minimum = 1
             }
         }
     )
@@ -432,12 +432,12 @@ class NewtonJointAPI "NewtonJointAPI" (
         }
     )
 
-    float newton:velocityLimit = inf (
+    float newton:velocityLimit = None (
         doc = """Maximum allowable DOF velocity.
 
         The solver clamps each DOF's velocity to the range
         `[-velocityLimit, +velocityLimit]` at every time step.
-        A value of `inf` means no velocity clamping is applied.
+        If unset, no velocity clamping is applied.
 
         The value is broadcast to all DOFs of the joint.
 
@@ -450,7 +450,7 @@ class NewtonJointAPI "NewtonJointAPI" (
         }
     )
 
-    float newton:limitStiffness = -inf (
+    float newton:limitStiffness = None (
         doc = """Stiffness of the joint limit spring.
 
         When a DOF's position exceeds the range defined by the joint limits,
@@ -462,15 +462,15 @@ class NewtonJointAPI "NewtonJointAPI" (
         constraint (no spring). Note: some solvers may ignore this attribute
         and always enforce hard positional constraints.
 
-        A value of `-inf` means the engine's own default stiffness is used.
+        If unset, the engine's own default stiffness is used.
 
         The value is broadcast to all DOFs of the joint.
 
-        Range: [0, inf] when authored (sentinel `-inf` defers to engine default).
+        Range: [0, inf]
         Units: effort / degrees (angular DOFs) or effort / distance (linear DOFs)."""
     )
 
-    float newton:limitDamping = -inf (
+    float newton:limitDamping = None (
         doc = """Damping of the joint limit spring.
 
         When a DOF's position exceeds the range defined by the joint limits,
@@ -483,11 +483,11 @@ class NewtonJointAPI "NewtonJointAPI" (
         no spring to damp. Note: some solvers may ignore this attribute and
         always enforce hard positional constraints.
 
-        A value of `-inf` means the engine's own default damping is used.
+        If unset, the engine's own default damping is used.
 
         The value is broadcast to all DOFs of the joint.
 
-        Range: [0, inf) when authored (sentinel `-inf` defers to engine default).
+        Range: [0, inf)
         Units: effort * seconds / degrees (angular DOFs) or effort * seconds / distance (linear DOFs)."""
     )
 }
@@ -547,7 +547,7 @@ class NewtonMassAPI "NewtonMassAPI" (
         controlled by `newton:shellThickness`."""
     )
 
-    float newton:shellThickness = -inf (
+    float newton:shellThickness = None (
         doc = """Wall thickness for shell mass and inertia computation,
         measured inward from the outer surface of the shape.
 
@@ -556,7 +556,7 @@ class NewtonMassAPI "NewtonMassAPI" (
 
         Only used when `newton:massModel` is "shell"; ignored for "solid".
 
-        If set to `-inf`, the active solver chooses an appropriate thickness.
+        If unset, the active solver chooses an appropriate thickness.
         This is a per-solver decision: solvers may fall back to
         `newton:contactMargin`, use zero-thickness mathematical shell inertia,
         or apply their own default.
@@ -595,7 +595,7 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
             }
         }
     )
-    float newton:contactGap = -inf (
+    float newton:contactGap = None (
         doc = """Additional contact detection gap.
 
         AABBs are expanded by this value and potential contact points get added into the solver
@@ -603,7 +603,7 @@ class NewtonCollisionAPI "NewtonCollisionAPI" (
 
         Increasing `newton:contactGap` helps avoid tunneling by detecting contacts earlier.
 
-        If `newton:contactGap` is set to `-inf`, the engine's default should be used instead.
+        If `newton:contactGap` is unset, the engine's default should be used instead.
 
         Range: [0, inf)
         Units: distance"""
@@ -622,18 +622,18 @@ class NewtonMeshCollisionAPI "NewtonMeshCollisionAPI" (
     By applying this schema, the prim also inherits the `PhysicsCollisionAPI`, `NewtonCollisionAPI` and `PhysicsMeshCollisionAPI` schemas."""
 )
 {
-    uniform int newton:maxHullVertices = -1 (
+    uniform int newton:maxHullVertices = None (
         doc = """Maximum number of vertices in the resulting convex hull approximation.
 
         This value is only relevant when `physics:approximation = "convexHull"`.
 
-        If `newton:maxHullVertices` is set to -1, the hull computation should use as many vertices as necessary to produce a perfect convex hull.
+        If unset, the hull computation should use as many vertices as necessary to produce a perfect convex hull.
 
-        Range: [-1, inf)
+        Range: [1, inf)
         Units: dimensionless"""
         limits = {
             dictionary hard = {
-                int minimum = -1
+                int minimum = 1
             }
         }
     )
@@ -667,13 +667,13 @@ class NewtonSDFCollisionAPI "NewtonSDFCollisionAPI" (
             }
         }
     )
-    uniform float newton:sdfTargetVoxelSize = -inf (
+    uniform float newton:sdfTargetVoxelSize = None (
         doc = """Target voxel size for the sparse SDF grid.
 
         When authored with a positive value, takes precedence over
         `newton:sdfMaxResolution`.
 
-        If `newton:sdfTargetVoxelSize` is set to `-inf`, `newton:sdfMaxResolution`
+        If `newton:sdfTargetVoxelSize` is unset, `newton:sdfMaxResolution`
         is used instead.
 
         Range: (0, inf)
@@ -714,13 +714,13 @@ class NewtonSDFCollisionAPI "NewtonSDFCollisionAPI" (
         (half the memory of `"float32"`). `"float32"` stores full-precision values.
         `"uint8"` uses 8-bit textures for minimum memory."""
     )
-    uniform float newton:sdfPadding = -inf (
+    uniform float newton:sdfPadding = None (
         doc = """SDF AABB padding.
 
         Enlarges the SDF's bounding box beyond the mesh AABB by this distance,
         extending the spatial domain in which distance queries are valid.
 
-        If `newton:sdfPadding` is set to `-inf`, the engine's default should be used instead.
+        If `newton:sdfPadding` is unset, the engine's default should be used instead.
 
         Range: (0, inf)
         Units: distance"""
@@ -796,13 +796,13 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
         }
     )
 
-    float newton:contactStiffness = -inf (
+    float newton:contactStiffness = None (
         doc = """Normal stiffness of the contact response.
 
         Controls how rigid or compliant the material feels on contact. Higher values
         produce stiffer contacts at the cost of requiring smaller time steps.
 
-        If `newton:contactStiffness` is set to `-inf`, the engine's default should be used instead.
+        If `newton:contactStiffness` is unset, the engine's default should be used instead.
 
         Range: [0, inf)
         Units: force/distance"""
@@ -813,13 +813,13 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
         }
     )
 
-    float newton:contactDamping = -inf (
+    float newton:contactDamping = None (
         doc = """Normal damping of the contact response.
 
         Controls how much energy the material absorbs during contact. Higher values
         reduce bouncing.
 
-        If `newton:contactDamping` is set to `-inf`, the engine's default should be used instead.
+        If `newton:contactDamping` is unset, the engine's default should be used instead.
 
         Range: [0, inf)
         Units: force * time / distance"""
@@ -830,14 +830,14 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
         }
     )
 
-    float newton:contactFrictionGain = -inf (
+    float newton:contactFrictionGain = None (
         doc = """Gain of the tangential friction response.
 
         Friction force equals `contactFrictionGain * slip_velocity`, clamped to the
         Coulomb limit `mu * normal_force`. Larger values produce stronger resistance
         to small relative motion and more closely approximate ideal Coulomb sticking.
 
-        If `newton:contactFrictionGain` is set to `-inf`, the engine's default should be used instead.
+        If `newton:contactFrictionGain` is unset, the engine's default should be used instead.
 
         Range: [0, inf)
         Units: force * time / distance"""
@@ -848,13 +848,13 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
         }
     )
 
-    float newton:contactAdhesion = -inf (
+    float newton:contactAdhesion = None (
         doc = """Contact adhesion distance.
 
         When two surfaces are within this distance, an attractive force pulls them together.
         A value of 0 or less disables adhesion.
 
-        If `newton:contactAdhesion` is set to `-inf`, the engine's default should be used instead.
+        If `newton:contactAdhesion` is unset, the engine's default should be used instead.
 
         Range: [0, inf)
         Units: distance"""
@@ -1226,7 +1226,7 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
         doc = """Maximum no-load joint velocity for the effort-speed curve.
 
         At this velocity, the motor can produce zero effort in the direction
-        of motion due to losses such as back-EMF. A value of inf disables the effort-speed
+        of motion due to losses such as back-EMF. A value of `inf` disables the effort-speed
         saturation effect.
 
         Range: (0, inf)
