@@ -1221,6 +1221,10 @@ class NewtonMimicAPI "NewtonMimicAPI" (
     A mimic constraint enforces that `joint0 = coef0 + coef1 * joint1` for the joint DOFs,
     where `joint0` is this joint (the follower) and `joint1` (the leader) is specified via the `newton:mimicJoint` relationship.
 
+    The leader and follower must be the same joint type. The coefficients are expressed in the follower's
+    position units, so mimicking across types -- an angular follower tracking a linear leader, or the reverse --
+    has no well defined units and is not supported.
+
     The behavior on multi-DOF joints is undefined. The mimic constraint will be applied to each DOF independently,
     but as the coefficients are shared across all DOFs, the units for translational and rotational DOFs will be mixed.
     Therefore, it is recommended to only use this API on single-DOF joints.
@@ -1234,7 +1238,9 @@ class NewtonMimicAPI "NewtonMimicAPI" (
     )
 
     rel newton:mimicJoint (
-        doc = "Joint that will be mimicked."
+        doc = """Joint that will be mimicked.
+
+        Must be the same joint type as the joint this API is applied to."""
     )
 
     float newton:mimicCoef0 = 0.0 (

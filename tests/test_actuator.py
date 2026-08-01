@@ -4,7 +4,7 @@
 import math
 import unittest
 
-from pxr import Plug, Sdf, Usd
+from pxr import Plug, Sdf, Usd, UsdGeom
 
 import newton_usd_schemas  # noqa: F401
 
@@ -34,6 +34,27 @@ class TestNewtonActuator(unittest.TestCase):
         targets = rel.GetTargets()
         self.assertEqual(len(targets), 1)
         self.assertEqual(str(targets[0]), "/World/Joint")
+
+    def test_not_imageable(self):
+        # Actuators carry a control law bound to a joint; they have no extent and are
+        # never rendered, so they derive from UsdTyped rather than UsdGeomImageable.
+        self.assertFalse(self.prim.IsA(UsdGeom.Imageable))
+
+        # The prim definition must not advertise Imageable properties it does not have.
+        definition = Usd.SchemaRegistry().FindConcretePrimDefinition("NewtonActuator")
+        self.assertIsNotNone(definition)
+        self.assertEqual(sorted(definition.GetPropertyNames()), ["newton:targets"])
+
+    def test_bbox_cache_skips_actuator(self):
+        # Regression test: when NewtonActuator declared UsdGeomImageable as its base
+        # without baking in the inherited visibility/purpose/proxyPrim properties,
+        # UsdGeom.BBoxCache treated the prim as Imageable and then failed to read its
+        # visibility attribute, raising from _GetOrCreateVisibilityQuery.
+        root = self.stage.DefinePrim("/World", "Xform")
+        self.stage.DefinePrim("/World/Actuator", "NewtonActuator")
+        cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), [UsdGeom.Tokens.default_])
+        bound = cache.ComputeWorldBound(root)
+        self.assertTrue(bound.GetRange().IsEmpty())
 
 
 class TestNewtonActuatorDelayAPI(unittest.TestCase):

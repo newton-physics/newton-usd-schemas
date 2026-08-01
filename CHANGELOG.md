@@ -1,3 +1,12 @@
+# 0.4.1
+
+## Fixes
+
+- Fixed incorrect base type for `NewtonActuator`, it is now `UsdTyped` rather than a partially implemented `UsdGeomImagable`
+  - This means actuators cannot be rendered in Hydra compatible viewers. If actuator manipulators are required, the viewer needs to handle them as a special case, or the content author needs to parent a `UsdGeomImagable` beneath them in the hierarchy.
+- Improved `NewtonMimicAPI` documentation to clarify that the leader and follower must be the same joint type.
+  - Multi-dof joint behavior remains undefined & unsupported
+
 # 0.4.0
 
 ## Features
