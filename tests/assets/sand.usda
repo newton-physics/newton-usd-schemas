@@ -1,0 +1,64 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def PhysicsScene "PhysicsScene" (
+        apiSchemas = ["NewtonMPMSceneAPI"]
+    )
+    {
+        uniform int newton:maxSolverIterations = 100
+        uniform token[] newton:mpm:rheologySolvers = ["cg", "gauss-seidel"]
+        uniform float newton:mpm:voxelSize = 0.05
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 9.81
+    }
+
+    def Material "SandMaterial" (
+        apiSchemas = ["NewtonMPMMaterialAPI"]
+    )
+    {
+        float newton:mpm:internalFriction = 0.68
+        float newton:mpm:yieldPressure = 100000
+        float physics:density = 1600
+    }
+
+    def Material "DenseSandMaterial" (
+        apiSchemas = ["NewtonMPMMaterialAPI"]
+    )
+    {
+        float newton:mpm:elasticDamping = 2000
+        float newton:mpm:initialPlasticVolumeStrain = 0.975
+        float newton:mpm:internalFriction = 0.8
+        float newton:mpm:yieldPressure = 200000
+        float physics:density = 1900
+    }
+
+    def Points "Sand" (
+        apiSchemas = ["MaterialBindingAPI", "NewtonParticleAPI"]
+    )
+    {
+        int64[] ids = [0, 1, 2, 3]
+        rel material:binding:physics = </World/SandMaterial>
+        rel physics:simulationOwner = </World/PhysicsScene>
+        point3f[] points = [(-0.025, -0.025, 0.5), (0.025, -0.025, 0.5), (-0.025, 0.025, 0.5), (0.025, 0.025, 0.5)]
+        uniform token subsetFamily:materialBind:familyType = "nonOverlapping"
+        vector3f[] velocities = [(0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0)]
+        float[] widths = [0.05, 0.05, 0.05, 0.05]
+
+        def GeomSubset "DenseSand" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "materialBind"
+            int[] indices = [2, 3]
+            rel material:binding:physics = </World/DenseSandMaterial>
+        }
+    }
+}
