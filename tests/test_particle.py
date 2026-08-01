@@ -94,9 +94,10 @@ class TestNewtonParticleAPI(unittest.TestCase):
 
         self.assertAlmostEqual(dense_material.GetAttribute("physics:density").Get(), 1900.0)
         self.assertAlmostEqual(
-            dense_material.GetAttribute("newton:mpm:elasticDampingTime").Get(),
-            0.02,
+            dense_material.GetAttribute("newton:mpm:elasticDamping").Get(),
+            2000.0,
         )
+        self.assertAlmostEqual(dense_material.GetAttribute("newton:mpm:initialPlasticVolumeStrain").Get(), 0.975)
         self.assertAlmostEqual(dense_material.GetAttribute("newton:mpm:internalFriction").Get(), 0.8)
         self.assertAlmostEqual(dense_material.GetAttribute("newton:mpm:yieldPressure").Get(), 2.0e5)
 

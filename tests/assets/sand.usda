@@ -32,7 +32,8 @@ def Xform "World"
         apiSchemas = ["NewtonMPMMaterialAPI"]
     )
     {
-        float newton:mpm:elasticDampingTime = 0.02
+        float newton:mpm:elasticDamping = 2000
+        float newton:mpm:initialPlasticVolumeStrain = 0.975
         float newton:mpm:internalFriction = 0.8
         float newton:mpm:yieldPressure = 200000
         float physics:density = 1900

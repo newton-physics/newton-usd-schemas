@@ -37,16 +37,16 @@ class TestNewtonMPMMaterialAPI(unittest.TestCase):
         self.material.ApplyAPI("NewtonMPMMaterialAPI")
         self.assertFalse(self.material.HasAPI("NewtonMaterialAPI"))
 
-    def test_elastic_damping_time(self):
+    def test_elastic_damping(self):
         self.material.ApplyAPI("NewtonMPMMaterialAPI")
-        attr = self.material.GetAttribute("newton:mpm:elasticDampingTime")
+        attr = self.material.GetAttribute("newton:mpm:elasticDamping")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.0)
 
-        self.assertTrue(attr.Set(0.02))
+        self.assertTrue(attr.Set(2000.0))
         self.assertTrue(attr.HasAuthoredValue())
-        self.assertAlmostEqual(attr.Get(), 0.02)
+        self.assertAlmostEqual(attr.Get(), 2000.0)
 
         if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()
@@ -132,6 +132,23 @@ class TestNewtonMPMMaterialAPI(unittest.TestCase):
         self.assertTrue(attr.Set(0.1))
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.1)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_initial_plastic_volume_strain(self):
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:initialPlasticVolumeStrain")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 1.0)
+
+        self.assertTrue(attr.Set(0.975))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.975)
 
         if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()

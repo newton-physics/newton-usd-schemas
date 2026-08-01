@@ -247,12 +247,12 @@ class TestNewtonMPMSceneAPI(unittest.TestCase):
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "linear")
 
-        self.assertTrue(attr.Set("bspline"))
+        self.assertTrue(attr.Set("trilinear"))
         self.assertTrue(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), "bspline")
+        self.assertEqual(attr.Get(), "trilinear")
         self.assertEqual(
             set(attr.GetMetadata("allowedTokens")),
-            {"linear", "trilinear", "bspline", "serendipity", "particle"},
+            {"linear", "trilinear", "particle"},
         )
 
     def test_strain_basis_order(self):
@@ -283,17 +283,34 @@ class TestNewtonMPMSceneAPI(unittest.TestCase):
         self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), True)
 
-    def test_velocity_basis(self):
+    def test_velocity_basis_type(self):
         self.scene.ApplyAPI("NewtonMPMSceneAPI")
-        attr = self.scene.GetAttribute("newton:mpm:velocityBasis")
+        attr = self.scene.GetAttribute("newton:mpm:velocityBasisType")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), "Q1")
+        self.assertEqual(attr.Get(), "trilinear")
 
-        self.assertTrue(attr.Set("B2"))
+        self.assertTrue(attr.Set("bspline"))
         self.assertTrue(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), "B2")
-        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"Q1", "B2", "B3"})
+        self.assertEqual(attr.Get(), "bspline")
+        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"trilinear", "bspline"})
+
+    def test_velocity_basis_order(self):
+        self.scene.ApplyAPI("NewtonMPMSceneAPI")
+        attr = self.scene.GetAttribute("newton:mpm:velocityBasisOrder")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), 1)
+
+        self.assertTrue(attr.Set(3))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), 3)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertEqual(hard.GetMinimum(), 1)
+            self.assertEqual(hard.GetMaximum(), 3)
 
 
 if __name__ == "__main__":
