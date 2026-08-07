@@ -866,6 +866,97 @@ class NewtonMaterialAPI "NewtonMaterialAPI" (
     )
 }
 
+class NewtonCurvesDeformableMaterialAPI "NewtonCurvesDeformableMaterialAPI" (
+    apiSchemas = ["PhysicsMaterialAPI"]
+    doc = """`NewtonCurvesDeformableMaterialAPI` applies on top of a `Material`, providing extra damping attributes for Newton's curve deformables.
+
+    By applying this schema, the prim also inherits the `PhysicsMaterialAPI` schema.
+
+    Apply this schema alongside `PhysicsCurvesDeformableMaterialAPI`, which provides
+    `physics:curvesThickness`, per-mode structural stiffnesses
+    `physics:curvesStretchStiffness`, `physics:curvesShearStiffness`,
+    `physics:curvesBendStiffness` and `physics:curvesTwistStiffness`, and the isotropic
+    fallback pair `physics:youngsModulus` and `physics:poissonsRatio`.
+    This schema extends a `PhysicsCurvesDeformableMaterialAPI` with corresponding damping
+    coefficients for each stiffness.
+
+    Newton requires `physics:youngsModulus` and `physics:poissonsRatio` to be honored for
+    curve deformables. Where a stiffness is unauthored it is derived from them and
+    `physics:curvesThickness`: `physics:youngsModulus` governs the stretch and bend response,
+    while both together give the shear modulus
+    `G = physics:youngsModulus / (2 * (1 + physics:poissonsRatio))`, which governs the
+    transverse shear and twist response.
+
+    The proposal defines no damping modulus, so damping has no equivalent derivation: each
+    damping attribute is independent, and an unauthored one falls back to the engine's
+    default rather than to another mode's damping."""
+)
+{
+    float newton:curvesStretchDamping = -inf (
+        doc = """Newton stretch damping for curve deformables.
+
+        Damps the stretch mode whose stiffness is `physics:curvesStretchStiffness`.
+
+        If `newton:curvesStretchDamping` is set to `-inf`, the engine's default should be used instead.
+
+        Range: [0, inf)
+        Units: force * time"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:curvesShearDamping = -inf (
+        doc = """Newton transverse shear damping for curve deformables.
+
+        Damps the shear mode whose stiffness is `physics:curvesShearStiffness`.
+
+        If `newton:curvesShearDamping` is set to `-inf`, the engine's default should be used instead.
+
+        Range: [0, inf)
+        Units: force * time"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:curvesBendDamping = -inf (
+        doc = """Newton bend damping for curve deformables.
+
+        Damps the bend mode whose stiffness is `physics:curvesBendStiffness`.
+
+        If `newton:curvesBendDamping` is set to `-inf`, the engine's default should be used instead.
+
+        Range: [0, inf)
+        Units: force * distance * distance * time"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:curvesTwistDamping = -inf (
+        doc = """Newton twist damping for curve deformables.
+
+        Damps the twist mode whose stiffness is `physics:curvesTwistStiffness`.
+
+        If `newton:curvesTwistDamping` is set to `-inf`, the engine's default should be used instead.
+
+        Range: [0, inf)
+        Units: force * distance * distance * time"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
 class NewtonMimicAPI "NewtonMimicAPI" (
     doc = """`NewtonMimicAPI` applies on top of a `PhysicsJoint`, adding additional constraints to mimic the DOFs of another joint.
 
@@ -951,7 +1042,7 @@ class NewtonActuator "NewtonActuator" (
 
         Currently only the first target is honored, and it must identify either a
         `PhysicsRevoluteJoint` or `PhysicsPrismaticJoint`.
-        
+
         Multi-DOF `PhysicsJoint` prims are not supported, even when locked via `LimitAPI` to a single axis.
         """
     )
