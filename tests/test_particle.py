@@ -9,36 +9,39 @@ from pxr import Plug, Usd, UsdGeom, UsdPhysics, UsdShade, Vt
 import newton_usd_schemas  # noqa: F401
 
 
-class TestNewtonParticleAPI(unittest.TestCase):
+class TestNewtonPointsDeformableSimAPI(unittest.TestCase):
     def setUp(self):
         self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
         self.points: Usd.Prim = UsdGeom.Points.Define(self.stage, "/Particles").GetPrim()
 
     def test_api_registered(self):
-        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsParticleAPI")
-        self.assertEqual(plug_type.typeName, "NewtonPhysicsParticleAPI")
-        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsParticleAPI")
-        self.assertEqual(schema_type, "NewtonParticleAPI")
+        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsPointsDeformableSimAPI")
+        self.assertEqual(plug_type.typeName, "NewtonPhysicsPointsDeformableSimAPI")
+        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsPointsDeformableSimAPI")
+        self.assertEqual(schema_type, "NewtonPointsDeformableSimAPI")
 
     def test_api_application(self):
-        self.assertTrue(self.points.CanApplyAPI("NewtonParticleAPI"))
-        self.points.ApplyAPI("NewtonParticleAPI")
-        self.assertTrue(self.points.HasAPI("NewtonParticleAPI"))
-        self.assertTrue(self.points.HasRelationship("physics:simulationOwner"))
+        self.assertTrue(self.points.CanApplyAPI("NewtonPointsDeformableSimAPI"))
+        self.points.ApplyAPI("NewtonPointsDeformableSimAPI")
+        self.assertTrue(self.points.HasAPI("NewtonPointsDeformableSimAPI"))
+        self.assertTrue(self.points.HasAttribute("physics:masses"))
+        self.assertFalse(self.points.HasRelationship("physics:simulationOwner"))
 
     def test_api_limitations(self):
         prim: Usd.Prim = self.stage.DefinePrim("/NotPoints", "Xform")
-        self.assertFalse(prim.CanApplyAPI("NewtonParticleAPI"))
+        self.assertFalse(prim.CanApplyAPI("NewtonPointsDeformableSimAPI"))
 
-    def test_simulation_owner(self):
-        self.points.ApplyAPI("NewtonParticleAPI")
-        relationship = self.points.GetRelationship("physics:simulationOwner")
-        self.assertTrue(relationship)
-        self.assertEqual(relationship.GetTargets(), [])
+    def test_masses(self):
+        self.points.ApplyAPI("NewtonPointsDeformableSimAPI")
+        attr = self.points.GetAttribute("physics:masses")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertIsNone(attr.Get())
 
-        scene = UsdPhysics.Scene.Define(self.stage, "/Scene")
-        self.assertTrue(relationship.SetTargets([scene.GetPath()]))
-        self.assertEqual(relationship.GetTargets(), [scene.GetPath()])
+        masses = Vt.FloatArray([0.1, 0.2])
+        self.assertTrue(attr.Set(masses))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), masses)
 
     def test_sand_fixture(self):
         fixture = pathlib.Path(__file__).parent / "assets" / "sand.usda"
@@ -53,7 +56,9 @@ class TestNewtonParticleAPI(unittest.TestCase):
 
         self.assertTrue(scene.HasAPI("NewtonSceneAPI"))
         self.assertTrue(scene.HasAPI("NewtonMPMSceneAPI"))
-        self.assertTrue(particles.HasAPI("NewtonParticleAPI"))
+        self.assertTrue(particles.HasAPI("NewtonPointsDeformableSimAPI"))
+        applied_schema_op = particles.GetMetadata("apiSchemas")
+        self.assertIn("PhysicsDeformableBodyAPI", applied_schema_op.explicitItems)
         self.assertTrue(sand_material.HasAPI("PhysicsMaterialAPI"))
         self.assertTrue(sand_material.HasAPI("NewtonMPMMaterialAPI"))
         self.assertTrue(dense_material.HasAPI("PhysicsMaterialAPI"))
@@ -87,8 +92,11 @@ class TestNewtonParticleAPI(unittest.TestCase):
         self.assertEqual(points.GetVelocitiesAttr().Get(), Vt.Vec3fArray([(0, 0, 0)] * 4))
         self.assertEqual(points.GetWidthsAttr().Get(), Vt.FloatArray([0.05] * 4))
         self.assertEqual(points.GetIdsAttr().Get(), Vt.Int64Array([0, 1, 2, 3]))
+        self.assertEqual(particles.GetAttribute("physics:masses").Get(), Vt.FloatArray([0.2, 0.2, 0.2375, 0.2375]))
 
         self.assertAlmostEqual(sand_material.GetAttribute("physics:density").Get(), 1600.0)
+        self.assertAlmostEqual(sand_material.GetAttribute("newton:mpm:youngsModulus").Get(), 1.0e7)
+        self.assertAlmostEqual(sand_material.GetAttribute("newton:mpm:poissonsRatio").Get(), 0.3)
         self.assertAlmostEqual(sand_material.GetAttribute("newton:mpm:internalFriction").Get(), 0.68)
         self.assertAlmostEqual(sand_material.GetAttribute("newton:mpm:yieldPressure").Get(), 1.0e5)
 
@@ -97,6 +105,8 @@ class TestNewtonParticleAPI(unittest.TestCase):
             dense_material.GetAttribute("newton:mpm:elasticDamping").Get(),
             2000.0,
         )
+        self.assertAlmostEqual(dense_material.GetAttribute("newton:mpm:youngsModulus").Get(), 2.0e7)
+        self.assertAlmostEqual(dense_material.GetAttribute("newton:mpm:poissonsRatio").Get(), 0.2)
         self.assertAlmostEqual(dense_material.GetAttribute("newton:mpm:initialPlasticVolumeStrain").Get(), 0.975)
         self.assertAlmostEqual(dense_material.GetAttribute("newton:mpm:internalFriction").Get(), 0.8)
         self.assertAlmostEqual(dense_material.GetAttribute("newton:mpm:yieldPressure").Get(), 2.0e5)

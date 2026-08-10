@@ -37,6 +37,40 @@ class TestNewtonMPMMaterialAPI(unittest.TestCase):
         self.material.ApplyAPI("NewtonMPMMaterialAPI")
         self.assertFalse(self.material.HasAPI("NewtonMaterialAPI"))
 
+    def test_youngs_modulus(self):
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:youngsModulus")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), -math.inf)
+
+        self.assertTrue(attr.Set(1.0e6))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 1.0e6)
+
+        if USD_HAS_LIMITS:
+            soft = attr.GetSoftLimits()
+            self.assertTrue(soft.IsValid())
+            self.assertAlmostEqual(soft.GetMinimum(), 0.0)
+            self.assertIsNone(soft.GetMaximum())
+
+    def test_poissons_ratio(self):
+        self.material.ApplyAPI("NewtonMPMMaterialAPI")
+        attr = self.material.GetAttribute("newton:mpm:poissonsRatio")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.3)
+
+        self.assertTrue(attr.Set(0.25))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.25)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), -1.0)
+            self.assertAlmostEqual(hard.GetMaximum(), 0.5)
+
     def test_elastic_damping(self):
         self.material.ApplyAPI("NewtonMPMMaterialAPI")
         attr = self.material.GetAttribute("newton:mpm:elasticDamping")

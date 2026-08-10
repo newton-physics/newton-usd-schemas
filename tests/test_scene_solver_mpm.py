@@ -58,7 +58,7 @@ class TestNewtonMPMSceneAPI(unittest.TestCase):
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), Vt.TokenArray(["auto"]))
 
-        solvers = Vt.TokenArray(["cg", "gauss-seidel"])
+        solvers = Vt.TokenArray(["cg", "auto"])
         self.assertTrue(attr.Set(solvers))
         self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), solvers)

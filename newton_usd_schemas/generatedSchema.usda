@@ -366,8 +366,8 @@ class "NewtonMPMSceneAPI" (
         doc = """Ordered rheology solver sequence.
 
         A sequence with more than one entry warm-starts solvers from left to
-        right. The "auto" mode selects an implementation based on the velocity
-        basis. At least one solver must be provided."""
+        right. Each "auto" entry selects an implementation based on the velocity
+        basis and is resolved in place. At least one solver must be provided."""
     )
 
     uniform float newton:mpm:voxelSize = -inf (
@@ -970,22 +970,24 @@ class NewtonSiteAPI "NewtonSiteAPI" (
 {
 }
 
-class NewtonParticleAPI "NewtonParticleAPI" (
-    doc = """Applies physics properties to a `UsdGeomPoints` prim and marks it as
-    driven by a simulation.
+class NewtonPointsDeformableSimAPI "NewtonPointsDeformableSimAPI" (
+    doc = """Marks a `UsdGeomPoints` prim as deformable simulation geometry.
 
     Particle positions, velocities, widths, and stable identifiers use the
     standard `UsdGeomPoints` `points`, `velocities`, `widths` (or
     `primvars:widths`), and `ids` attributes. Widths are diameters, so radius is
-    `width / 2`. Mass may be derived from particle size and a bound material's
-    `physics:density`."""
+    `width / 2`. Apply `PhysicsDeformableBodyAPI` to this prim or its parent to
+    define the deformable body."""
 )
 {
-    rel physics:simulationOwner (
-        doc = """Single `PhysicsScene` that will simulate these particles.
+    float[] physics:masses (
+        doc = """Per-point masses of the simulation geometry.
 
-        By default this is the first `PhysicsScene` found in the stage during
-        a standard traversal."""
+        When authored, the array length must match `points`. These values take
+        precedence over body or material mass and density parameters.
+
+        Range: (0, inf)
+        Units: mass"""
     )
 }
 
@@ -1095,11 +1097,38 @@ class NewtonMPMMaterialAPI "NewtonMPMMaterialAPI" (
     doc = """Provides constitutive parameters for an implicit MPM solver.
 
     Applying this schema also applies `PhysicsMaterialAPI`. It does not apply
-    `NewtonMaterialAPI`, which describes surface-contact response. Use
-    `PhysicsVolumeDeformableMaterialAPI` for Young's modulus and Poisson's
-    ratio."""
+    `NewtonMaterialAPI`, which describes surface-contact response."""
 )
 {
+    float newton:mpm:youngsModulus = -inf (
+        doc = """Young's modulus.
+
+        If `newton:mpm:youngsModulus` is set to `-inf`, the engine's default
+        should be used instead. Any authored numeric value is interpreted in
+        the stage's derived pressure units.
+
+        Range: [0, inf)
+        Units: force / (distance * distance)"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:mpm:poissonsRatio = 0.3 (
+        doc = """Poisson's ratio for the elastic response.
+
+        Range: (-1, 0.5]
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = -1
+                float maximum = 0.5
+            }
+        }
+    )
+
     float newton:mpm:elasticDamping = 0 (
         doc = """Absolute elastic damping coefficient.
 
