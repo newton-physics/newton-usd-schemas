@@ -339,6 +339,77 @@ class "NewtonKaminoSceneAPI" (
     )
 }
 
+class "NewtonVbdSceneAPI" (
+    apiSchemas = ["NewtonSceneAPI"]
+    doc = """Provides Newton's VBD (Vertex Block Descent) solver configuration.
+
+    This schema represents VBD's compliant augmented Lagrangian method (ALM)
+    path for rigid bodies. Schema consumers constructing `SolverVBD` must pass
+    `rigid_compliant_alm=True`. The transitional solver-mode selector is runtime
+    compatibility configuration and is intentionally not authored in USD."""
+)
+{
+    uniform bool newton:vbd:rigid:contactHistory = false (
+        doc = """Whether to persist numeric body-body contact state across steps for warm-starting.
+
+        This requires collision-pipeline contact matching configured as
+        `contact_matching="latest"` or `contact_matching="sticky"`. Contact
+        geometry remains owned by the collision pipeline."""
+    )
+
+    uniform float newton:vbd:rigid:jointLinearStiffness = 100000.0 (
+        doc = """Material stiffness for non-rod structural linear joint constraints.
+
+        Values must be finite.
+        Range: [0, inf)
+        Units: force / distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:vbd:rigid:jointAngularStiffness = 100000.0 (
+        doc = """Material stiffness for non-rod structural angular joint constraints.
+
+        Values must be finite.
+        Range: [0, inf)
+        Units: torque / radians"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:vbd:rigid:jointLinearDamping = 0.0 (
+        doc = """Absolute damping coefficient for non-rod structural linear joint constraints.
+
+        Values must be finite.
+        Range: [0, inf)
+        Units: force * time / distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:vbd:rigid:jointAngularDamping = 0.0 (
+        doc = """Absolute damping coefficient for non-rod structural angular joint constraints.
+
+        Values must be finite.
+        Range: [0, inf)
+        Units: torque * time / radians"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
 class "NewtonMPMSceneAPI" (
     apiSchemas = ["NewtonSceneAPI"]
     doc = """Provides configuration for an implicit Material Point Method (MPM) solver.
