@@ -544,6 +544,248 @@ class "NewtonMPMSceneAPI" (
     )
 }
 
+class "NewtonCollisionPipelineAPI" (
+    apiSchemas = ["NewtonSceneAPI"]
+    doc = """Configures Newton's collision pipeline (broad phase, narrow phase
+    buffer sizing, and contact generation policy) for a `PhysicsScene` prim.
+
+    EXPERIMENTAL: The Newton collision pipeline schema is provisional. Attribute names,
+    defaults, and composition rules may change without notice in subsequent releases.
+
+    Applying this schema also applies `NewtonSceneAPI`."""
+)
+{
+    uniform token newton:collisionPipeline:broadPhase = "explicit" (
+        allowedTokens = ["nxn", "sap", "explicit"]
+        doc = """Broad phase candidate-pair generation strategy.
+
+        "nxn": all-pairs broad phase with AABB overlap, group, and excluded-pair
+        filtering. "sap": sweep-and-prune broad phase. "explicit": use a
+        precomputed shape-pair list (e.g. `PhysicsFilteredPairsAPI`-derived
+        pairs) instead of dynamic broad-phase search."""
+    )
+
+    uniform int newton:collisionPipeline:maxTrianglePairs = -1 (
+        doc = """Maximum number of triangle pairs allocated by the narrow phase
+        for mesh and heightfield collisions.
+
+        If set to `-1`, the simulator chooses its own default capacity.
+
+        Increase this when scenes with large/complex meshes or heightfields
+        report triangle-pair overflow warnings.
+
+        A value of `0` is invalid.
+
+        Range: {-1} ∪ (0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
+    )
+
+    uniform int newton:collisionPipeline:maxRigidContacts = -1 (
+        doc = """Maximum rigid contact buffer capacity.
+
+        If set to `-1`, the engine can use its own logic to determine the
+        buffer capacity.
+
+        If set to a value greater than or equal to `0`, that value is used
+        directly as the buffer capacity. A value of `0` means no rigid
+        contacts are allocated.
+
+        Range: [-1, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
+    )
+
+    uniform bool newton:collisionPipeline:reduceContacts = true (
+        doc = "Whether to reduce contacts for mesh-mesh collisions."
+    )
+
+    uniform int newton:collisionPipeline:maxSoftContacts = -1 (
+        doc = """Maximum soft contact buffer capacity.
+
+        If `newton:collisionPipeline:maxSoftContacts` is set to `-1`, the
+        engine derives a capacity from the model's soft-rigid contact pair
+        count (plus full-surface headroom when
+        `newton:collisionPipeline:enableRigidSoftFullSurfaceContact` is set).
+
+        Range: [-1, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
+    )
+
+    uniform float newton:collisionPipeline:softContactGap = -inf (
+        doc = """Detection-only distance added to the per-particle radius for
+        particle-shape (soft) contact queries.
+
+        If `newton:collisionPipeline:softContactGap` is set to `-inf`, the
+        engine's default should be used instead.
+
+        Range: [0, inf)
+        Units: distance"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform bool newton:collisionPipeline:enableRigidSoftFullSurfaceContact = false (
+        doc = """Generate soft contacts over the full soft-mesh surface (edges
+        and triangle interiors) against rigid SDFs, in addition to the
+        per-vertex (particle) contacts.
+
+        Requires an SDF on every participating rigid mesh/convex shape (see
+        `NewtonSDFCollisionAPI`), and is only consumed by solvers that support
+        full-surface soft contact; other solvers should raise on such
+        contacts."""
+    )
+
+    uniform token newton:collisionPipeline:requiresGrad = "inherit" (
+        allowedTokens = ["inherit", "true", "false"]
+        doc = """Whether pipeline-generated soft contacts (and the deprecated
+        automatic rigid-contact outputs) require gradients.
+
+        If `newton:collisionPipeline:requiresGrad` is set to "inherit", the
+        engine uses the owning model's `requires_grad` setting."""
+    )
+
+    uniform bool newton:collisionPipeline:deterministic = false (
+        doc = """Sort contacts after the narrow phase so that results are
+        independent of GPU thread scheduling.
+
+        Also enables deterministic hydroelastic accumulation and contact
+        allocation. Adds a radix sort + gather pass.
+
+        If `newton:collisionPipeline:contactMatching` is set to any mode other
+        than "disabled", this flag behaves as true."""
+    )
+
+    uniform bool newton:collisionPipeline:includeStaticKinematicPairs = true (
+        doc = """Whether to generate contacts for static-kinematic and
+        kinematic-kinematic shape pairs.
+
+        Set to false to filter those pairs. Static-static pairs are always
+        filtered, regardless of this setting."""
+    )
+
+    uniform int newton:collisionPipeline:maxShapePairs = -1 (
+        doc = """Override for the broad-phase candidate-pair buffer capacity
+        used by the "nxn" and "sap" `newton:collisionPipeline:broadPhase`
+        modes.
+
+        If `newton:collisionPipeline:maxShapePairs` is set to `-1`, the engine
+        uses the worst-case per-world bound. Ignored for the "explicit" mode.
+
+        A value of `0` is invalid.
+
+        Range: {-1} ∪ (0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
+    )
+
+    uniform token newton:collisionPipeline:contactMatching = "disabled" (
+        allowedTokens = ["disabled", "latest", "sticky"]
+        doc = """Frame-to-frame contact matching mode.
+
+        Any non-"disabled" mode implies
+        `newton:collisionPipeline:deterministic` behaves as true."""
+    )
+
+    uniform float newton:collisionPipeline:contactMatchingPosThreshold = 0.0005 (
+        doc = """World-space distance threshold between the previous and
+        current contact midpoints. Contacts whose midpoint moves more than
+        this are considered broken.
+
+        Range: [0, inf)
+        Units: distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:collisionPipeline:contactMatchingNormalDotThreshold = 0.995 (
+        doc = """Minimum dot product between old and new contact normals for a
+        match.
+
+        Range: [-1, 1]
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = -1
+                float maximum = 1
+            }
+        }
+    )
+
+    uniform bool newton:collisionPipeline:contactReport = false (
+        doc = """Allocate and populate per-frame contact-matching new/broken
+        index and count outputs.
+
+        Requires a non-"disabled" `newton:collisionPipeline:contactMatching`
+        mode."""
+    )
+
+    uniform bool newton:collisionPipeline:verifyBuffers = true (
+        doc = """Run a diagnostic kernel at the end of the narrow phase that
+        prints warnings on any intermediate candidate-pair or final rigid
+        contact buffer overflow."""
+    )
+
+    uniform float newton:collisionPipeline:contactReductionHashtableSizeFactor = 0.25 (
+        doc = """Multiplier applied to `newton:collisionPipeline:maxTrianglePairs`
+        when allocating the global contact reduction hashtable.
+
+        Increase this if hashtable fill/failure warnings appear.
+
+        Range: (0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:collisionPipeline:maxSpeculativeContactGap = -inf (
+        doc = """Upper bound on the velocity-based contact gap for speculative
+        rigid contacts.
+
+        Approaching candidates are retained when their contact points can
+        close the current separation before the next collision update. A
+        value of `0` enables speculative contacts without velocity
+        adaptation.
+
+        If `newton:collisionPipeline:maxSpeculativeContactGap` is set to
+        `-inf`, speculative contacts are disabled.
+
+        Range: [0, inf)
+        Units: distance"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
 class NewtonArticulationRootAPI "NewtonArticulationRootAPI" (
     apiSchemas = ["PhysicsArticulationRootAPI"]
     doc = """NewtonArticulationRootAPI extends the `PhysicsArticulationRootAPI` with additional attributes for Newton.

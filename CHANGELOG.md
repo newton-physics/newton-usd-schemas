@@ -1,3 +1,10 @@
+# 0.6.0 (unreleased)
+
+## Features
+
+- Added `NewtonCollisionPipelineAPI`, which further extends a `PhysicsScene` with Newton's collision pipeline configuration (broad phase, narrow phase buffer sizing, and contact generation policy)
+  - Applying `NewtonCollisionPipelineAPI` implicitly applies the `NewtonSceneAPI` as well
+
 # 0.5.0
 
 ## Features
