@@ -615,6 +615,133 @@ class "NewtonMPMSceneAPI" (
     )
 }
 
+class "NewtonMuJoCoSceneAPI" (
+    apiSchemas = ["NewtonSceneAPI", "MjcSceneAPI"]
+    doc = """Provides Newton's MuJoCo solver configuration.
+
+    Applying this schema also applies `NewtonSceneAPI` and the MuJoCo `MjcSceneAPI`. Options that
+    `MjcSceneAPI` already describes (for example `mjc:option:iterations`, `mjc:option:solver`,
+    `mjc:option:cone`, or `mjc:option:impratio`) are authored through that schema. The attributes
+    below only cover `SolverMuJoCo` settings that have no MuJoCo USD equivalent. Contact, sensor and
+    multi-CCD toggles are authored through `mjc:flag:contact`, `mjc:flag:sensor` and `mjc:flag:multiccd`.
+
+    For the capacity attributes (`newton:mujoco:njmax`, `newton:mujoco:njmax_nnz`, `newton:mujoco:nconmax`
+    and `newton:mujoco:nvmax`), a value of -1 lets the solver choose an appropriate default."""
+)
+{
+    uniform int newton:mujoco:njmax = -1 (
+        doc = """Maximum number of constraints per world (MuJoCo `njmax`).
+
+        If set to -1, the solver estimates a value automatically. An explicit value is increased, with a warning, if it
+        cannot hold the initial MuJoCo constraints.
+
+        Range: [-1, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
+    )
+
+    uniform int newton:mujoco:njmax_nnz = -1 (
+        doc = """Sparse constraint Jacobian nonzero capacity per world (MuJoCo `njmax_nnz`).
+
+        If set to -1, the solver derives a value from the constraint counts.
+
+        Range: [-1, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
+    )
+
+    uniform int newton:mujoco:nconmax = -1 (
+        doc = """Maximum number of contacts per world (MuJoCo `nconmax`).
+
+        If set to -1, the solver estimates a value automatically. An explicit value is increased, with a warning, if it
+        cannot hold the initial MuJoCo contacts.
+
+        Range: [-1, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
+    )
+
+    uniform bool newton:mujoco:useMujocoCpu = false (
+        doc = """Whether to use the MuJoCo CPU backend instead of the MuJoCo Warp (GPU) backend."""
+    )
+
+    uniform bool newton:mujoco:useMujocoContacts = true (
+        doc = """Whether MuJoCo computes contacts.
+
+        When false, contacts must be provided by Newton's collision pipeline."""
+    )
+
+    uniform bool newton:mujoco:enableSleeping = false (
+        doc = """Whether to enable MuJoCo Warp's sleeping optimization.
+
+        Requires the MuJoCo Warp backend, MuJoCo contact handling, the Newton solver, and a
+        non-RK4 integrator."""
+    )
+
+    uniform int newton:mujoco:nvmax = -1 (
+        doc = """Maximum number of active degrees of freedom per world when sleeping is enabled (MuJoCo `nvmax`).
+
+        If set to -1, space is allocated for every degree of freedom. Only valid when
+        `newton:mujoco:enableSleeping` is true.
+
+        Range: [-1, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+            }
+        }
+    )
+
+    uniform token newton:mujoco:deterministic = "inherit" (
+        allowedTokens = ["inherit", "notGuaranteed", "runToRun", "gpuToGpu"]
+        doc = """Reproducibility guarantee requested for the MuJoCo Warp solver kernels.
+
+        - `inherit`: use the simulator's global setting.
+        - `notGuaranteed`: results may differ between runs (fastest).
+        - `runToRun`: repeated runs on the same GPU produce identical results.
+        - `gpuToGpu`: results are identical across runs and across GPUs.
+
+        Stricter modes may reduce performance."""
+    )
+
+    uniform int newton:mujoco:updateDataInterval = 1 (
+        doc = """Frequency, in simulation steps, at which MuJoCo data is refreshed from the Newton state.
+
+        If 0, the data is never refreshed after initialization.
+
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = 0
+            }
+        }
+    )
+
+    uniform bool newton:mujoco:includeSites = true (
+        doc = """Whether site shapes are exported to MuJoCo as sites."""
+    )
+
+    uniform bool newton:mujoco:skipVisualOnlyGeoms = true (
+        doc = """Whether geometry used only for visualization is excluded from the MuJoCo model.
+
+        This avoids mismatches with models that use explicit contact definitions for collision geometry."""
+    )
+}
+
 class NewtonArticulationRootAPI "NewtonArticulationRootAPI" (
     apiSchemas = ["PhysicsArticulationRootAPI"]
     doc = """NewtonArticulationRootAPI extends the `PhysicsArticulationRootAPI` with additional attributes for Newton.

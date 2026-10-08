@@ -1,3 +1,12 @@
+# Unreleased
+
+## Features
+
+- Added `NewtonMuJoCoSceneAPI`, which further extends a `PhysicsScene` with Newton's MuJoCo solver configuration
+  - Applying `NewtonMuJoCoSceneAPI` implicitly applies `NewtonSceneAPI` and the MuJoCo `MjcSceneAPI` as well
+  - Only adds `SolverMuJoCo` settings that `MjcSceneAPI` does not describe (constraint/contact capacities, backend and contact selection, sleeping, determinism, and export options). Options such as iterations, solver, cone, and impratio remain authored via `mjc:option:*`, and the contact, sensor, and multi-CCD toggles via `mjc:flag:*`.
+  - Note: the `MjcSceneAPI` schema plugin must be registered for it to be applied. Without it, USD warns and applies only `NewtonSceneAPI`.
+
 # 0.5.0
 
 ## Features
