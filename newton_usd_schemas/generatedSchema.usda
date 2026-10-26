@@ -623,6 +623,10 @@ class "NewtonCollisionPipelineAPI" (
     EXPERIMENTAL: The Newton collision pipeline schema is provisional. Attribute names,
     defaults, and composition rules may change without notice in subsequent releases.
 
+    Buffer capacities, diagnostics, and gradient requirements describe the runtime 
+    workload rather than the scene. Applications typically supply them at runtime 
+    (e.g. via a session layer) rather than authoring them in reusable assets.
+
     Applying this schema also applies `NewtonSceneAPI`."""
 )
 {
