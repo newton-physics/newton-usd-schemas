@@ -1514,11 +1514,26 @@ class NewtonActuator "NewtonActuator" (
 
     Actuators must provide a single control law by applying a `NewtonActuatorControlBaseAPI` derived schema (e.g. `NewtonPDControlAPI`).
 
-    Actuator command input delay can be included by applying `NewtonActuatorDelayAPI`. This is useful to model actuator communication or processing lag.
+    Additional input processing (e.g. command delay or link-side position sensing) can be added by applying
+    `NewtonActuatorInputProcessorBaseAPI` derived schemas (e.g. `NewtonActuatorDelayAPI`). The order of input
+    processors is not guaranteed to be preserved thus input processors must be order independent.
 
     Additional effort clamping behaviors can be added by applying any number of `NewtonActuatorClampingBaseAPI`
     derived schemas (e.g. `NewtonMaxEffortClampingAPI`). The order of clamping is not guaranteed to be preserved thus
     clamping operations must be order independent.
+
+    A single motor can be added by applying a `NewtonActuatorMotorBaseAPI` derived schema (e.g.
+    `NewtonDCMotorAPI`). With a motor, the control law must output the motor
+    command (e.g. a voltage from `NewtonVoltageControlAPI`), and the motor turns it into the effort of the
+    motor, which the clamping bounds.
+
+    With a motor, command clamping behaviors can be added by applying any number of
+    `NewtonActuatorCommandClampingBaseAPI` derived schemas (e.g. `NewtonCurrentPWMClampingAPI`). They bound
+    the motor command before the motor. The order of command clamping is not guaranteed to be preserved thus
+    command clamping operations must be order independent.
+
+    The motor of an actuator may draw from a battery shared with other actuators (e.g.
+    `NewtonConstantResistanceBattery`) via the `newton:battery` relationship.
 
     Note: Newton actuators use radians, diverging from `UsdPhysicsDriveAPI` which uses degrees.
     Actuator attributes are also documented in joint space, though this is not enforced,
@@ -1539,9 +1554,134 @@ class NewtonActuator "NewtonActuator" (
         Multi-DOF `PhysicsJoint` prims are not supported, even when locked via `LimitAPI` to a single axis.
         """
     )
+
+    rel newton:battery (
+        doc = """The battery this actuator draws from.
+
+        The relationship is optional. Only the first target is honored, and it must
+        identify a prim derived from `NewtonBattery` (e.g. `NewtonConstantResistanceBattery`).
+        Parsers should raise an error if it does not. The battery type defines which actuators
+        may target it.
+        """
+    )
+}
+
+class "NewtonBattery" (
+    doc = """Base class for all batteries shared by one or more actuators.
+
+    EXPERIMENTAL: The Newton actuator schema family is provisional. Attribute names,
+    defaults, and composition rules may change without notice in subsequent releases.
+
+    A battery is defined by a prim of a concrete type derived from `NewtonBattery` (e.g.
+    `NewtonConstantResistanceBattery`), which determines the battery model.
+
+    An actuator draws from a battery by targeting it with its `newton:battery` relationship.
+    The battery type defines how the battery affects its actuators and which actuators may
+    draw from it.
+    """
+)
+{
+}
+
+class NewtonConstantResistanceBattery "NewtonConstantResistanceBattery" (
+    doc = """Battery modeled as an ideal voltage source behind a constant internal resistance.
+
+    The battery provides the supply voltage of the motors of its actuators: motors that read a
+    supply voltage (e.g. `NewtonDCMotorAPI`) use the battery's voltage instead of their own.
+    Only actuators whose motor models the current it draws from the battery (e.g.
+    `NewtonDCMotorAPI`) may draw from this battery. Parsers should raise an error for
+    other actuators that target one.
+
+    As in [BAM](https://github.com/Rhoban/bam), the voltage drops with the total current of
+    the actuators that draw from the battery:
+
+        `voltage = max(nominalVoltage - resistance * max(0, sum(current)), minVoltage)`
+
+    This is BAM's battery law since Rhoban/bam commit `5f9341bd` (July 2026). Earlier versions, and
+    battery resistances fitted with them, estimate the current as the motor current
+    `sum(|torque|) / kt` instead, which drops the voltage more for the same resistance.
+
+    The current of an actuator is the current its motor draws from the battery, e.g.
+    `duty * current` for `NewtonDCMotorAPI`, since the battery supplies the motor current only
+    during the PWM on-time. It is signed: a regenerating actuator returns current and offsets
+    the others, but the voltage never rises above `newton:nominalVoltage`.
+
+    The voltage is not updated by the actuators themselves: consumers update it once per
+    step, after the actuators have stepped, so the voltage used at a step is computed from
+    the currents of the previous step. At the first step and after a reset, the voltage is
+    `newton:nominalVoltage`.
+
+    This feedback loop settles only while the battery resistance is small enough. For
+    `NewtonDCMotorAPI` actuators with `NewtonVoltageControlAPI` and
+    `NewtonCurrentPWMClampingAPI` without an active current limit, it settles while
+    `resistance * sum(maxPwm^2 / r) < 1`, where `resistance` is the battery's
+    `newton:resistance` and `r` is each actuator's motor `newton:resistance`. Above that
+    bound, or while a current limit is active, the voltage may oscillate instead of
+    converging."""
+)
+{
+    float newton:nominalVoltage (
+        doc = """Supply voltage without load.
+
+        Must be authored. Parsers should raise an error if it is missing. Must not be less than
+        `newton:minVoltage`.
+
+        Range: [0, inf)
+        Units: volt"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:resistance = 0 (
+        doc = """Internal resistance of the battery and its wiring.
+
+        Range: [0, inf)
+        Units: ohm"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:minVoltage = 0 (
+        doc = """Lower bound of the supply voltage under load.
+
+        Must not exceed `newton:nominalVoltage`.
+
+        Range: [0, inf)
+        Units: volt"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
+class NewtonActuatorInputProcessorBaseAPI "NewtonActuatorInputProcessorBaseAPI" (
+    doc = """Base API for all actuator input processors.
+
+    Input processors transform the inputs of the control law, such as the commanded inputs
+    (e.g. `NewtonActuatorDelayAPI`) or the sensed joint state (e.g.
+    `NewtonActuatorEncoderAPI`), before the control law computes the actuator output effort.
+    Any number of input processors may be applied to a `NewtonActuator`. The order of input
+    processors is not guaranteed to be preserved, thus input processors must be order
+    independent.
+
+    Applying any input processor API automatically applies this base. Check
+    `prim.HasAPI('NewtonActuatorInputProcessorBaseAPI')` to detect whether any input
+    processor is present.
+    """
+)
+{
 }
 
 class NewtonActuatorDelayAPI "NewtonActuatorDelayAPI" (
+    apiSchemas = ["NewtonActuatorInputProcessorBaseAPI"]
     doc = """Adds command input delay to an actuator to model communication or processing lag.
 
     Command inputs such as control targets and feedforward terms are delayed by the specified
@@ -1569,6 +1709,39 @@ class NewtonActuatorDelayAPI "NewtonActuatorDelayAPI" (
     )
 }
 
+class NewtonActuatorEncoderAPI "NewtonActuatorEncoderAPI" (
+    apiSchemas = ["NewtonActuatorInputProcessorBaseAPI"]
+    doc = """Position encoder of the actuator.
+
+    Models the sensor that provides the position the control law reads, including effects of
+    how the encoder is mounted and how it measures.
+
+    Output-side mounting: the encoder measures after a passive single-DOF joint between the
+    actuated joint and the link, named by `newton:outputJoint`. The control law reads the position
+    `q = q_actuated + q_output` instead of the actuated joint position alone. This captures
+    gearbox backlash when the output joint has a small motion range: the simulation handles
+    the dead zone, where the actuator effort does not reach the link.
+
+    The velocity is still that of the actuated joint.
+    """
+)
+{
+    rel newton:outputJoint (
+        doc = """The passive joint between the actuated joint and the link, e.g. to model gearbox
+        backlash. The encoder measures the position after this joint:
+        `q = q_actuated + q_output`.
+
+        The relationship must be authored. Parsers should raise an error if no target
+        is provided.
+
+        Only the first target is honored, and it must identify either a
+        `PhysicsRevoluteJoint` or `PhysicsPrismaticJoint`, matching the type of the
+        actuated joint. Since the positions are summed, its axis must be aligned with the
+        axis of the actuated joint, with the same direction and sign convention.
+        """
+    )
+}
+
 class NewtonActuatorControlBaseAPI "NewtonActuatorControlBaseAPI" (
     doc = """Base API for all actuator control laws.
 
@@ -1578,6 +1751,11 @@ class NewtonActuatorControlBaseAPI "NewtonActuatorControlBaseAPI" (
     one or more applied `NewtonActuatorClampingBaseAPI` derived schemas.
 
     Actuators must provide a single control law by applying a `NewtonActuatorControlBaseAPI` derived schema (e.g. `NewtonPDControlAPI`).
+
+    Each control law outputs either an effort (e.g. `NewtonPDControlAPI`) or a motor command (e.g.
+    a voltage from `NewtonVoltageControlAPI`), as stated in its doc. A control law that outputs an
+    effort must not be combined with a motor, and a control law that outputs a motor command
+    requires one. Parsers should raise an error for either combination.
 
     Applying any control law API (e.g. PD, PID, Network) automatically applies this base.
     Check `prim.HasAPI('NewtonActuatorControlBaseAPI')` to detect whether any control law is present.
@@ -1726,6 +1904,57 @@ class NewtonNeuralControlAPI "NewtonNeuralControlAPI" (
     )
 }
 
+class NewtonVoltageControlAPI "NewtonVoltageControlAPI" (
+    apiSchemas = ["NewtonActuatorControlBaseAPI"]
+    doc = """Firmware position controller of a voltage-controlled servo, as in BAM (Better Actuator Models).
+
+    This follows the voltage-controlled servo model of the [Rhoban/bam](https://github.com/Rhoban/bam)
+    library, whose identified fits are described in the ICRA 2025 paper "Extended Friction Models
+    for the Physics Simulation of Servo Actuators".
+
+    Computes the PWM duty cycle and outputs the voltage that the motor receives at its supply
+    voltage `V`:
+
+        `duty = errorGain * kp * (target_pos - q)`
+        `voltage = V * duty`
+
+    `V` is the supply voltage of the motor, so this control law requires a motor that takes a
+    voltage command (e.g. `NewtonDCMotorAPI`). Parsers should raise an error if none is applied.
+    The current and PWM limits of the servo are authored with `NewtonCurrentPWMClampingAPI`.
+
+    Target velocity and feedforward terms are ignored, since the modeled firmware has no effort
+    input. For a BAM fit, `newton:kp` and `newton:errorGain` are the firmware gain and the error
+    gain of the servo, not fitted values.
+    """
+)
+{
+    float newton:kp = 0 (
+        doc = """Firmware proportional gain, as set on the servo.
+
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:errorGain = 1 (
+        doc = """Converts `kp` times the position error (in joint space) to a duty cycle.
+
+        Depends on the encoder resolution and the gain scaling of the servo firmware.
+
+        Range: [0, inf)
+        Units: 1 / distance or 1 / radians"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
 class NewtonActuatorClampingBaseAPI "NewtonActuatorClampingBaseAPI" (
     doc = """Base API for all actuator clamping strategies.
 
@@ -1733,8 +1962,26 @@ class NewtonActuatorClampingBaseAPI "NewtonActuatorClampingBaseAPI" (
     applied to a `NewtonActuator` to constrain actuator output effort (i.e. force/torque for linear/rotational actuators). The order of clamping
     is not guaranteed to be preserved thus clamping operations must be order independent.
 
+    In an actuator with a motor, clamping is applied after the motor and bounds the effort of the motor.
+
     Applying any clamping API (e.g. `NewtonMaxEffortClampingAPI`, `NewtonDCMotorClampingAPI`, `NewtonPositionBasedClampingAPI`) automatically
     applies this base. Check `prim.HasAPI('NewtonActuatorClampingBaseAPI')` to detect whether any clamping is present.
+    """
+)
+{
+}
+
+class NewtonActuatorCommandClampingBaseAPI "NewtonActuatorCommandClampingBaseAPI" (
+    doc = """Base API for all actuator command clamping strategies.
+
+    Any number of `NewtonActuatorCommandClampingBaseAPI` derived schemas (e.g. `NewtonCurrentPWMClampingAPI`) may be
+    applied to a `NewtonActuator` to constrain the motor command (e.g. a voltage for `NewtonDCMotorAPI`). The order of command clamping
+    is not guaranteed to be preserved thus command clamping operations must be order independent.
+
+    Command clamping is applied before the motor and requires one. Parsers should raise an error if none is applied.
+
+    Applying any command clamping API (e.g. `NewtonCurrentPWMClampingAPI`) automatically
+    applies this base. Check `prim.HasAPI('NewtonActuatorCommandClampingBaseAPI')` to detect whether any command clamping is present.
     """
 )
 {
@@ -1774,6 +2021,10 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
 
     At zero velocity the motor can produce up to `saturationEffort` (capped by `maxMotorEffort`).
     As velocity approaches `velocityLimit`, available effort drops to zero in both directions.
+
+    This clamp models a DC motor by its effort-speed limit only. It must not be combined with a
+    motor (e.g. `NewtonDCMotorAPI`), which models the motor itself including its back-EMF, so the
+    effort-speed limit would be applied a second time. Parsers should raise an error if one is applied.
     """
 )
 {
@@ -1852,5 +2103,156 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
         Must be the same length as `newton:lookupPositions`.
 
         Units: force or torque"""
+    )
+}
+
+class NewtonCurrentPWMClampingAPI "NewtonCurrentPWMClampingAPI" (
+    apiSchemas = ["NewtonActuatorCommandClampingBaseAPI"]
+    doc = """Current and PWM limits of the firmware of a servo, as in BAM (Better Actuator Models).
+
+    This follows the voltage-controlled servo model of the [Rhoban/bam](https://github.com/Rhoban/bam)
+    library, whose identified fits are described in the ICRA 2025 paper "Extended Friction Models
+    for the Physics Simulation of Servo Actuators".
+
+    Bounds the voltage command of a motor (e.g. from `NewtonVoltageControlAPI`) first by the
+    current limit and then by the PWM limit, in this fixed order:
+
+        `voltage = clamp(voltage, kt*v - resistance*maxCurrent, kt*v + resistance*maxCurrent)`
+        `voltage = clamp(voltage, -maxPwm*V, maxPwm*V)`
+
+    The current limit is skipped when `newton:maxCurrent` is 0. `V` is the supply voltage of the
+    motor. `kt` and `resistance` are `newton:kt` and `newton:resistance` of the motor, which
+    requires a `NewtonDCMotorAPI` on the same prim. Parsers should raise an error if none is
+    applied.
+
+    The current limit keeps the motor current within `[-maxCurrent, maxCurrent]`. The PWM limit
+    is applied last, so at high velocity the back-EMF can still drive the current above
+    `newton:maxCurrent`. For a BAM fit, both are firmware limits of the servo, not fitted values.
+    """
+)
+{
+    float newton:maxCurrent = 0 (
+        doc = """Firmware current limit.
+
+        A value of 0 disables the current limit.
+
+        Range: [0, inf)
+        Units: ampere"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:maxPwm = 1 (
+        doc = """Largest duty cycle magnitude.
+
+        A value of 1 allows the full duty cycle.
+
+        Range: [0, 1]
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
+    )
+}
+
+class NewtonActuatorMotorBaseAPI "NewtonActuatorMotorBaseAPI" (
+    doc = """Base API for all actuator motors.
+
+    Motors turn the motor command of the control law (e.g. a voltage from `NewtonVoltageControlAPI`),
+    bounded by any applied `NewtonActuatorCommandClampingBaseAPI` derived schemas, into the effort of the
+    motor. This effort may still be constrained by one or more applied `NewtonActuatorClampingBaseAPI`
+    derived schemas.
+
+    Actuators may provide a single motor by applying a `NewtonActuatorMotorBaseAPI` derived schema (e.g. `NewtonDCMotorAPI`).
+
+    Applying any motor API automatically applies this base.
+    Check `prim.HasAPI('NewtonActuatorMotorBaseAPI')` to detect whether any motor is present.
+
+    Only one motor API should be applied to a given `NewtonActuator` prim."""
+)
+{
+}
+
+class NewtonDCMotorAPI "NewtonDCMotorAPI" (
+    apiSchemas = ["NewtonActuatorMotorBaseAPI"]
+    doc = """DC motor driven by a PWM voltage, as in BAM (Better Actuator Models).
+
+    This follows the voltage-controlled servo model of the [Rhoban/bam](https://github.com/Rhoban/bam)
+    library, whose identified fits are described in the ICRA 2025 paper "Extended Friction Models
+    for the Physics Simulation of Servo Actuators".
+
+    The motor computes the effort from the voltage command
+    of the control law (e.g. `NewtonVoltageControlAPI`), bounded by command clamping (e.g.
+    `NewtonCurrentPWMClampingAPI`), and by the supply voltage `V`, which the motor cannot exceed:
+
+        `voltage = clamp(voltage, -V, V)`
+        `current = (voltage - kt*v) / resistance`
+        `effort = kt*current`
+
+    Control laws that output an effort (e.g. `NewtonPDControlAPI`) must not be combined with this
+    motor. Parsers should raise an error if one is applied.
+
+    The motor models its back-EMF itself, so it must not be combined with `NewtonDCMotorClampingAPI`,
+    which would apply the effort-speed limit a second time. Parsers should raise an error if both are
+    applied.
+
+    The motor provides the supply voltage `V`: `newton:vin`, or the voltage of the battery the
+    actuator draws from if that battery provides one (e.g. `NewtonConstantResistanceBattery`).
+    The actuator then draws the current `duty * current` from the battery, with the duty cycle
+    `duty = voltage / V`.
+
+    For a BAM fit, `newton:kt` and `newton:resistance` are the fit's `kt` and `R`, and
+    `newton:vin` is the supply voltage of the servo, not a fitted value. The rest of a fit is
+    modeled outside the actuator: its armature on the actuated joint and its command delay with
+    `NewtonActuatorDelayAPI`. Its friction is not modeled, and BAM's current-controlled servo
+    models are not covered.
+
+    `newton:kt` and `newton:resistance` have no fallback values and must be authored, as must
+    `newton:vin` unless the actuator draws from a battery that provides its supply voltage.
+    Parsers should raise an error if any of them is missing.
+    """
+)
+{
+    float newton:kt (
+        doc = """Motor torque constant (in joint space).
+
+        Range: (0, inf)
+        Units: force / ampere or torque / ampere"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:resistance (
+        doc = """Motor winding resistance.
+
+        Range: (0, inf)
+        Units: ohm"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:vin (
+        doc = """Supply voltage, unless the actuator draws from a battery that provides its
+        supply voltage (e.g. `NewtonConstantResistanceBattery`).
+
+        Range: (0, inf)
+        Units: volt"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
     )
 }
