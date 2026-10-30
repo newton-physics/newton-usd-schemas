@@ -92,10 +92,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--exclude",
-        dest="exclude_pattern",
+        dest="exclude_patterns",
         type=str,
-        default=".venv",
-        help="Glob pattern of paths to skip",
+        action="append",
+        help="Path prefix to skip, may be repeated (default: .venv)",
     )
     parser.add_argument(
         "--check",
@@ -119,7 +119,8 @@ if __name__ == "__main__":
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
 
-    files = [x for x in pathlib.Path().glob(args.include_pattern) if not str(x).startswith(args.exclude_pattern)]
+    exclude_patterns = tuple(args.exclude_patterns or [".venv"])
+    files = [x for x in pathlib.Path().glob(args.include_pattern) if not x.as_posix().startswith(exclude_patterns)]
     logger.info("Checking licenses in %d files.", len(files))
     if args.check:
         passed, failed = __check(files)

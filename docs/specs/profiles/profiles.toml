@@ -1,0 +1,4 @@
+[Newton-Simulation]
+"1.0.0" = {features = [
+    {"newton_simulation" = {version = "1.0.0"}},
+]}

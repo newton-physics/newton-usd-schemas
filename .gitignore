@@ -4,3 +4,4 @@ __pycache__
 .results.xml
 
 dist
+newton_usd_schemas/validators/_requirements
