@@ -1051,7 +1051,7 @@ class NewtonPointsDeformableSimAPI "NewtonPointsDeformableSimAPI" (
     define the deformable body."""
 )
 {
-    float[] physics:masses (
+    float[] newton:masses (
         doc = """Per-point masses of the simulation geometry.
 
         When authored, the array length must match `points`. These values take

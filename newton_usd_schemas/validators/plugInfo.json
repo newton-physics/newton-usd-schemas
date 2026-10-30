@@ -1,0 +1,32 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "newton_usd_schemas.validators",
+            "Info": {
+                "Validators": {
+                    "SdfMaxResolutionValidator": {
+                        "doc": "newton:sdfMaxResolution must be divisible by 8, as SDF volumes are allocated in 8x8x8 tiles.",
+                        "keywords": ["NewtonValidators", "NewtonCollision", "NewtonSDFCollisionAPI"],
+                        "schemaTypes": ["NewtonPhysicsSDFCollisionAPI"]
+                    },
+                    "AttributeHardLimitsValidator": {
+                        "doc": "Authored attribute values must lie within the attribute's hard limits, unless they equal the attribute's schema fallback value, which may be a sentinel outside the limits (such as -inf).",
+                        "keywords": ["NewtonValidators", "AttributeLimits"],
+                        "isTimeDependent": true
+                    },
+                    "MimicJointValidator": {
+                        "doc": "newton:mimicJoint must target exactly one other joint, of the same joint type as the follower.",
+                        "keywords": ["NewtonValidators", "NewtonJoints", "NewtonMimicAPI"],
+                        "schemaTypes": ["NewtonPhysicsMimicAPI"]
+                    },
+                    "RenamedAttributesValidator": {
+                        "doc": "Attributes that a breaking change to a Newton schema renamed must be authored with their new names, as values authored with the old names are ignored.",
+                        "keywords": ["NewtonValidators", "NewtonMigration", "NewtonPointsDeformableSimAPI"],
+                        "schemaTypes": ["NewtonPhysicsPointsDeformableSimAPI"]
+                    }
+                }
+            }
+        }
+    ]
+}

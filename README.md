@@ -17,8 +17,7 @@ To start using the schemas, install the python wheel into a virtual environment 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install newton-usd-schemas
-pip install usd-core  # or any other USD runtime
+pip install newton-usd-schemas[usd]  # or [usdex], or install any other USD runtime separately
 ```
 
 At runtime, simply import the module to register the schemas with OpenUSD.
@@ -44,6 +43,12 @@ stage.Export("/tmp/my_robot.usda")  # or .usdc or .usd
 ```
 
 Once a USD layer is authored to storage, it can be loaded into a Newton runtime using [Newton's USD Parsing](https://newton-physics.github.io/newton/concepts/usd_parsing.html) mechanism.
+
+# Validation
+
+Some of the Newton schemas have automated validation, which can be run with OpenUSD's [UsdValidation](https://openusd.org/release/api/usd_validation_page_front.html) framework, or as [usd-validation-nvidia](https://github.com/NVIDIA-Omniverse/usd-validation-nvidia) rules via the `validation` extra. More of the schemas will gain validation as they evolve.
+
+See [Validation](https://github.com/newton-physics/newton-usd-schemas/blob/main/docs/validation.md) for the requirements and how to validate content.
 
 # Experimental Status
 

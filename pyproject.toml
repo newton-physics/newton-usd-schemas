@@ -14,6 +14,17 @@ Homepage = "https://github.com/newton-physics/newton-usd-schemas"
 Repository = "https://github.com/newton-physics/newton-usd-schemas"
 Changelog = "https://github.com/newton-physics/newton-usd-schemas/blob/main/CHANGELOG.md"
 
+[project.optional-dependencies]
+usd = [
+    "usd-core>=25.5 ; python_version < '3.14'",
+    "usd-core>=26.11 ; python_version >= '3.14'",
+]
+usdex = ["usd-exchange>=3.0.1 ; python_version < '3.14'"]
+validation = ["usd-validation-nvidia>=1.22"]
+
+[project.entry-points."usd_validation_nvidia"]
+newton_usd_schemas = "newton_usd_schemas.validators._usd_validation_nvidia:Plugin"
+
 [dependency-groups]
 dev = [
     "poethepoet>=0.34",
@@ -21,9 +32,9 @@ dev = [
     "black>=25.1",
     "coverage>=7.4",
     "unittest-xml-reporting>=3.2.0",
-    "usd-core>=25.11 ; platform_machine != 'aarch64' and python_version < '3.14'",
-    "usd-core>=26.11 ; python_version >= '3.14'",
-    "usd-exchange>=2.2 ; platform_machine == 'aarch64' and python_version < '3.14'",
+    "newton-usd-schemas[usd] ; platform_machine != 'aarch64' or python_version >= '3.14'",
+    "newton-usd-schemas[usdex] ; platform_machine == 'aarch64' and python_version < '3.14'",
+    "newton-usd-schemas[validation]",
 ]
 
 [build-system]
@@ -33,9 +44,16 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 path = "newton_usd_schemas/_version.py"
 
+[tool.hatch.build.targets.wheel]
+artifacts = ["newton_usd_schemas/validators/_requirements"]
+
+[tool.hatch.build.targets.wheel.hooks.custom]
+dependencies = ["usd-profiles-nvidia>=1.23"]
+
 [tool.uv]
 package = true
 python-preference = "only-managed"
+cache-keys = [{ file = "pyproject.toml" }, { file = "hatch_build.py" }, { file = "docs/specs/**/*.md" }]
 
 # Dev Tools
 
@@ -70,7 +88,7 @@ cmd  = "uv lock --check"
 
 [tool.poe.tasks.lint-license]
 help = "Run license conformance checks on code base"
-cmd  = "python tools/license_format.py --check"
+cmd  = "python tools/license_format.py --check --exclude .venv --exclude newton_usd_schemas/validators/_requirements"
 
 [tool.poe.tasks.lint-ruff]
 help = "Run ruff check on code base"
@@ -87,7 +105,7 @@ ignore_fail = "return_non_zero"
 
 [tool.poe.tasks.format-license]
 help = "Run license conformance checks on code base"
-cmd  = "python tools/license_format.py --fix"
+cmd  = "python tools/license_format.py --fix --exclude .venv --exclude newton_usd_schemas/validators/_requirements"
 
 [tool.poe.tasks.format-ruff]
 help = "Run ruff fixer on code base"
@@ -99,6 +117,7 @@ cmd  = "black ."
 
 [tool.coverage.run]
 source = ["newton_usd_schemas"]
+omit = ["newton_usd_schemas/validators/_requirements/*"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -152,5 +171,5 @@ docstring-code-format = true
 
 [tool.black]
 line-length = 150
-exclude = "(.venv|dist)"
+exclude = "(.venv|dist|newton_usd_schemas/validators/_requirements)"
 target-version = ['py310']

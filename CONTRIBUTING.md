@@ -86,6 +86,8 @@ uv run --group dev poe lint
 uv run --group dev poe test
 ```
 
+The `dev` group includes an OpenUSD runtime and `usd-validation-nvidia`, through the extras defined in `pyproject.toml`.
+
 ### Development Requirements
 
 To use the build scripts locally, you need uv installed:
@@ -108,6 +110,16 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 - Run linting: `uv run --group dev poe lint`
 - Run tests: `uv run --group dev poe test`
 - Run auto-formatters: `uv run --group dev poe format`
+
+### Validation Requirements
+
+The requirements implemented by the validators are specified by pages in [`docs/specs/requirements`](docs/specs/requirements), and grouped by schema into capabilities by pages in [`docs/specs/capabilities`](docs/specs/capabilities). A new validator needs a new requirement page, with valid and invalid examples, which the tests validate.
+
+The `newton_simulation` feature in [`docs/specs/features`](docs/specs/features) lists the requirements that content needs for Newton, including requirements from other packages, and the `Newton-Simulation` profile in [`docs/specs/profiles/profiles.toml`](docs/specs/profiles/profiles.toml) selects it. Add a new requirement to the feature when Newton relies on it, and bump the feature and profile versions when their contents change.
+
+When a breaking change renames an attribute of a Newton schema, add the rename to `RENAMED_ATTRIBUTES` in [`newton_usd_schemas/validators/_migration.py`](newton_usd_schemas/validators/_migration.py), to the table on the [`renamed-attributes`](docs/specs/requirements/renamed-attributes.md) requirement page, and to the validator's `schemaTypes` and keywords in `plugInfo.json` if the schema is new to it. The validators then report content that still uses the old name, and their fix renames it. The tests check that all of these list the same renames.
+
+The wheel build, including `uv sync`, runs `hatch_build.py`, which generates the `newton_usd_schemas.validators._requirements` package from these pages with `usd-profiles-nvidia`. The generated package is not committed; edit the pages instead. The hook gives the modules generated from our pages the Newton copyright header, and the `_api` package and `_protocols.py`, which `usd-profiles-nvidia` copies in unchanged, keep their NVIDIA headers. Capability pages must be named `capability-<name>.md`, and list their requirement pages in a `requirements-table` directive.
 
 ## Testing
 
