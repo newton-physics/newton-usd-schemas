@@ -49,7 +49,7 @@ def Xform "World"
     {
         int64[] ids = [0, 1, 2, 3]
         rel material:binding:physics = </World/SandMaterial>
-        float[] physics:masses = [0.2, 0.2, 0.2375, 0.2375]
+        float[] newton:masses = [0.2, 0.2, 0.2375, 0.2375]
         rel physics:simulationOwner = </World/PhysicsScene>
         point3f[] points = [(-0.025, -0.025, 0.5), (0.025, -0.025, 0.5), (-0.025, 0.025, 0.5), (0.025, 0.025, 0.5)]
         uniform token subsetFamily:materialBind:familyType = "nonOverlapping"

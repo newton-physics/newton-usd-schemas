@@ -11,6 +11,13 @@
 - Added the `usd` and `usdex` extras, which install `usd-core` or `usd-exchange` respectively as the OpenUSD runtime
   - The extras are optional, and should not be combined. Any other OpenUSD runtime can still be installed separately.
 
+## Breaking Changes
+
+- Renamed `physics:masses` to `newton:masses` on `NewtonPointsDeformableSimAPI`
+  - The `physics:` namespace belongs to UsdPhysics and AOUSD, so a Newton schema should not define properties in it.
+  - Assets that author `physics:masses` on prims with `NewtonPointsDeformableSimAPI` should rename the attribute to `newton:masses`.
+  - Consumers that read `physics:masses` from these prims, such as Newton's USD importer, need a corresponding update to read `newton:masses`.
+
 # 0.6.0
 
 ## Features
