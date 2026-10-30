@@ -24,7 +24,8 @@ class TestNewtonPointsDeformableSimAPI(unittest.TestCase):
         self.assertTrue(self.points.CanApplyAPI("NewtonPointsDeformableSimAPI"))
         self.points.ApplyAPI("NewtonPointsDeformableSimAPI")
         self.assertTrue(self.points.HasAPI("NewtonPointsDeformableSimAPI"))
-        self.assertTrue(self.points.HasAttribute("physics:masses"))
+        self.assertTrue(self.points.HasAttribute("newton:masses"))
+        self.assertFalse(self.points.HasAttribute("physics:masses"))
         self.assertFalse(self.points.HasRelationship("physics:simulationOwner"))
 
     def test_api_limitations(self):
@@ -33,7 +34,7 @@ class TestNewtonPointsDeformableSimAPI(unittest.TestCase):
 
     def test_masses(self):
         self.points.ApplyAPI("NewtonPointsDeformableSimAPI")
-        attr = self.points.GetAttribute("physics:masses")
+        attr = self.points.GetAttribute("newton:masses")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
         self.assertIsNone(attr.Get())
@@ -92,7 +93,7 @@ class TestNewtonPointsDeformableSimAPI(unittest.TestCase):
         self.assertEqual(points.GetVelocitiesAttr().Get(), Vt.Vec3fArray([(0, 0, 0)] * 4))
         self.assertEqual(points.GetWidthsAttr().Get(), Vt.FloatArray([0.05] * 4))
         self.assertEqual(points.GetIdsAttr().Get(), Vt.Int64Array([0, 1, 2, 3]))
-        self.assertEqual(particles.GetAttribute("physics:masses").Get(), Vt.FloatArray([0.2, 0.2, 0.2375, 0.2375]))
+        self.assertEqual(particles.GetAttribute("newton:masses").Get(), Vt.FloatArray([0.2, 0.2, 0.2375, 0.2375]))
 
         self.assertAlmostEqual(sand_material.GetAttribute("physics:density").Get(), 1600.0)
         self.assertAlmostEqual(sand_material.GetAttribute("newton:mpm:youngsModulus").Get(), 1.0e7)
