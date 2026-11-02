@@ -1,0 +1,83 @@
+#usda 1.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+(
+    defaultPrim = "Rig"
+    metersPerUnit = 1
+    kilogramsPerUnit = 1
+    upAxis = "Y"
+)
+
+# Authoring fixture, not a runnable Newton example until the native importer exists.
+def Scope "Rig"
+{
+    def PhysicsScene "Scene" (
+        prepend apiSchemas = ["NewtonXpbdSceneAPI", "NewtonTendonSceneAPI"]
+    )
+    {
+        vector3f physics:gravityDirection = (0, -1, 0)
+        float physics:gravityMagnitude = 9.81
+        uniform int newton:tendon:maxSweeps = 256
+    }
+
+    def Xform "Load" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        rel physics:simulationOwner = </Rig/Scene>
+        float physics:mass = 0.1
+        float3 physics:diagonalInertia = (0.00001, 0.00001, 0.00001)
+        double3 xformOp:translate = (0.15, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def NewtonTendon "Cable"
+    {
+        rel physics:simulationOwner = </Rig/Scene>
+        rel newton:tendon:guides = [
+            </Rig/Cable/Start>,
+            </Rig/Cable/Pinhole>,
+            </Rig/Cable/Roller>,
+            </Rig/Cable/End>
+        ]
+
+        def NewtonTendonGuide "Start" (
+            prepend apiSchemas = ["NewtonTendonAnchorAPI"]
+        )
+        {
+            # No body target: this position is in stage world coordinates.
+            uniform point3f newton:tendon:localPos = (-0.2, 0, 0)
+        }
+
+        def NewtonTendonGuide "Pinhole" (
+            prepend apiSchemas = ["NewtonTendonPinholeAPI", "NewtonTendonSpanAPI"]
+        )
+        {
+            uniform point3f newton:tendon:localPos = (-0.1, 0, 0)
+            uniform float newton:tendon:friction = 0.1
+            uniform float newton:tendon:span:compliance = 0.0001
+            uniform float newton:tendon:span:damping = 0.01
+        }
+
+        def NewtonTendonGuide "Roller" (
+            prepend apiSchemas = ["NewtonTendonRollerAPI", "NewtonRollerCircleAPI", "NewtonTendonSpanAPI"]
+        )
+        {
+            uniform point3f newton:tendon:localPos = (0, 0, 0)
+            uniform float newton:roller:radius = 0.03
+            uniform float newton:tendon:friction = 0.2
+            uniform bool newton:tendon:dynamic = true
+            uniform float newton:tendon:span:compliance = 0.0001
+            uniform float newton:tendon:span:damping = 0.01
+        }
+
+        def NewtonTendonGuide "End" (
+            prepend apiSchemas = ["NewtonTendonAnchorAPI", "NewtonTendonSpanAPI"]
+        )
+        {
+            rel newton:tendon:body = </Rig/Load>
+            uniform float newton:tendon:span:compliance = 0.0001
+            uniform float newton:tendon:span:damping = 0.01
+        }
+    }
+}

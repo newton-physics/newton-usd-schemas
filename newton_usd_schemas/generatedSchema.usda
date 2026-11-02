@@ -1854,3 +1854,339 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
         Units: force or torque"""
     )
 }
+
+class NewtonTendon "NewtonTendon" (
+    doc = """An open, ordered, massless tendon routed through independent guides.
+
+    EXPERIMENTAL: This schema family is a proposal for native Newton XPBD/VBD
+    tendons. Names and semantics may change following review. It does not define
+    MuJoCo tendons, and registering these schemas does not implement an importer.
+
+    The tendon prim has no geometry or transform. Its guides define the route;
+    each guide after the first owns its incoming straight span's material data.
+    See docs/tendons.md for composition, validation, units, and import rules.
+    """
+)
+{
+    rel newton:tendon:guides (
+        doc = """Ordered relationship to at least two distinct NewtonTendonGuide prims.
+
+        The composed target order is the route order. Author the complete list
+        with SetTargets; do not infer order from prim names or traversal.
+        Each guide represents one route occurrence and belongs to one tendon.
+        To visit the same physical fixture twice, author two guide prims.
+        Invalid, inactive, unloaded, or non-guide targets are authoring errors,
+        not skipped route entries. Branching and closed routes are unsupported.
+        """
+    )
+
+    rel physics:simulationOwner (
+        doc = """Optional relationship to exactly one PhysicsScene.
+
+        All attached bodies must belong to that scene. With no target, use the
+        common scene of the attached bodies, or the sole scene for an all-world
+        route. Ambiguous scene ownership is an error; it must not depend on prim
+        traversal order. An invalid authored target is not an omitted target.
+        """
+    )
+}
+
+class NewtonTendonGuide "NewtonTendonGuide" (
+    doc = """A body-relative or world-fixed tendon attachment frame.
+
+    EXPERIMENTAL: Apply exactly one of NewtonTendonAnchorAPI,
+    NewtonTendonPinholeAPI, or NewtonTendonRollerAPI to select guide behavior.
+    A roller also requires exactly one profile API, initially NewtonRollerCircleAPI.
+    Apply NewtonTendonSpanAPI to every guide except the first in its route.
+
+    Guides are not collision shapes, sites, or three-dimensional surfaces.
+    Their own or enclosing Xform prims do not define the attachment frame.
+    Local pose properties below are relative to the body, or to stage world
+    coordinates when the body relationship has no target.
+    """
+)
+{
+    rel newton:tendon:body (
+        doc = """Optional relationship to one prim carrying PhysicsRigidBodyAPI.
+
+        No target means world attachment. An invalid, inactive, unloaded, or
+        non-rigid-body target, or more than one target, is an error. Do not
+        silently convert a failed reference into a world attachment. Runtime
+        body indices and the -1 world sentinel are not serialized.
+        """
+    )
+
+    uniform point3f newton:tendon:localPos = (0, 0, 0) (
+        doc = """Guide point or roller profile origin in the attachment frame.
+
+        Body-relative coordinates use the rigid body's prim frame, not its
+        center-of-mass frame. For a circle this point is the circle center.
+
+        Units: distance"""
+    )
+
+    uniform quatf newton:tendon:localRot = (1, 0, 0, 0) (
+        doc = """Unit quaternion rotating the guide frame into its attachment frame.
+
+        Roller profiles lie in local XY; local +Z is their normal. The full
+        rotation preserves in-plane orientation for future non-circular profiles.
+        Anchors and pinholes use only localPos, so localRot has no physical effect
+        on them. Quaternion components must be finite and form a unit quaternion.
+
+        Units: dimensionless"""
+    )
+}
+
+class NewtonTendonAnchorAPI "NewtonTendonAnchorAPI" (
+    doc = """EXPERIMENTAL: Fix cable material at the guide's localPos.
+
+    Anchors have no friction, winding, routing, or profile parameters. They may
+    also occur inside a route, separating material that cannot slip across them.
+    """
+)
+{
+}
+
+class NewtonTendonPinholeAPI "NewtonTendonPinholeAPI" (
+    doc = """EXPERIMENTAL: Route a tendon through the guide's localPos.
+
+    Material can slip between the adjacent spans subject to capstan friction
+    based on the bend angle. No roller profile, winding, or dynamic-routing
+    properties apply to a pinhole.
+    """
+)
+{
+    uniform float newton:tendon:friction = 0 (
+        doc = """Capstan friction coefficient at the pinhole.
+
+        Adjacent tensions satisfy T_high <= exp(friction * bendAngle) * T_low.
+        This is not collision friction or MuJoCo's tendon frictionloss.
+
+        Range: [0, inf), finite
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
+class NewtonTendonRollerAPI "NewtonTendonRollerAPI" (
+    doc = """EXPERIMENTAL: Route a tendon tangentially around a 2D roller profile.
+
+    A profile API supplies geometry independently of collision shapes. Apply
+    NewtonRollerCircleAPI and author its radius for the initial circular model.
+    Only one guide kind and one profile are permitted on a roller guide.
+    """
+)
+{
+    uniform float newton:tendon:friction = 0 (
+        doc = """Capstan friction coefficient at the roller.
+
+        Adjacent tensions satisfy T_high <= exp(friction * wrapAngle) * T_low.
+        Zero permits free slip. This is not a separate friction torque or a
+        collision material coefficient.
+
+        Range: [0, inf), finite
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform int newton:tendon:winding = 1 (
+        doc = """Winding side in the ordered route, matching TendonGuide.orientation.
+
+        Only +1 and -1 are valid; zero is an authoring error. The sign selects
+        tangents relative to the guide frame's +Z normal and also selects the
+        engagement side of a dynamic roller. It is not the guide's pose rotation.
+
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+                int maximum = 1
+            }
+        }
+    )
+
+    uniform bool newton:tendon:dynamic = false (
+        doc = """Allow this roller to engage or be bypassed as the route changes.
+
+        This controls cable routing, not whether the attached body moves. The
+        initial model supports only isolated internal dynamic circular rollers;
+        endpoint and consecutive dynamic guides are unsupported. The authoring
+        relationship retains inactive candidates in their original route order.
+        """
+    )
+}
+
+class NewtonRollerCircleAPI "NewtonRollerCircleAPI" (
+    doc = """EXPERIMENTAL: A circular 2D roller profile in the guide's local XY plane.
+
+    Apply together with NewtonTendonRollerAPI. This describes the roller, not
+    the tendon's cross section or a collision shape. Future ellipse or sector
+    profiles can supply their own properties without changing this schema.
+    """
+)
+{
+    uniform float newton:roller:radius (
+        doc = """Required positive finite contact radius, centered at localPos.
+
+        There is no fallback size. Zero is invalid even though the inclusive
+        metadata bound is zero; consumers must enforce the strict inequality.
+
+        Range: (0, inf), finite
+        Units: distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
+class NewtonTendonSpanAPI "NewtonTendonSpanAPI" (
+    doc = """EXPERIMENTAL: Material properties of a guide's incoming straight span.
+
+    Apply on every guide after the first, regardless of guide kind, and never
+    on the first guide. The predecessor is determined by the tendon relationship,
+    not the namespace hierarchy. These are authored initial material properties;
+    transferred material and active/bypassed spans are runtime state, not USD edits.
+    """
+)
+{
+    uniform float newton:tendon:span:restLength = -1 (
+        doc = """Initial rest length of the incoming straight span.
+
+        Any negative value requests measurement from the initial guide geometry.
+        Preserve that sentinel during unit conversion. Nonnegative values are
+        explicit rest lengths; a shorter value can introduce pre-tension.
+        Wrapped arc material is initialized by the native model, not counted
+        again in this straight-span rest length.
+
+        Units: distance (except the negative automatic sentinel)"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:tendon:span:compliance = 0 (
+        doc = """Incoming span compliance, the reciprocal of axial spring stiffness.
+
+        Zero requests an inextensible span. XPBD supports that request; VBD
+        currently approximates it using a small positive compliance. This is a
+        per-span value, not Young's modulus or a whole-tendon compliance.
+
+        Range: [0, inf), finite
+        Units: second * second / mass"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:tendon:span:damping = 0 (
+        doc = """Incoming span axial damping coefficient.
+
+        Range: [0, inf), finite
+        Units: mass / second"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
+class NewtonTendonSceneAPI "NewtonTendonSceneAPI" (
+    apiSchemas = ["NewtonSceneAPI"]
+    doc = """EXPERIMENTAL: Shared native tendon controls on a PhysicsScene.
+
+    These settings apply to the scene's XPBD or VBD solver, not to individual
+    tendons. This API does not select the rigid-body solver. Other providers
+    must not silently interpret native tendons as their own tendon model.
+    """
+)
+{
+    uniform token newton:tendon:materialSolver = "sweeps" (
+        allowedTokens = ["sweeps"]
+        doc = """Material-transfer method; the initial schema supports sweeps only.
+
+        Direct material solving is a future extension, not a supported token
+        in this proposal. Reject unknown authored solver modes.
+        """
+    )
+
+    uniform int newton:tendon:maxSweeps = 256 (
+        doc = """Maximum material sweeps per outer solver iteration.
+
+        Reaching this budget does not establish convergence. Consumers with a
+        smaller supported maximum must reject larger values rather than clamp.
+
+        Range: [1, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = 1
+            }
+        }
+    )
+
+    uniform float newton:tendon:settleTolerance = 0.001 (
+        doc = """Relative final capstan-force residual tolerance for material sweeps.
+
+        Each guide must satisfy error <= settleAbsoluteTolerance +
+        settleTolerance * max(T_left, T_right), including the appropriate slip
+        boundary or sticking inequality and feasible material-transfer directions.
+        Zero disables early-out, including the absolute tolerance. This contract
+        requires Newton's corrected sweep convergence criterion (PR #5051);
+        do not map it to the older incremental-transfer stopping criterion.
+
+        Range: [0, inf), finite
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:tendon:settleAbsoluteTolerance = 0.000001 (
+        doc = """Absolute final capstan-force residual tolerance for material sweeps.
+
+        Ignored when settleTolerance is zero. Requires the corrected sweep
+        convergence criterion described by settleTolerance.
+
+        Range: [0, inf), finite
+        Units: mass * distance / (second * second)"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:tendon:activationTolerance = 0.002 (
+        doc = """Radius-relative activation gap for inactive dynamic rollers.
+
+        This is a routing tolerance, not a material-solver stopping criterion.
+        Values must be finite and strictly less than one; consumers must enforce
+        the strict upper bound beyond the inclusive metadata limit.
+
+        Range: [0, 1)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
+    )
+}

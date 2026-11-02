@@ -54,6 +54,11 @@ Please note automated upgrades may not always be possible and content could requ
 
 # Design Principles
 
+For the experimental native routed-tendon proposal, including guide composition,
+units, validation rules, and the comparison with spatial `MjcTendon`, see
+[Native routed tendons](docs/tendons.md). The schema definitions are available for
+authoring and review; the corresponding Newton importer is not implemented yet.
+
 Newton schemas follow a minimalist approach to determine which attributes should be included, and are similar to the philosophy that [UsdPhysics](https://openusd.org/release/api/usd_physics_page_front.html#usdPhysics_purpose_and_scope) and the [Newton API](https://newton-physics.github.io/newton/api/newton.html) follow for capturing parameters that generalize across simulators. We view the Newton schemas as a proving and staging ground for physics parameters that should eventually be eligible for promotion into the UsdPhysics standard.
 
 A USD attribute belongs in the Newton schema if it meets one of these criteria:
