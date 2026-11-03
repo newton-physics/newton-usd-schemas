@@ -7,6 +7,7 @@
   - `NewtonMimicAPI`: `newton:mimicJoint` must target exactly one other joint, of the same joint type as the follower, unless the mimic is disabled
   - Any schema: authored values must lie within their attribute's hard limits. A value equal to the schema fallback is accepted even outside the hard limits, so sentinels such as `-inf` for `newton:contactGap` remain valid. Soft limits are not validated.
   - The validators are available through `UsdValidation` after importing `newton_usd_schemas.validators`, which requires OpenUSD 26.05 or newer, and 26.11 or newer for the fix. Importing `newton_usd_schemas` alone still only registers the schemas.
+  - With the `validation` extra, the validators are also available as `usd-validation-nvidia` rules, including the fix, with every OpenUSD version the schemas support
   - See [Validation](https://github.com/newton-physics/newton-usd-schemas/blob/main/docs/validation.md) for details
 - Added the `usd` and `usdex` extras, which install `usd-core` or `usd-exchange` respectively as the OpenUSD runtime
   - The extras are optional, and should not be combined. Any other OpenUSD runtime can still be installed separately.
