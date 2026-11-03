@@ -20,6 +20,10 @@ usd = [
     "usd-core>=26.11 ; python_version >= '3.14'",
 ]
 usdex = ["usd-exchange>=3.0.1"]
+validation = ["usd-validation-nvidia>=1.22"]
+
+[project.entry-points."usd_validation_nvidia"]
+newton_usd_schemas = "newton_usd_schemas.validators._usd_validation_nvidia:Plugin"
 
 [dependency-groups]
 dev = [
@@ -30,6 +34,7 @@ dev = [
     "unittest-xml-reporting>=3.2.0",
     "newton-usd-schemas[usd] ; platform_machine != 'aarch64' or python_version >= '3.14'",
     "newton-usd-schemas[usdex] ; platform_machine == 'aarch64' and python_version < '3.14'",
+    "newton-usd-schemas[validation]",
 ]
 
 [build-system]
