@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
-import math
 import unittest
 
 from pxr import Plug, Usd, UsdPhysics
@@ -115,12 +114,16 @@ class TestNewtonJointAPI(unittest.TestCase):
         attr = self.revolute.GetAttribute("newton:velocityLimit")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), math.inf)
+        self.assertIsNone(attr.Get())
 
         success = attr.Set(360.0)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 360.0)
+
+        # Block resets to None
+        attr.Block()
+        self.assertIsNone(attr.Get())
 
         if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()
@@ -133,24 +136,32 @@ class TestNewtonJointAPI(unittest.TestCase):
         attr = self.revolute.GetAttribute("newton:limitStiffness")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         success = attr.Set(174.5)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 174.5)
 
+        attr.Block()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), None)
+
     def test_limit_damping(self):
         self.revolute.ApplyAPI("NewtonJointAPI")
         attr = self.revolute.GetAttribute("newton:limitDamping")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         success = attr.Set(0.1745)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.1745)
+
+        attr.Block()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), None)
 
 
 if __name__ == "__main__":

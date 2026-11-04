@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
-import math
 import unittest
 
 from pxr import Plug, Usd, UsdGeom
@@ -67,12 +66,16 @@ class TestNewtonCollisionAPI(unittest.TestCase):
         attr = self.prim.GetAttribute("newton:contactGap")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         success = attr.Set(0.1)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.1)
+
+        attr.Block()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), None)
 
         if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()
@@ -140,11 +143,15 @@ class TestNewtonSDFCollisionAPI(unittest.TestCase):
         attr = self.prim.GetAttribute("newton:sdfTargetVoxelSize")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         attr.Set(0.005)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.005)
+
+        attr.Block()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), None)
 
         if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()
@@ -202,11 +209,15 @@ class TestNewtonSDFCollisionAPI(unittest.TestCase):
         attr = self.prim.GetAttribute("newton:sdfPadding")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -math.inf)
+        self.assertEqual(attr.Get(), None)
 
         attr.Set(0.05)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.05)
+
+        attr.Block()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), None)
 
         if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()
@@ -281,29 +292,21 @@ class TestNewtonMeshCollisionAPI(unittest.TestCase):
         attr = self.prim.GetAttribute("newton:maxHullVertices")
         self.assertIsNotNone(attr)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -1)
+        self.assertEqual(attr.Get(), None)
 
         success = attr.Set(100)
         self.assertTrue(success)
         self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), 100)
 
-        # Test rounding down to the nearest integer
-        success = attr.Set(0.9)
-        self.assertTrue(success)
-        self.assertTrue(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), 0)
-
-        # Test setting to -1
-        success = attr.Set(-1)
-        self.assertTrue(success)
-        self.assertTrue(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), -1)
+        attr.Block()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), None)
 
         if USD_HAS_LIMITS:
             hard = attr.GetHardLimits()
             self.assertTrue(hard.IsValid())
-            self.assertEqual(hard.GetMinimum(), -1)
+            self.assertEqual(hard.GetMinimum(), 1)
             self.assertIsNone(hard.GetMaximum())
 
 
