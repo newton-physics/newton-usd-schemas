@@ -151,7 +151,7 @@ The validators in `newton_usd_schemas/validators` check content against requirem
 2. At the end of the module, register it with `register_prim_validator("<Name>Validator", native_prim_task(check_<name>))`, and define its full name as `<NAME>_VALIDATOR = validator_name("<Name>Validator")`. Import a new module, and export the name, from `validators/__init__.py`, since importing that package is what registers the validators.
 3. Declare the validator in `validators/plugInfo.json`, under the same `<Name>Validator` key:
    - `doc`: the requirement, in one or two sentences.
-   - `keywords`: `NewtonValidators`, a topic keyword such as `NewtonJoints`, and, for a validator of a single schema, the schema name, such as `NewtonMimicAPI`.
+   - `keywords`: a topic keyword such as `NewtonJoints`, and, for a validator of a single schema, the schema name, such as `NewtonMimicAPI`. Every validator also gets the `NewtonValidators` keyword, which is declared once for the whole plugin.
    - `schemaTypes`: for a validator of a single API schema, its TfType name, such as `NewtonPhysicsMimicAPI`, so that it only runs on prims with that schema. OpenUSD ignores schema identifiers, such as `NewtonMimicAPI`, here.
    - `isTimeDependent`: `true` if the check reads time samples.
 4. To add a fixer, pass a list of `UsdValidation.ValidationFixer`s as the third argument of `register_prim_validator`, built only when `SUPPORTS_PYTHON_FIXERS` is true, since Python fixers require OpenUSD 26.11 or newer. Its `errorName` must match the findings it fixes, and it must author in the edit target it is given. See `_collision.py` for an example.

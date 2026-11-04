@@ -81,11 +81,12 @@ def register_prim_validator(key: str, task, fixers: list | None = None) -> None:
         return
     # The registry reads plugInfo.json only once, when it is first created (PixarAnimationStudios/OpenUSD#4315).
     # If that happened before this plugin was registered with Plug, register the validator explicitly using the same metadata.
-    info = _PLUGIN_INFO["Info"]["Validators"][key]
+    validators = _PLUGIN_INFO["Info"]["Validators"]
+    info = validators[key]
     metadata = UsdValidation.ValidatorMetadata(
         name=name,
         doc=info["doc"],
-        keywords=info["keywords"],
+        keywords=validators.get("keywords", []) + info.get("keywords", []),
         schemaTypes=info.get("schemaTypes", []),
         isTimeDependent=info.get("isTimeDependent", False),
     )
