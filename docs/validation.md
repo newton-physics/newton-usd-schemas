@@ -7,7 +7,7 @@ Only the Newton schemas can declare what Newton requires of the content that use
 The validators require OpenUSD 26.05 or newer, and their fixers require OpenUSD 26.11 or newer. With older OpenUSD versions the validators are not registered, and the schemas work as usual.
 
 ```bash
-pip install newton-usd-schemas[usd]
+pip install 'newton-usd-schemas[usd]'
 ```
 
 ## Validating with UsdValidation
