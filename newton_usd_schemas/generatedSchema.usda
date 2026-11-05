@@ -288,6 +288,10 @@ class "NewtonKaminoSceneAPI" (
         joint constraints (e.g. hinge, ball-and-socket). Higher values increase stiffness and reduce
         positional drift, but may lead to instability if set too high.
 
+        The positional recovery coefficient is `alpha / dt`, where `dt` is the
+        timestep. If `newton:kamino:constraints:jointRecoveryTime` is a finite
+        time, the coefficient becomes `1 / (dt + time)` and `alpha` is ignored.
+
         Range: [0.0, 1.0]
         Units: dimensionless"""
         limits = {
@@ -304,6 +308,12 @@ class "NewtonKaminoSceneAPI" (
         This parameter controls the amount of configuration-level error correction applied to unilateral
         joint-limit constraints. Higher values increase stiffness and reduce positional drift, but may
         lead to instability if set too high.
+
+        For hard limits, the positional recovery coefficient is `beta / dt`, where
+        `dt` is the timestep. If `newton:kamino:constraints:limitRecoveryTime` is a
+        finite time, the coefficient becomes `1 / (dt + time)` and `beta` is ignored.
+        This changes positional correction without enabling compliance. Compliant
+        limit recovery is described in `newton:kamino:constraints:limitRecoveryTime`.
 
         Range: [0.0, 1.0]
         Units: dimensionless"""
@@ -322,6 +332,12 @@ class "NewtonKaminoSceneAPI" (
         contact constraints. Higher values increase stiffness and reduce positional drift, but may
         lead to instability if set too high.
 
+        For hard contacts, the positional recovery coefficient is `gamma / dt`, where
+        `dt` is the timestep. If `newton:kamino:constraints:contactRecoveryTime` is a
+        finite time, the coefficient becomes `1 / (dt + time)` and `gamma` is ignored.
+        This changes positional correction without enabling compliance. Compliant
+        contact recovery is described in `newton:kamino:constraints:contactRecoveryTime`.
+
         Range: [0.0, 1.0]
         Units: dimensionless"""
         limits = {
@@ -335,8 +351,10 @@ class "NewtonKaminoSceneAPI" (
     uniform float newton:kamino:constraints:jointRecoveryTime = -inf (
         doc = """Recovery time for positional errors in bilateral joint constraints.
 
-        A finite value overrides `newton:kamino:constraints:alpha`. A value of `-inf`
-        selects the engine's default recovery based on that stabilization fraction.
+        The default `-inf` uses `alpha / dt` as the coefficient multiplying positional
+        error, where `alpha` is `newton:kamino:constraints:alpha` and `dt` is the
+        timestep. A finite time replaces that coefficient with `1 / (dt + time)`;
+        `alpha` is ignored.
 
         Range: [0, inf) for explicit times; sentinel -inf selects the engine default.
         Units: seconds"""
@@ -350,12 +368,12 @@ class "NewtonKaminoSceneAPI" (
     uniform float newton:kamino:constraints:jointRecoverySpeed = inf (
         doc = """Maximum positional recovery speed for bilateral joint constraints.
 
-        The cap applies independently to each row. The same numerical value is used
-        for linear and angular rows. Zero disables positional recovery; `inf` leaves
+        The cap applies independently to each scalar constraint. The same numerical value is used
+        for linear and angular constraints. Zero disables positional recovery; `inf` leaves
         it uncapped. This does not impose a body velocity limit.
 
         Range: [0, inf]
-        Units: meters / second for linear rows; radians / second for angular rows"""
+        Units: meters / second for linear constraints; radians / second for angular constraints"""
         limits = {
             dictionary hard = {
                 float minimum = 0
@@ -366,10 +384,15 @@ class "NewtonKaminoSceneAPI" (
     uniform float newton:kamino:constraints:limitRecoveryTime = -inf (
         doc = """Recovery time for violated joint limits.
 
-        For compliant limits, a finite value overrides the damping-to-stiffness ratio
-        and sets effective damping in both positional recovery and physical compliance.
-        A value of `-inf` uses the limit spring's damping for compliant limits and
-        `newton:kamino:constraints:beta` for hard limits.
+        For hard limits, the default `-inf` uses `beta / dt` as the coefficient
+        multiplying limit violation, where `beta` is `newton:kamino:constraints:beta`
+        and `dt` is the timestep. A finite time replaces that coefficient with
+        `1 / (dt + time)`; `beta` is ignored and the limit remains hard.
+
+        For compliant limits, enabled through `newton:kamino:constraints:limitCompliance`,
+        the default `-inf` uses the limit's damping-to-stiffness ratio. A finite value
+        replaces that ratio in both positional recovery and physical compliance.
+        Setting a recovery time does not enable compliance.
 
         Range: [0, inf) for explicit times; sentinel -inf selects the engine default.
         Units: seconds"""
@@ -383,7 +406,7 @@ class "NewtonKaminoSceneAPI" (
     uniform float newton:kamino:constraints:limitRecoverySpeed = inf (
         doc = """Maximum positional recovery speed for violated joint limits.
 
-        The cap applies independently to each row. The same numerical value is used
+        The cap applies independently to each scalar constraint. The same numerical value is used
         for linear and angular limits. Zero disables positional recovery; `inf` leaves
         it uncapped. The spring-damper response remains active for compliant limits.
 
@@ -399,11 +422,18 @@ class "NewtonKaminoSceneAPI" (
     uniform float newton:kamino:constraints:contactRecoveryTime = -inf (
         doc = """Recovery time for contact penetration.
 
-        For compliant contacts, a finite value overrides the damping-to-stiffness ratio
-        and sets effective damping in both positional recovery and physical compliance.
-        A value of `-inf` uses contact damping for compliant contacts and
-        `newton:kamino:constraints:gamma` for hard contacts. The closing allowance
-        for separated speculative contacts is independent of this setting.
+        For hard contacts, the default `-inf` uses `gamma / dt` as the coefficient
+        multiplying penetration, where `gamma` is `newton:kamino:constraints:gamma`
+        and `dt` is the timestep. A finite time replaces that coefficient with
+        `1 / (dt + time)`; `gamma` is ignored and the contact remains hard.
+
+        For compliant contacts, enabled through `newton:kamino:constraints:contactCompliance`,
+        the default `-inf` uses the contact's damping-to-stiffness ratio. A finite value
+        replaces that ratio in both positional recovery and physical compliance.
+        Setting a recovery time does not enable compliance.
+
+        The closing allowance for separated speculative contacts is independent
+        of this setting.
 
         Range: [0, inf) for explicit times; sentinel -inf selects the engine default.
         Units: seconds"""
@@ -434,9 +464,10 @@ class "NewtonKaminoSceneAPI" (
     uniform bool newton:kamino:constraints:contactCompliance = false (
         doc = """Whether to use an implicit spring-damper response for contact normals.
 
-        Material gains are authored through `newton:contactStiffness` and
-        `newton:contactDamping`. Positive per-contact stiffness and its corresponding
-        damping take precedence over the arithmetic mean of the two shape materials.
+        When disabled, contacts remain hard. When enabled, contacts use material gains
+        authored through `newton:contactStiffness` and `newton:contactDamping`.
+        Positive per-contact stiffness and its corresponding damping take precedence
+        over the arithmetic mean of the two shape materials.
         Positive finite stiffness produces a compliant response; non-positive or
         infinite stiffness retains hard contact.
 
@@ -448,9 +479,10 @@ class "NewtonKaminoSceneAPI" (
     uniform bool newton:kamino:constraints:limitCompliance = false (
         doc = """Whether to use an implicit spring-damper response for joint limits.
 
-        Stiffness and damping are authored through `newton:limitStiffness` and
-        `newton:limitDamping`. Positive finite stiffness produces a compliant limit;
-        non-positive or infinite stiffness retains a hard limit.
+        When disabled, limits remain hard. When enabled, limits use stiffness and damping
+        authored through `newton:limitStiffness` and `newton:limitDamping`.
+        Positive finite stiffness produces a compliant limit; non-positive or infinite
+        stiffness retains a hard limit.
 
         This setting does not change limit detection, drive gains, or passive joint
         damping."""
@@ -478,8 +510,9 @@ class "NewtonKaminoDviSceneAPI" (
 
     Applying this schema also applies `NewtonKaminoSceneAPI` and `NewtonSceneAPI`.
     Select the DVI backend with `newton:kamino:dynamicsSolver = "dvi"`.
-    Joint limits use projected Gauss-Seidel, contacts use projected Gauss-Seidel
-    or accelerated projected gradient descent, and bilateral joints use LLT.
+    Joint inequalities use projected Gauss-Seidel, contacts use projected
+    Gauss-Seidel or accelerated projected gradient descent, and bilateral joint
+    constraints use a selected LLT factorization.
     Contact parameters for the unselected numerical method are ignored."""
 )
 {
@@ -489,34 +522,29 @@ class "NewtonKaminoDviSceneAPI" (
         }
     )
 
-    uniform token newton:kamino:dvi:bilateral:numericalSolver = "llt" (
-        allowedTokens = ["llt"]
-        doc = """Numerical method used for bilateral joint constraints.
-
-        The supported method is "llt", an LLT (Cholesky) factorization."""
-    )
-
-    uniform token newton:kamino:dvi:bilateral:llt:implementation = "LLTB" (
-        allowedTokens = ["LLTB", "LLTBRCM"]
-        doc = """LLT factorization implementation for the bilateral constraint block.
+    uniform token newton:kamino:dvi:bilateral:numericalSolver = "lltb" (
+        allowedTokens = ["llt", "lltb", "lltbrcm"]
+        doc = """Numerical solver used for bilateral joint constraints.
 
         Options:
-        - "LLTB": Dense blocked LLT factorization.
-        - "LLTBRCM": Reverse Cuthill-McKee reordered blocked LLT factorization.
+        - "llt": Sequential LLT (Cholesky) factorization.
+        - "lltb": Dense blocked LLT factorization.
+        - "lltbrcm": Reverse Cuthill-McKee reordered blocked LLT factorization.
 
-        LLTB is suitable for small or dense systems. LLTBRCM can accelerate large
-        sparse articulated systems."""
+        Blocked LLT is suitable for small or dense systems. The reordered variant
+        can accelerate large sparse articulated systems."""
     )
 
-    uniform token newton:kamino:dvi:jointLimit:numericalSolver = "pgs" (
+    uniform token newton:kamino:dvi:jointInequality:numericalSolver = "pgs" (
         allowedTokens = ["pgs"]
-        doc = """Numerical method used for joint-limit constraints.
+        doc = """Numerical method used for joint inequality constraints.
 
+        This includes joint limits, joint friction, and bounded drive efforts.
         The supported method is "pgs", projected Gauss-Seidel."""
     )
 
-    uniform float newton:kamino:dvi:jointLimit:pgs:omega = 1.0 (
-        doc = """Relaxation factor applied to projected Gauss-Seidel joint-limit updates.
+    uniform float newton:kamino:dvi:jointInequality:pgs:omega = 1.0 (
+        doc = """Relaxation factor applied to projected Gauss-Seidel joint inequality updates.
 
         Range: (0, 2]
         Units: dimensionless"""
@@ -528,8 +556,8 @@ class "NewtonKaminoDviSceneAPI" (
         }
     )
 
-    uniform int newton:kamino:dvi:jointLimit:pgs:sweepsPerSolve = 2 (
-        doc = """Number of projected Gauss-Seidel sweeps for joint-limit inequalities
+    uniform int newton:kamino:dvi:jointInequality:pgs:sweepsPerSolve = 2 (
+        doc = """Number of projected Gauss-Seidel sweeps for joint inequalities
         during each alternating DVI iteration.
 
         Range: [1, inf)

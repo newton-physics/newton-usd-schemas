@@ -110,7 +110,7 @@ class TestNewtonKaminoDviSceneAPI(unittest.TestCase):
         self.assertEqual(attr.Get(), False)
 
     def test_bilateral_numerical_solver(self):
-        """Author the supported bilateral numerical method."""
+        """Select the concrete bilateral solver while preserving blocked LLT by default."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:bilateral:numericalSolver"))
 
         self.scene.ApplyAPI("NewtonKaminoDviSceneAPI")
@@ -119,48 +119,37 @@ class TestNewtonKaminoDviSceneAPI(unittest.TestCase):
         self.assertEqual(attr.GetTypeName(), Sdf.ValueTypeNames.Token)
         self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), "llt")
+        self.assertEqual(attr.Get(), "lltb")
+
+        self.assertTrue(attr.Set("lltbrcm"))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "lltbrcm")
+        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"llt", "lltb", "lltbrcm"})
 
         self.assertTrue(attr.Set("llt"))
         self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "llt")
-        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"llt"})
+
+        self.assertTrue(attr.Set("lltb"))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "lltb")
 
         attr.Clear()
         self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), "llt")
+        self.assertEqual(attr.Get(), "lltb")
 
-    def test_bilateral_llt_implementation(self):
-        """Select the bilateral LLT implementation."""
+    def test_no_bilateral_llt_implementation(self):
+        """Keep the removed bilateral implementation property absent."""
+        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:bilateral:llt:implementation"))
+        self.scene.ApplyAPI("NewtonKaminoDviSceneAPI")
         self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:bilateral:llt:implementation"))
 
-        self.scene.ApplyAPI("NewtonKaminoDviSceneAPI")
-        attr = self.scene.GetAttribute("newton:kamino:dvi:bilateral:llt:implementation")
-        self.assertIsNotNone(attr)
-        self.assertEqual(attr.GetTypeName(), Sdf.ValueTypeNames.Token)
-        self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
-        self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), "LLTB")
-
-        self.assertTrue(attr.Set("LLTBRCM"))
-        self.assertTrue(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), "LLTBRCM")
-        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"LLTB", "LLTBRCM"})
-
-        self.assertTrue(attr.Set("LLTB"))
-        self.assertTrue(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), "LLTB")
-
-        attr.Clear()
-        self.assertFalse(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), "LLTB")
-
-    def test_joint_limit_numerical_solver(self):
-        """Author the supported joint-limit numerical methods."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:jointLimit:numericalSolver"))
+    def test_joint_inequality_numerical_solver(self):
+        """Author the supported joint inequality numerical methods."""
+        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:jointInequality:numericalSolver"))
 
         self.scene.ApplyAPI("NewtonKaminoDviSceneAPI")
-        attr = self.scene.GetAttribute("newton:kamino:dvi:jointLimit:numericalSolver")
+        attr = self.scene.GetAttribute("newton:kamino:dvi:jointInequality:numericalSolver")
         self.assertIsNotNone(attr)
         self.assertEqual(attr.GetTypeName(), Sdf.ValueTypeNames.Token)
         self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
@@ -176,12 +165,12 @@ class TestNewtonKaminoDviSceneAPI(unittest.TestCase):
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "pgs")
 
-    def test_joint_limit_pgs_omega(self):
-        """Author joint-limit PGS relaxation with the solver fallback."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:jointLimit:pgs:omega"))
+    def test_joint_inequality_pgs_omega(self):
+        """Author joint inequality PGS relaxation with the solver fallback."""
+        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:jointInequality:pgs:omega"))
 
         self.scene.ApplyAPI("NewtonKaminoDviSceneAPI")
-        attr = self.scene.GetAttribute("newton:kamino:dvi:jointLimit:pgs:omega")
+        attr = self.scene.GetAttribute("newton:kamino:dvi:jointInequality:pgs:omega")
         self.assertIsNotNone(attr)
         self.assertEqual(attr.GetTypeName(), Sdf.ValueTypeNames.Float)
         self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
@@ -206,12 +195,12 @@ class TestNewtonKaminoDviSceneAPI(unittest.TestCase):
         self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 1.0, places=7)
 
-    def test_joint_limit_pgs_sweeps_per_solve(self):
-        """Author the joint-limit PGS sweep budget."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:jointLimit:pgs:sweepsPerSolve"))
+    def test_joint_inequality_pgs_sweeps_per_solve(self):
+        """Author the joint inequality PGS sweep budget."""
+        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:jointInequality:pgs:sweepsPerSolve"))
 
         self.scene.ApplyAPI("NewtonKaminoDviSceneAPI")
-        attr = self.scene.GetAttribute("newton:kamino:dvi:jointLimit:pgs:sweepsPerSolve")
+        attr = self.scene.GetAttribute("newton:kamino:dvi:jointInequality:pgs:sweepsPerSolve")
         self.assertIsNotNone(attr)
         self.assertEqual(attr.GetTypeName(), Sdf.ValueTypeNames.Int)
         self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
@@ -424,6 +413,24 @@ class TestNewtonKaminoDviSceneAPI(unittest.TestCase):
         attr.Clear()
         self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 1e-5, places=7)
+
+    def test_no_joint_limit_numerical_solver(self):
+        """Keep the renamed joint-limit numerical solver property absent."""
+        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:jointLimit:numericalSolver"))
+        self.scene.ApplyAPI("NewtonKaminoDviSceneAPI")
+        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:jointLimit:numericalSolver"))
+
+    def test_no_joint_limit_pgs_omega(self):
+        """Keep the renamed joint-limit pgs omega property absent."""
+        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:jointLimit:pgs:omega"))
+        self.scene.ApplyAPI("NewtonKaminoDviSceneAPI")
+        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:jointLimit:pgs:omega"))
+
+    def test_no_joint_limit_pgs_sweeps_per_solve(self):
+        """Keep the renamed joint-limit pgs sweeps per solve property absent."""
+        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:jointLimit:pgs:sweepsPerSolve"))
+        self.scene.ApplyAPI("NewtonKaminoDviSceneAPI")
+        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:jointLimit:pgs:sweepsPerSolve"))
 
 
 if __name__ == "__main__":
