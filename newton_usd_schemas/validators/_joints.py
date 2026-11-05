@@ -9,13 +9,16 @@ MIMIC_JOINT_VALIDATOR = validator_name("MimicJointValidator")
 
 
 def _is_mimic_disabled(prim: Usd.Prim) -> bool:
-    """Whether newton:mimicEnabled is false at the default time and at every time sample."""
+    """Whether newton:mimicEnabled is false at the default time and at every time sample.
+
+    A blocked value counts as enabled, since Newton reads it as the fallback value.
+    """
     attr = prim.GetAttribute("newton:mimicEnabled")
     samples = attr.GetTimeSamples()
     values = [attr.Get(time) for time in samples]
     if not samples or attr.GetResolveInfo(Usd.TimeCode.Default()).GetSource() == Usd.ResolveInfoSourceDefault:
         values.append(attr.Get(Usd.TimeCode.Default()))
-    return not any(values)
+    return not any(True if value is None else value for value in values)
 
 
 def check_mimic_joint(prim: Usd.Prim, time_range: TimeRange) -> list[Finding]:

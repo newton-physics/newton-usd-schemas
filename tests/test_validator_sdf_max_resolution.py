@@ -49,6 +49,17 @@ class TestSdfMaxResolutionValidator(ValidatorTestCase):
         self.attr.Set(100)
         self.assertEqual(self.validate(self.prim), [(ERROR, self.attr.GetPath())])
 
+    def test_blocked_value(self):
+        self.attr.Block()
+        self.assertEqual(self.validate(self.prim), [])
+
+    def test_blocked_value_does_not_abort_stage_validation(self):
+        self.attr.Block()
+        other = UsdGeom.Cube.Define(self.stage, "/OtherCollider").GetPrim()
+        other.ApplyAPI("NewtonSDFCollisionAPI")
+        other.GetAttribute("newton:sdfMaxResolution").Set(100)
+        self.assertEqual(self.validate_with_keywords("NewtonValidators"), [ERROR])
+
     def test_target_voxel_size_does_not_hide_error(self):
         self.prim.GetAttribute("newton:sdfTargetVoxelSize").Set(0.01)
         self.attr.Set(100)

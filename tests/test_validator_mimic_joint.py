@@ -56,6 +56,10 @@ class TestMimicJointValidator(ValidatorTestCase):
         enabled.Set(False, 0.0)
         self.assertEqual(self.validate(self.follower), [("MimicJointTargetCount", self.rel.GetPath())])
 
+    def test_blocked_enabled_is_validated(self):
+        self.follower.GetAttribute("newton:mimicEnabled").Block()
+        self.assertEqual(self.validate(self.follower), [("MimicJointTargetCount", self.rel.GetPath())])
+
     def test_no_target(self):
         self.assertEqual(self.validate(self.follower), [("MimicJointTargetCount", self.rel.GetPath())])
 

@@ -14,7 +14,8 @@ def check_sdf_max_resolution(prim: Usd.Prim, time_range: TimeRange) -> list[Find
         return []
     attr = prim.GetAttribute("newton:sdfMaxResolution")
     value = attr.Get()
-    if value % 8 == 0:
+    # A blocked value leaves the resolution to Newton's default
+    if value is None or value % 8 == 0:
         return []
     return [Finding(SDF_MAX_RESOLUTION_ERROR, attr, f"newton:sdfMaxResolution on <{prim.GetPath()}> is {value}, which is not divisible by 8.")]
 

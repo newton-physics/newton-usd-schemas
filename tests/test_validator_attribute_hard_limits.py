@@ -25,6 +25,10 @@ class TestAttributeHardLimitsValidator(ValidatorTestCase):
         self.assertFalse(self.gap.HasAuthoredValue())
         self.assertEqual(self.validate(self.prim), [])
 
+    def test_blocked_value(self):
+        self.gap.Block()
+        self.assertEqual(self.validate(self.prim), [])
+
     def test_sentinel_fallback(self):
         self.assertEqual(self.gap.GetHardLimits().GetMinimum(), 0.0)
         self.gap.Set(-math.inf)
