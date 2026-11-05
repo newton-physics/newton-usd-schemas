@@ -8,8 +8,8 @@
     upAxis = "Y"
 )
 
-# Authoring fixture, not a runnable Newton example until the native importer exists.
-def Scope "Rig"
+# Authoring and composition fixture for native routed tendon schemas.
+def Xform "Rig"
 {
     def PhysicsScene "Scene" (
         prepend apiSchemas = ["NewtonXpbdSceneAPI", "NewtonTendonSceneAPI"]
@@ -18,6 +18,34 @@ def Scope "Rig"
         vector3f physics:gravityDirection = (0, -1, 0)
         float physics:gravityMagnitude = 9.81
         uniform int newton:tendon:maxSweeps = 256
+    }
+
+    def Xform "Frames"
+    {
+        def Xform "Start"
+        {
+            double3 xformOp:translate = (-0.2, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Pinhole"
+        {
+            double3 xformOp:translate = (-0.1, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Xform "Pulley" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        rel physics:simulationOwner = </Rig/Scene>
+        float physics:mass = 0.1
+        float3 physics:diagonalInertia = (0.00001, 0.00001, 0.00001)
+
+        def Xform "GuideFrame"
+        {
+        }
     }
 
     def Xform "Load" (
@@ -29,6 +57,15 @@ def Scope "Rig"
         float3 physics:diagonalInertia = (0.00001, 0.00001, 0.00001)
         double3 xformOp:translate = (0.15, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Sphere "AttachmentSite" (
+            prepend apiSchemas = ["NewtonSiteAPI"]
+        )
+        {
+            double radius = 0.005
+            double3 xformOp:translate = (0.01, 0.02, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
     }
 
     def NewtonTendon "Cable"
@@ -45,15 +82,14 @@ def Scope "Rig"
             prepend apiSchemas = ["NewtonTendonAnchorAPI"]
         )
         {
-            # No body target: this position is in stage world coordinates.
-            uniform point3f newton:tendon:localPos = (-0.2, 0, 0)
+            rel newton:tendon:frame = </Rig/Frames/Start>
         }
 
         def NewtonTendonGuide "Pinhole" (
             prepend apiSchemas = ["NewtonTendonPinholeAPI", "NewtonTendonSpanAPI"]
         )
         {
-            uniform point3f newton:tendon:localPos = (-0.1, 0, 0)
+            rel newton:tendon:frame = </Rig/Frames/Pinhole>
             uniform float newton:tendon:friction = 0.1
             uniform float newton:tendon:span:compliance = 0.0001
             uniform float newton:tendon:span:damping = 0.01
@@ -63,7 +99,7 @@ def Scope "Rig"
             prepend apiSchemas = ["NewtonTendonRollerAPI", "NewtonRollerCircleAPI", "NewtonTendonSpanAPI"]
         )
         {
-            uniform point3f newton:tendon:localPos = (0, 0, 0)
+            rel newton:tendon:frame = </Rig/Pulley/GuideFrame>
             uniform float newton:roller:radius = 0.03
             uniform float newton:tendon:friction = 0.2
             uniform bool newton:tendon:dynamic = true
@@ -75,7 +111,7 @@ def Scope "Rig"
             prepend apiSchemas = ["NewtonTendonAnchorAPI", "NewtonTendonSpanAPI"]
         )
         {
-            rel newton:tendon:body = </Rig/Load>
+            rel newton:tendon:frame = </Rig/Load/AttachmentSite>
             uniform float newton:tendon:span:compliance = 0.0001
             uniform float newton:tendon:span:damping = 0.01
         }
