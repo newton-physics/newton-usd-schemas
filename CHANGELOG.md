@@ -2,6 +2,12 @@
 
 ## Features
 
+- Added native routed-tendon schemas
+  - `NewtonTendon` owns ordered guide definitions and span parameters; each `NewtonTendonGuide` references a USD frame for placement and body attachment.
+  - Guide-kind, circular-profile, and incoming-span APIs keep routing geometry independent of collision shapes.
+  - `NewtonTendonSceneAPI` describes shared XPBD/VBD material-solve and activation settings.
+  - Includes an authoring fixture, a three-guide diagram, and a conversion assessment for spatial `MjcTendon`.
+
 - Added the `usd` and `usdex` extras, which install `usd-core` or `usd-exchange` respectively as the OpenUSD runtime
   - The extras are optional, and should not be combined. Any other OpenUSD runtime can still be installed separately.
 
