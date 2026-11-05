@@ -1523,9 +1523,8 @@ class NewtonActuator "NewtonActuator" (
     clamping operations must be order independent.
 
     A single motor can be added by applying a `NewtonActuatorMotorBaseAPI` derived schema (e.g.
-    `NewtonDCMotorAPI`). With a motor, the control law must output the motor
-    command (e.g. a voltage from `NewtonVoltageControlAPI`), and the motor turns it into the effort of the
-    motor, which the clamping bounds.
+    `NewtonDCMotorAPI`). With a motor, the control law must output a duty (`newton:outputSpace = "duty"`),
+    and the motor turns it into the effort of the motor, which the clamping bounds.
 
     With a motor, command clamping behaviors can be added by applying any number of
     `NewtonActuatorCommandClampingBaseAPI` derived schemas (e.g. `NewtonCurrentPWMClampingAPI`). They bound
@@ -1612,7 +1611,7 @@ class NewtonConstantResistanceBattery "NewtonConstantResistanceBattery" (
     `newton:nominalVoltage`.
 
     This feedback loop settles only while the battery resistance is small enough. For
-    `NewtonDCMotorAPI` actuators with `NewtonVoltageControlAPI` and
+    `NewtonDCMotorAPI` actuators with a duty control law and
     `NewtonCurrentPWMClampingAPI` without an active current limit, it settles while
     `resistance * sum(maxPwm^2 / r) < 1`, where `resistance` is the battery's
     `newton:resistance` and `r` is each actuator's motor `newton:resistance`. Above that
@@ -1667,7 +1666,7 @@ class NewtonActuatorInputProcessorBaseAPI "NewtonActuatorInputProcessorBaseAPI" 
 
     Input processors transform the inputs of the control law, such as the commanded inputs
     (e.g. `NewtonActuatorDelayAPI`) or the sensed joint state (e.g.
-    `NewtonActuatorEncoderAPI`), before the control law computes the actuator output effort.
+    `NewtonActuatorEncoderAPI`), before the control law computes the actuator output.
     Any number of input processors may be applied to a `NewtonActuator`. The order of input
     processors is not guaranteed to be preserved, thus input processors must be order
     independent.
@@ -1745,16 +1744,17 @@ class NewtonActuatorEncoderAPI "NewtonActuatorEncoderAPI" (
 class NewtonActuatorControlBaseAPI "NewtonActuatorControlBaseAPI" (
     doc = """Base API for all actuator control laws.
 
-    Control laws compute actuator output effort (i.e. force/torque for linear/rotational actuators)
-    from authored controller parameters, commanded inputs such as control targets and optional
-    feedforward terms, and simulation and actuator state. This output may still be constrained by
-    one or more applied `NewtonActuatorClampingBaseAPI` derived schemas.
+    Control laws compute actuator output effort (i.e. force/torque for linear/rotational actuators),
+    or a duty for a motor such as `NewtonDCMotorAPI`, from authored controller
+    parameters, commanded inputs such as control targets and optional feedforward terms, and
+    simulation and actuator state. This output may still be constrained by one or more applied
+    `NewtonActuatorClampingBaseAPI` derived schemas.
 
     Actuators must provide a single control law by applying a `NewtonActuatorControlBaseAPI` derived schema (e.g. `NewtonPDControlAPI`).
 
-    Each control law outputs either an effort (e.g. `NewtonPDControlAPI`) or a motor command (e.g.
-    a voltage from `NewtonVoltageControlAPI`), as stated in its doc. A control law that outputs an
-    effort must not be combined with a motor, and a control law that outputs a motor command
+    Control laws with a `newton:outputSpace` attribute output either an effort (`"effort"`) or a
+    signed duty in [-1, 1] (`"duty"`), and the units of their gains follow that space. A control law
+    that outputs an effort must not be combined with a motor, and a control law that outputs a duty
     requires one. Parsers should raise an error for either combination.
 
     Applying any control law API (e.g. PD, PID, Network) automatically applies this base.
@@ -1769,14 +1769,27 @@ class NewtonPDControlAPI "NewtonPDControlAPI" (
     apiSchemas = ["NewtonActuatorControlBaseAPI"]
     doc = """Stateless PD (Proportional-Derivative) controller.
 
-    Control law: `effort = constEffort + feedforward + kp*(target_pos - q) + kd*(target_vel - v)`"""
+    Control law: `output = constEffort + feedforward + kp*(target_pos - q) + kd*(target_vel - v)`
+
+    The output is an effort or a duty, as set by `newton:outputSpace`."""
 )
 {
+    uniform token newton:outputSpace = "effort" (
+        allowedTokens = ["effort", "duty"]
+        doc = """Space of the control law output.
+
+        Options:
+        - effort: force or torque (in joint space), for an actuator without a motor.
+        - duty: signed duty in [-1, 1], for an actuator with a motor such as `NewtonDCMotorAPI`.
+
+        The units of `newton:constEffort` and of the gains depend on this space."""
+    )
+
     float newton:constEffort = 0 (
-        doc = """Constant bias effort added to the controller output (in joint space).
+        doc = """Constant bias added to the controller output (in joint space).
 
         Range: (-inf, inf)
-        Units: force or torque"""
+        Units: force or torque with `newton:outputSpace = "effort"`; dimensionless with `"duty"`"""
     )
 
     float newton:kp = 0 (
@@ -1786,7 +1799,8 @@ class NewtonPDControlAPI "NewtonPDControlAPI" (
         a restoring effort proportional to displacement.
 
         Range: [0, inf)
-        Units: force / distance or torque / radians"""
+        Units: force / distance or torque / radians with `newton:outputSpace = "effort"`;
+        1 / distance or 1 / radians with `"duty"`"""
         limits = {
             dictionary hard = {
                 float minimum = 0
@@ -1801,7 +1815,8 @@ class NewtonPDControlAPI "NewtonPDControlAPI" (
         a damping effort proportional to velocity.
 
         Range: [0, inf)
-        Units: force * seconds / distance or torque * seconds / radians"""
+        Units: force * seconds / distance or torque * seconds / radians with `newton:outputSpace = "effort"`;
+        seconds / distance or seconds / radians with `"duty"`"""
         limits = {
             dictionary hard = {
                 float minimum = 0
@@ -1817,14 +1832,27 @@ class NewtonPIDControlAPI "NewtonPIDControlAPI" (
     Includes proportional, integral, and derivative terms for steady-state
     error elimination.
 
-    Control law: `effort = constEffort + feedforward + kp*(target_pos - q) + ki*integral(target_pos - q) + kd*(target_vel - v)`"""
+    Control law: `output = constEffort + feedforward + kp*(target_pos - q) + ki*integral(target_pos - q) + kd*(target_vel - v)`
+
+    The output is an effort or a duty, as set by `newton:outputSpace`."""
 )
 {
+    uniform token newton:outputSpace = "effort" (
+        allowedTokens = ["effort", "duty"]
+        doc = """Space of the control law output.
+
+        Options:
+        - effort: force or torque (in joint space), for an actuator without a motor.
+        - duty: signed duty in [-1, 1], for an actuator with a motor such as `NewtonDCMotorAPI`.
+
+        The units of `newton:constEffort` and of the gains depend on this space."""
+    )
+
     float newton:constEffort = 0 (
-        doc = """Constant bias effort added to the controller output (in joint space).
+        doc = """Constant bias added to the controller output (in joint space).
 
         Range: (-inf, inf)
-        Units: force or torque"""
+        Units: force or torque with `newton:outputSpace = "effort"`; dimensionless with `"duty"`"""
     )
 
     float newton:kp = 0 (
@@ -1834,7 +1862,8 @@ class NewtonPIDControlAPI "NewtonPIDControlAPI" (
         a restoring effort proportional to displacement.
 
         Range: [0, inf)
-        Units: force / distance or torque / radians"""
+        Units: force / distance or torque / radians with `newton:outputSpace = "effort"`;
+        1 / distance or 1 / radians with `"duty"`"""
         limits = {
             dictionary hard = {
                 float minimum = 0
@@ -1849,7 +1878,8 @@ class NewtonPIDControlAPI "NewtonPIDControlAPI" (
         a damping effort proportional to velocity.
 
         Range: [0, inf)
-        Units: force * seconds / distance or torque * seconds / radians"""
+        Units: force * seconds / distance or torque * seconds / radians with `newton:outputSpace = "effort"`;
+        seconds / distance or seconds / radians with `"duty"`"""
         limits = {
             dictionary hard = {
                 float minimum = 0
@@ -1864,7 +1894,8 @@ class NewtonPIDControlAPI "NewtonPIDControlAPI" (
         steady-state error.
 
         Range: [0, inf)
-        Units: force / (distance * seconds) or torque / (radians * seconds)"""
+        Units: force / (distance * seconds) or torque / (radians * seconds) with `newton:outputSpace = "effort"`;
+        1 / (distance * seconds) or 1 / (radians * seconds) with `"duty"`"""
         limits = {
             dictionary hard = {
                 float minimum = 0
@@ -1892,66 +1923,27 @@ class NewtonNeuralControlAPI "NewtonNeuralControlAPI" (
     apiSchemas = ["NewtonActuatorControlBaseAPI"]
     doc = """Neural-network actuator controller.
 
-    Computes actuator effort from a pre-trained model file (e.g. TorchScript .pt).
+    Computes actuator effort, or a duty as set by `newton:outputSpace`, from a pre-trained model
+    file (e.g. TorchScript .pt). The model must be trained for that output space.
 
     The parser is responsible for inspecting the model and dispatching to the
     appropriate runtime; unsupported model types must raise an error at parse time.
     """
 )
 {
+    uniform token newton:outputSpace = "effort" (
+        allowedTokens = ["effort", "duty"]
+        doc = """Space of the control law output.
+
+        Options:
+        - effort: force or torque (in joint space), for an actuator without a motor.
+        - duty: signed duty in [-1, 1], for an actuator with a motor such as `NewtonDCMotorAPI`.
+
+        The model output is read in this space."""
+    )
+
     asset newton:modelPath (
         doc = """Path to the pre-trained neural model file (e.g. TorchScript .pt)."""
-    )
-}
-
-class NewtonVoltageControlAPI "NewtonVoltageControlAPI" (
-    apiSchemas = ["NewtonActuatorControlBaseAPI"]
-    doc = """Firmware position controller of a voltage-controlled servo, as in BAM (Better Actuator Models).
-
-    This follows the voltage-controlled servo model of the [Rhoban/bam](https://github.com/Rhoban/bam)
-    library, whose identified fits are described in the ICRA 2025 paper "Extended Friction Models
-    for the Physics Simulation of Servo Actuators".
-
-    Computes the PWM duty cycle and outputs the voltage that the motor receives at its supply
-    voltage `V`:
-
-        `duty = errorGain * kp * (target_pos - q)`
-        `voltage = V * duty`
-
-    `V` is the supply voltage of the motor, so this control law requires a motor that takes a
-    voltage command (e.g. `NewtonDCMotorAPI`). Parsers should raise an error if none is applied.
-    The current and PWM limits of the servo are authored with `NewtonCurrentPWMClampingAPI`.
-
-    Target velocity and feedforward terms are ignored, since the modeled firmware has no effort
-    input. For a BAM fit, `newton:kp` and `newton:errorGain` are the firmware gain and the error
-    gain of the servo, not fitted values.
-    """
-)
-{
-    float newton:kp = 0 (
-        doc = """Firmware proportional gain, as set on the servo.
-
-        Range: [0, inf)
-        Units: dimensionless"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
-    )
-
-    float newton:errorGain = 1 (
-        doc = """Converts `kp` times the position error (in joint space) to a duty cycle.
-
-        Depends on the encoder resolution and the gain scaling of the servo firmware.
-
-        Range: [0, inf)
-        Units: 1 / distance or 1 / radians"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-            }
-        }
     )
 }
 
@@ -2114,7 +2106,7 @@ class NewtonCurrentPWMClampingAPI "NewtonCurrentPWMClampingAPI" (
     library, whose identified fits are described in the ICRA 2025 paper "Extended Friction Models
     for the Physics Simulation of Servo Actuators".
 
-    Bounds the voltage command of a motor (e.g. from `NewtonVoltageControlAPI`) first by the
+    Bounds the voltage command of a motor (from a duty control law) first by the
     current limit and then by the PWM limit, in this fixed order:
 
         `voltage = clamp(voltage, kt*v - resistance*maxCurrent, kt*v + resistance*maxCurrent)`
@@ -2164,7 +2156,7 @@ class NewtonCurrentPWMClampingAPI "NewtonCurrentPWMClampingAPI" (
 class NewtonActuatorMotorBaseAPI "NewtonActuatorMotorBaseAPI" (
     doc = """Base API for all actuator motors.
 
-    Motors turn the motor command of the control law (e.g. a voltage from `NewtonVoltageControlAPI`),
+    Motors turn the duty of the control law (`newton:outputSpace = "duty"`),
     bounded by any applied `NewtonActuatorCommandClampingBaseAPI` derived schemas, into the effort of the
     motor. This effort may still be constrained by one or more applied `NewtonActuatorClampingBaseAPI`
     derived schemas.
@@ -2187,15 +2179,14 @@ class NewtonDCMotorAPI "NewtonDCMotorAPI" (
     library, whose identified fits are described in the ICRA 2025 paper "Extended Friction Models
     for the Physics Simulation of Servo Actuators".
 
-    The motor computes the effort from the voltage command
-    of the control law (e.g. `NewtonVoltageControlAPI`), bounded by command clamping (e.g.
-    `NewtonCurrentPWMClampingAPI`), and by the supply voltage `V`, which the motor cannot exceed:
+    The motor computes the effort from the duty of the control law (`newton:outputSpace = "duty"`),
+    bounded by command clamping (e.g. `NewtonCurrentPWMClampingAPI`), and the supply voltage `V`:
 
-        `voltage = clamp(voltage, -V, V)`
+        `voltage = clamp(duty, -1, 1) * V`
         `current = (voltage - kt*v) / resistance`
         `effort = kt*current`
 
-    Control laws that output an effort (e.g. `NewtonPDControlAPI`) must not be combined with this
+    Control laws that output an effort (`newton:outputSpace = "effort"`) must not be combined with this
     motor. Parsers should raise an error if one is applied.
 
     The motor models its back-EMF itself, so it must not be combined with `NewtonDCMotorClampingAPI`,
@@ -2204,8 +2195,7 @@ class NewtonDCMotorAPI "NewtonDCMotorAPI" (
 
     The motor provides the supply voltage `V`: `newton:vin`, or the voltage of the battery the
     actuator draws from if that battery provides one (e.g. `NewtonConstantResistanceBattery`).
-    The actuator then draws the current `duty * current` from the battery, with the duty cycle
-    `duty = voltage / V`.
+    The actuator then draws the current `duty * current` from the battery.
 
     For a BAM fit, `newton:kt` and `newton:resistance` are the fit's `kt` and `R`, and
     `newton:vin` is the supply voltage of the servo, not a fitted value. The rest of a fit is

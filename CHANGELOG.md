@@ -4,8 +4,9 @@
 
 - Added `NewtonActuatorMotorBaseAPI`, the base of all actuator motors, which turn the motor command into the effort of a motor; at most one motor may be applied to an actuator
 - Added `NewtonDCMotorAPI`, a DC motor driven by a PWM voltage following the voltage-controlled servo model of [Rhoban/bam](https://github.com/Rhoban/bam), with `newton:kt`, `newton:resistance` and `newton:vin`, which turns the motor command into the effort of a motor
-  - With a motor, the control law must output the motor command (e.g. a voltage from `NewtonVoltageControlAPI`), command clamping bounds that command, and clamping bounds the effort of the motor. Control laws that output an effort, such as `NewtonPDControlAPI`, must not be combined with a motor.
-- Added `NewtonVoltageControlAPI`, the firmware position controller of a BAM voltage-controlled servo, with `newton:kp` and `newton:errorGain`, which outputs the voltage of a motor
+  - With a motor, the control law must output a duty (`newton:outputSpace = "duty"`), command clamping bounds that command, and clamping bounds the effort of the motor. Control laws that output an effort must not be combined with a motor.
+- Added `newton:outputSpace` to `NewtonPDControlAPI`, `NewtonPIDControlAPI` and `NewtonNeuralControlAPI`, which selects whether the control law outputs an effort (`"effort"`, the default) or a signed duty for a motor (`"duty"`); the units of the gains follow that space
+  - A BAM voltage-controlled servo uses `NewtonPDControlAPI` with `newton:outputSpace = "duty"`, `newton:kp` set to its firmware gain times its error gain and `newton:kd = 0`.
 - Added `NewtonActuatorCommandClampingBaseAPI`, the base of all actuator command clamping, which bounds the motor command before the motor
 - Added `NewtonCurrentPWMClampingAPI`, the current and PWM limits of the firmware of a servo, with `newton:maxCurrent` and `newton:maxPwm`, applied in this order to the voltage of a `NewtonDCMotorAPI` whose `newton:kt` and `newton:resistance` it uses
   - Together they reproduce a BAM voltage-controlled servo; friction is not modeled, and the command delay and armature are authored with `NewtonActuatorDelayAPI` and on the joint.
