@@ -4,11 +4,12 @@
 import pathlib
 import unittest
 
-from pxr import Plug
+from pxr import Plug, Usd, UsdGeom
 from validator_test_case import SUPPORTS_PYTHON_VALIDATORS, ValidatorTestCase, run_python
 
 import newton_usd_schemas
 from newton_usd_schemas import validators
+from newton_usd_schemas.validators._registration import register_prim_validator
 
 if SUPPORTS_PYTHON_VALIDATORS:
     from pxr import UsdValidation
@@ -49,6 +50,16 @@ class TestValidatorsImport(unittest.TestCase):
             assert metadata.plugin, "expected metadata from plugInfo.json"
             """)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_VALIDATORS, "Python validators require OpenUSD 26.05 or newer")
+    def test_register_existing_validator(self):
+        register_prim_validator("SdfMaxResolutionValidator", lambda prim, time_range: [])
+        stage = Usd.Stage.CreateInMemory()
+        prim = UsdGeom.Cube.Define(stage, "/Collider").GetPrim()
+        prim.ApplyAPI("NewtonSDFCollisionAPI")
+        prim.GetAttribute("newton:sdfMaxResolution").Set(100)
+        validator = UsdValidation.ValidationRegistry().GetOrLoadValidatorByName(validators.SDF_MAX_RESOLUTION_VALIDATOR)
+        self.assertEqual([error.GetName() for error in validator.Validate(prim)], ["SdfMaxResolutionNotDivisibleBy8"])
 
     @unittest.skipUnless(SUPPORTS_PYTHON_VALIDATORS, "Python validators require OpenUSD 26.05 or newer")
     def test_register_after_registry_created(self):
