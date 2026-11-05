@@ -21,6 +21,9 @@ def _is_mimic_disabled(prim: Usd.Prim) -> bool:
     return not any(True if value is None else value for value in values)
 
 
+# Not time dependent: the relationship is not time sampled, and whether a mimic is ever enabled depends on the whole
+# timeline, so the check reads every time sample regardless of the time range. Marking it time dependent would repeat
+# its findings for each time code being validated.
 def check_mimic_joint(prim: Usd.Prim, time_range: TimeRange) -> list[Finding]:
     if not prim.HasAPI("NewtonMimicAPI") or _is_mimic_disabled(prim):
         return []

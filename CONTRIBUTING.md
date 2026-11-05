@@ -153,7 +153,7 @@ The validators in `newton_usd_schemas/validators` check content against requirem
    - `doc`: the requirement, in one or two sentences.
    - `keywords`: a topic keyword such as `NewtonJoints`, and, for a validator of a single schema, the schema name, such as `NewtonMimicAPI`. Every validator also gets the `NewtonValidators` keyword, which is declared once for the whole plugin.
    - `schemaTypes`: for a validator of a single API schema, its TfType name, such as `NewtonPhysicsMimicAPI`, so that it only runs on prims with that schema. OpenUSD ignores schema identifiers, such as `NewtonMimicAPI`, here.
-   - `isTimeDependent`: `true` if the check reads time samples.
+   - `isTimeDependent`: `true` if the check validates values at the times in its `time_range`, such as time-sampled attribute values. When `UsdValidation` validates a list of time codes, it runs time dependent validators once for each, and other validators once with the whole time range. A check that is not time dependent can still read time samples to decide whether a requirement applies, as the mimic validator does with `newton:mimicEnabled`.
 4. To add a fixer, pass a list of `UsdValidation.ValidationFixer`s as the third argument of `register_prim_validator`, built only when `SUPPORTS_PYTHON_FIXERS` is true, since Python fixers require OpenUSD 26.11 or newer. Its `errorName` must match the findings it fixes, and it must author in the edit target it is given. See `_collision.py` for an example.
 5. Add a changelog entry under `## Features` that states the requirement.
 
