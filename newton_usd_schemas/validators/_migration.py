@@ -10,7 +10,9 @@ RENAMED_ATTRIBUTE_ERROR = "RenamedAttribute"
 
 # Attributes renamed by a breaking change, by the API schema that defines their new names. The validator's schemaTypes
 # and keywords in plugInfo.json must list the same schemas.
-RENAMED_ATTRIBUTES: dict[str, dict[str, str]] = {}
+RENAMED_ATTRIBUTES: dict[str, dict[str, str]] = {
+    "NewtonPointsDeformableSimAPI": {"physics:masses": "newton:masses"},
+}
 
 
 def renamed_to(prim: Usd.Prim, name: str) -> str | None:

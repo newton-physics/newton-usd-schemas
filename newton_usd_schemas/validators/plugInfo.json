@@ -23,7 +23,8 @@
                     },
                     "RenamedAttributesValidator": {
                         "doc": "Attributes that a breaking change to a Newton schema renamed must be authored with their new names, as values authored with the old names are ignored.",
-                        "keywords": ["NewtonMigration"]
+                        "keywords": ["NewtonMigration", "NewtonPointsDeformableSimAPI"],
+                        "schemaTypes": ["NewtonPhysicsPointsDeformableSimAPI"]
                     }
                 }
             }

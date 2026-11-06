@@ -5,7 +5,7 @@
 - Added automated validation for a subset of the Newton schemas
   - `NewtonSDFCollisionAPI`: `newton:sdfMaxResolution` must be divisible by 8. A fix rounds it to the nearest multiple of 8.
   - `NewtonMimicAPI`: `newton:mimicJoint` must target exactly one other joint, of the same joint type as the follower, unless the mimic is disabled
-  - Renamed attributes: attributes that a breaking change renamed must use their new names. A fix moves their values to the new names.
+  - Renamed attributes: attributes that a breaking change renamed, such as `physics:masses` on `NewtonPointsDeformableSimAPI`, must use their new names. A fix moves their values to the new names.
   - Any schema: authored values must lie within their attribute's hard limits. A value equal to the schema fallback is accepted even outside the hard limits, so sentinels such as `-inf` for `newton:contactGap` remain valid. Soft limits are not validated.
   - The validators are available through `UsdValidation` after importing `newton_usd_schemas.validators`, which requires OpenUSD 26.05 or newer, and 26.11 or newer for the fix. Importing `newton_usd_schemas` alone still only registers the schemas.
   - See [Validation](https://github.com/newton-physics/newton-usd-schemas/blob/main/docs/validation.md) for details
@@ -16,7 +16,7 @@
 
 - Renamed `physics:masses` to `newton:masses` on `NewtonPointsDeformableSimAPI`
   - The `physics:` namespace belongs to UsdPhysics and AOUSD, so a Newton schema should not define properties in it.
-  - Assets that author `physics:masses` on prims with `NewtonPointsDeformableSimAPI` should rename the attribute to `newton:masses`.
+  - Assets that author `physics:masses` on prims with `NewtonPointsDeformableSimAPI` should rename the attribute to `newton:masses`. The validators report the old name, and their fix renames it.
   - Consumers that read `physics:masses` from these prims, such as Newton's USD importer, need a corresponding update to read `newton:masses`.
 
 # 0.6.0
