@@ -86,7 +86,7 @@ uv run --group dev poe lint
 uv run --group dev poe test
 ```
 
-The `dev` group includes an OpenUSD runtime, through the extras defined in `pyproject.toml`.
+The `dev` group includes an OpenUSD runtime and `usd-validation-nvidia`, through the extras defined in `pyproject.toml`.
 
 ### Development Requirements
 
@@ -155,7 +155,8 @@ The validators in `newton_usd_schemas/validators` check content against requirem
    - `schemaTypes`: for a validator of a single API schema, its TfType name, such as `NewtonPhysicsMimicAPI`, so that it only runs on prims with that schema. OpenUSD ignores schema identifiers, such as `NewtonMimicAPI`, here.
    - `isTimeDependent`: `true` if the check validates values at the times in its `time_range`, such as time-sampled attribute values. When `UsdValidation` validates a list of time codes, it runs time dependent validators once for each, and other validators once with the whole time range. A check that is not time dependent can still read time samples to decide whether a requirement applies, as the mimic validator does with `newton:mimicEnabled`.
 4. To add a fixer, pass a list of `UsdValidation.ValidationFixer`s as the third argument of `register_prim_validator`, built only when `SUPPORTS_PYTHON_FIXERS` is true, since Python fixers require OpenUSD 26.11 or newer. Its `errorName` must match the findings it fixes, and it must author in the edit target it is given. See `_collision.py` for an example.
-5. Add a changelog entry under `## Features` that states the requirement.
+5. Wrap the validator as a usd-validation-nvidia rule in `validators/_usd_validation_nvidia.py`: subclass `_NewtonRule`, set `check = staticmethod(check_<name>)`, return `<NAME>_VALIDATOR` from `validator_name`, and add the rule to `Plugin.rules` with its category. The category is the topic keyword, or `Basic` for a requirement that is not specific to Newton. usd-validation-nvidia does not convert `UsdValidation` fixers, so a rule for a validator with a fixer also attaches a `Suggestion` that applies the same fix, as `SdfMaxResolutionChecker` does.
+6. Add a changelog entry under `## Features` that states the requirement.
 
 ### Validator Tests
 
@@ -167,4 +168,4 @@ Test each validator in its own `tests/test_validator_<name>.py`, using `Validato
 - Selection by each of its keywords.
 - The fixer, if any, on a file backed stage, since applying a fixer saves the edit target layer. Skip these tests when `SUPPORTS_PYTHON_FIXERS` is false.
 
-Also add the validator to the metadata and keyword tests in `tests/test_validators_plugin.py`.
+Also add the validator to the metadata and keyword tests in `tests/test_validators_plugin.py`, and its rule to `tests/test_usd_validation_nvidia_plugin.py` and to the rule tests in `tests/test_usd_validation_nvidia_rules.py`. The rule tests run each rule both with the `UsdValidation` validator and with the Python fallback, and cover its issue, its category and its fix.
