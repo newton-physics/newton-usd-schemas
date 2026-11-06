@@ -51,11 +51,15 @@ cmd = "python -m unittest discover -v -s ./tests"
 
 [tool.poe.tasks.test-ci]
 help = "Run the unittests with results and coverage reporting printed to console (for CI)"
-sequence = ["test-report", "generate-coverage-xml", "show-coverage-report"]
+sequence = ["test-report", "combine-coverage", "generate-coverage-xml", "show-coverage-report"]
 
 [tool.poe.tasks.test-report]
 help = "Run the unittests with coverage tracking and generate test report"
 cmd = "coverage run -m xmlrunner discover -v -s ./tests --output-file=.results.xml"
+
+[tool.poe.tasks.combine-coverage]
+help = "Combine the coverage data from the test process and its subprocesses"
+cmd = "coverage combine"
 
 [tool.poe.tasks.generate-coverage-xml]
 help = "Generate coverage XML report"
@@ -105,6 +109,7 @@ cmd  = "black ."
 
 [tool.coverage.run]
 source = ["newton_usd_schemas"]
+patch = ["subprocess"]
 
 [tool.coverage.report]
 exclude_lines = [
