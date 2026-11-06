@@ -32,7 +32,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertFalse(prim.CanApplyAPI("NewtonKaminoSceneAPI"))
 
     def test_padmm_primal_tolerance(self):
-        """Verify the existing padmm primal tolerance property."""
+        """Verify the padmm primal tolerance property."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:padmm:primalTolerance"))
 
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -53,7 +53,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
             self.assertIsNone(hard.GetMaximum())
 
     def test_padmm_dual_tolerance(self):
-        """Verify the existing padmm dual tolerance property."""
+        """Verify the padmm dual tolerance property."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:padmm:dualTolerance"))
 
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -74,7 +74,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
             self.assertIsNone(hard.GetMaximum())
 
     def test_padmm_complementarity_tolerance(self):
-        """Verify the existing padmm complementarity tolerance property."""
+        """Verify the padmm complementarity tolerance property."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:padmm:complementarityTolerance"))
 
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -95,7 +95,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
             self.assertIsNone(hard.GetMaximum())
 
     def test_padmm_warmstarting(self):
-        """Verify the existing padmm warmstarting property."""
+        """Verify the padmm warmstarting property."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:padmm:warmstarting"))
 
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -125,7 +125,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertFalse(success)
 
     def test_padmm_use_acceleration(self):
-        """Verify the existing padmm use acceleration property."""
+        """Verify the padmm use acceleration property."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:padmm:useAcceleration"))
 
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -140,7 +140,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertEqual(attr.Get(), False)
 
     def test_constraints_use_preconditioning(self):
-        """Verify the existing constraints use preconditioning property."""
+        """Verify the constraints use preconditioning property."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:constraints:usePreconditioning"))
 
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -155,7 +155,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertEqual(attr.Get(), False)
 
     def test_constraints_alpha(self):
-        """Verify the existing constraints alpha property."""
+        """Verify the constraints alpha property."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:constraints:alpha"))
 
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -176,7 +176,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
             self.assertAlmostEqual(hard.GetMaximum(), 1.0)
 
     def test_constraints_beta(self):
-        """Verify the existing constraints beta property."""
+        """Verify the constraints beta property."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:constraints:beta"))
 
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -197,7 +197,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
             self.assertAlmostEqual(hard.GetMaximum(), 1.0)
 
     def test_constraints_gamma(self):
-        """Verify the existing constraints gamma property."""
+        """Verify the constraints gamma property."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:constraints:gamma"))
 
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -218,7 +218,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
             self.assertAlmostEqual(hard.GetMaximum(), 1.0)
 
     def test_joint_correction(self):
-        """Verify the existing joint correction property."""
+        """Verify the joint correction property."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:jointCorrection"))
 
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -248,7 +248,7 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertFalse(success)
 
     def test_dynamics_solver(self):
-        """Author the dynamics backend while preserving the PADMM fallback."""
+        """Author the dynamics solver while preserving the PADMM fallback."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:dynamicsSolver"))
 
         self.scene.ApplyAPI("NewtonKaminoSceneAPI")
@@ -297,10 +297,10 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertEqual(attr.Get(), -math.inf)
 
         if USD_HAS_LIMITS:
-            soft = attr.GetSoftLimits()
-            self.assertTrue(soft.IsValid())
-            self.assertEqual(soft.GetMinimum(), 0.0)
-            self.assertIsNone(soft.GetMaximum())
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
 
         attr.Clear()
         self.assertFalse(attr.HasAuthoredValue())
@@ -365,10 +365,10 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertEqual(attr.Get(), -math.inf)
 
         if USD_HAS_LIMITS:
-            soft = attr.GetSoftLimits()
-            self.assertTrue(soft.IsValid())
-            self.assertEqual(soft.GetMinimum(), 0.0)
-            self.assertIsNone(soft.GetMaximum())
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
 
         attr.Clear()
         self.assertFalse(attr.HasAuthoredValue())
@@ -433,10 +433,10 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertEqual(attr.Get(), -math.inf)
 
         if USD_HAS_LIMITS:
-            soft = attr.GetSoftLimits()
-            self.assertTrue(soft.IsValid())
-            self.assertEqual(soft.GetMinimum(), 0.0)
-            self.assertIsNone(soft.GetMaximum())
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
 
         attr.Clear()
         self.assertFalse(attr.HasAuthoredValue())

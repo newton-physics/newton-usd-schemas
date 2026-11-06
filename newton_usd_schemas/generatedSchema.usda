@@ -278,6 +278,8 @@ class "NewtonKaminoSceneAPI" (
         When enabled, the forward dynamics problem is scaled to improve numerical conditioning, which
         can lead to solver robustness for very ill-conditioned systems. It may however slow down
         convergence for well-conditioned systems.
+
+        The DVI solver always disables preconditioning and ignores this attribute.
         """
     )
 
@@ -351,15 +353,15 @@ class "NewtonKaminoSceneAPI" (
     uniform float newton:kamino:constraints:jointRecoveryTime = -inf (
         doc = """Recovery time for positional errors in bilateral joint constraints.
 
-        The default `-inf` uses `alpha / dt` as the coefficient multiplying positional
-        error, where `alpha` is `newton:kamino:constraints:alpha` and `dt` is the
-        timestep. A finite time replaces that coefficient with `1 / (dt + time)`;
-        `alpha` is ignored.
+        If this attribute is set to `-inf`, the engine's default should be used instead:
+        the coefficient multiplying positional error is `alpha / dt`, where `alpha`
+        is `newton:kamino:constraints:alpha` and `dt` is the timestep. A finite time
+        replaces that coefficient with `1 / (dt + time)`; `alpha` is ignored.
 
-        Range: [0, inf) for explicit times; sentinel -inf selects the engine default.
+        Range: [0, inf)
         Units: seconds"""
         limits = {
-            dictionary soft = {
+            dictionary hard = {
                 float minimum = 0
             }
         }
@@ -384,20 +386,22 @@ class "NewtonKaminoSceneAPI" (
     uniform float newton:kamino:constraints:limitRecoveryTime = -inf (
         doc = """Recovery time for violated joint limits.
 
-        For hard limits, the default `-inf` uses `beta / dt` as the coefficient
+        If this attribute is set to `-inf`, the engine's default should be used instead.
+
+        For hard limits, default recovery uses `beta / dt` as the coefficient
         multiplying limit violation, where `beta` is `newton:kamino:constraints:beta`
         and `dt` is the timestep. A finite time replaces that coefficient with
         `1 / (dt + time)`; `beta` is ignored and the limit remains hard.
 
         For compliant limits, enabled through `newton:kamino:constraints:limitCompliance`,
-        the default `-inf` uses the limit's damping-to-stiffness ratio. A finite value
+        default recovery uses the limit's damping-to-stiffness ratio. A finite value
         replaces that ratio in both positional recovery and physical compliance.
         Setting a recovery time does not enable compliance.
 
-        Range: [0, inf) for explicit times; sentinel -inf selects the engine default.
+        Range: [0, inf)
         Units: seconds"""
         limits = {
-            dictionary soft = {
+            dictionary hard = {
                 float minimum = 0
             }
         }
@@ -422,23 +426,25 @@ class "NewtonKaminoSceneAPI" (
     uniform float newton:kamino:constraints:contactRecoveryTime = -inf (
         doc = """Recovery time for contact penetration.
 
-        For hard contacts, the default `-inf` uses `gamma / dt` as the coefficient
+        If this attribute is set to `-inf`, the engine's default should be used instead.
+
+        For hard contacts, default recovery uses `gamma / dt` as the coefficient
         multiplying penetration, where `gamma` is `newton:kamino:constraints:gamma`
         and `dt` is the timestep. A finite time replaces that coefficient with
         `1 / (dt + time)`; `gamma` is ignored and the contact remains hard.
 
         For compliant contacts, enabled through `newton:kamino:constraints:contactCompliance`,
-        the default `-inf` uses the contact's damping-to-stiffness ratio. A finite value
+        default recovery uses the contact's damping-to-stiffness ratio. A finite value
         replaces that ratio in both positional recovery and physical compliance.
         Setting a recovery time does not enable compliance.
 
         The closing allowance for separated speculative contacts is independent
         of this setting.
 
-        Range: [0, inf) for explicit times; sentinel -inf selects the engine default.
+        Range: [0, inf)
         Units: seconds"""
         limits = {
-            dictionary soft = {
+            dictionary hard = {
                 float minimum = 0
             }
         }
@@ -464,10 +470,13 @@ class "NewtonKaminoSceneAPI" (
     uniform bool newton:kamino:constraints:contactCompliance = false (
         doc = """Whether to use an implicit spring-damper response for contact normals.
 
-        When disabled, contacts remain hard. When enabled, contacts use material gains
-        authored through `newton:contactStiffness` and `newton:contactDamping`.
-        Positive per-contact stiffness and its corresponding damping take precedence
-        over the arithmetic mean of the two shape materials.
+        When disabled, contacts remain hard. When enabled, stiffness and damping are
+        the arithmetic means of `newton:contactStiffness` and `newton:contactDamping`
+        on the physics materials bound to the two colliding shapes. These material
+        properties are authored through `NewtonMaterialAPI`.
+
+        Contact-specific gains supplied at runtime take precedence over these material
+        gains when their stiffness is positive.
         Positive finite stiffness produces a compliant response; non-positive or
         infinite stiffness retains hard contact.
 
@@ -506,28 +515,33 @@ class "NewtonKaminoSceneAPI" (
 
 class "NewtonKaminoDviSceneAPI" (
     apiSchemas = ["NewtonKaminoSceneAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["newton:kamino:dynamicsSolver"]
+    }
     doc = """Provides Newton's Kamino DVI solver configuration.
 
     Applying this schema also applies `NewtonKaminoSceneAPI` and `NewtonSceneAPI`.
-    Select the DVI backend with `newton:kamino:dynamicsSolver = "dvi"`.
-    Joint inequalities use projected Gauss-Seidel, contacts use projected
-    Gauss-Seidel or accelerated projected gradient descent, and bilateral joint
-    constraints use a selected LLT factorization.
-    Contact parameters for the unselected numerical method are ignored."""
+    Applying this schema makes DVI the default dynamics solver. An explicitly
+    authored `newton:kamino:dynamicsSolver` value takes precedence over this default.
+    There is no need to list `NewtonKaminoSceneAPI` separately. If both APIs are
+    listed explicitly, list `NewtonKaminoDviSceneAPI` first for its default to apply.
+
+    Joint limits, joint friction, bounded drive efforts, and contacts share one
+    unilateral numerical solver and its parameters. Bilateral joint constraints use
+    a separate LLT factorization. Parameters for the unselected unilateral method
+    are ignored. Contact and joint-limit compliance remain independently configurable.
+
+    `newton:maxSolverIterations` sets the outer alternating iteration budget;
+    its default `-1` selects the engine default of 24 iterations."""
 )
 {
-    uniform bool newton:kamino:constraints:usePreconditioning = false (
-        customData = {
-            bool apiSchemaOverride = true
-        }
-    )
+    uniform token newton:kamino:dynamicsSolver = "dvi"
 
     uniform token newton:kamino:dvi:bilateral:numericalSolver = "lltb" (
-        allowedTokens = ["llt", "lltb", "lltbrcm"]
+        allowedTokens = ["lltb", "lltbrcm"]
         doc = """Numerical solver used for bilateral joint constraints.
 
         Options:
-        - "llt": Sequential LLT (Cholesky) factorization.
         - "lltb": Dense blocked LLT factorization.
         - "lltbrcm": Reverse Cuthill-McKee reordered blocked LLT factorization.
 
@@ -535,53 +549,22 @@ class "NewtonKaminoDviSceneAPI" (
         can accelerate large sparse articulated systems."""
     )
 
-    uniform token newton:kamino:dvi:jointInequality:numericalSolver = "pgs" (
-        allowedTokens = ["pgs"]
-        doc = """Numerical method used for joint inequality constraints.
-
-        This includes joint limits, joint friction, and bounded drive efforts.
-        The supported method is "pgs", projected Gauss-Seidel."""
-    )
-
-    uniform float newton:kamino:dvi:jointInequality:pgs:omega = 1.0 (
-        doc = """Relaxation factor applied to projected Gauss-Seidel joint inequality updates.
-
-        Range: (0, 2]
-        Units: dimensionless"""
-        limits = {
-            dictionary hard = {
-                float minimum = 0
-                float maximum = 2
-            }
-        }
-    )
-
-    uniform int newton:kamino:dvi:jointInequality:pgs:sweepsPerSolve = 2 (
-        doc = """Number of projected Gauss-Seidel sweeps for joint inequalities
-        during each alternating DVI iteration.
-
-        Range: [1, inf)
-        Units: dimensionless"""
-        limits = {
-            dictionary hard = {
-                int minimum = 1
-            }
-        }
-    )
-
-    uniform token newton:kamino:dvi:contact:numericalSolver = "pgs" (
+    uniform token newton:kamino:dvi:unilateral:numericalSolver = "pgs" (
         allowedTokens = ["pgs", "apgd"]
-        doc = """Numerical method used for contact constraints.
+        doc = """Numerical method shared by all unilateral constraints.
+
+        Joint limits, joint friction, bounded drive efforts, and contacts use the
+        same method and parameters.
 
         Options:
         - "pgs": Projected Gauss-Seidel.
         - "apgd": Accelerated projected gradient descent."""
     )
 
-    uniform float newton:kamino:dvi:contact:pgs:omega = 1.0 (
-        doc = """Relaxation factor applied to projected Gauss-Seidel contact updates.
+    uniform float newton:kamino:dvi:unilateral:pgs:omega = 1.0 (
+        doc = """Relaxation factor applied to all projected Gauss-Seidel unilateral updates.
 
-        Used when `newton:kamino:dvi:contact:numericalSolver` is "pgs".
+        Used when `newton:kamino:dvi:unilateral:numericalSolver` is "pgs".
 
         Range: (0, 2]
         Units: dimensionless"""
@@ -593,12 +576,12 @@ class "NewtonKaminoDviSceneAPI" (
         }
     )
 
-    uniform int newton:kamino:dvi:contact:pgs:sweepsPerSolve = 2 (
-        doc = """Number of projected Gauss-Seidel sweeps for contact inequalities during
-        each alternating DVI iteration.
+    uniform int newton:kamino:dvi:unilateral:pgs:sweepsPerIteration = 2 (
+        doc = """Number of projected Gauss-Seidel sweeps for all unilateral constraints
+        during each alternating DVI iteration.
 
         Contacts use graph-colored sweeps on CUDA. Used when
-        `newton:kamino:dvi:contact:numericalSolver` is "pgs".
+        `newton:kamino:dvi:unilateral:numericalSolver` is "pgs".
 
         Range: [1, inf)
         Units: dimensionless"""
@@ -609,13 +592,14 @@ class "NewtonKaminoDviSceneAPI" (
         }
     )
 
-    uniform int newton:kamino:dvi:contact:apgd:maxIterations = 64 (
+    uniform int newton:kamino:dvi:unilateral:apgd:maxIterations = 64 (
         doc = """Maximum accepted APGD steps per frozen-correction quadratic solve.
 
+        Used when `newton:kamino:dvi:unilateral:numericalSolver` is "apgd".
         The inner solve stops early when its residual satisfies
-        `newton:kamino:dvi:contact:apgd:tolerance`. This budget is separate from the
+        `newton:kamino:dvi:unilateral:apgd:tolerance`. This budget is separate from the
         nonlinear correction budget in
-        `newton:kamino:dvi:contact:maxNonlinearCorrections`.
+        `newton:kamino:dvi:unilateral:apgd:maxNonlinearCorrections`.
 
         Range: [1, inf)
         Units: dimensionless"""
@@ -626,9 +610,10 @@ class "NewtonKaminoDviSceneAPI" (
         }
     )
 
-    uniform float newton:kamino:dvi:contact:apgd:tolerance = 1e-5 (
+    uniform float newton:kamino:dvi:unilateral:apgd:tolerance = 1e-5 (
         doc = """Absolute infinity-norm tolerance on inner and nonlinear natural-map residuals.
 
+        Used when `newton:kamino:dvi:unilateral:numericalSolver` is "apgd".
         The inner residual uses a frozen friction correction. The nonlinear residual
         recomputes the correction at the accepted impulse after relaxation. Both use
         a unit projection step, independent of the APGD step size and contact count.
@@ -642,13 +627,14 @@ class "NewtonKaminoDviSceneAPI" (
         }
     )
 
-    uniform int newton:kamino:dvi:contact:maxNonlinearCorrections = 1 (
-        doc = """Maximum De Saxce fixed-point corrections per contact solve.
+    uniform int newton:kamino:dvi:unilateral:apgd:maxNonlinearCorrections = 1 (
+        doc = """Maximum De Saxce fixed-point corrections per unilateral APGD phase.
 
+        Used when `newton:kamino:dvi:unilateral:numericalSolver` is "apgd".
         Each correction freezes the nonlinear friction term for one APGD solve.
-        Increasing `newton:kamino:dvi:contact:apgd:maxIterations` alone cannot resolve
+        Increasing `newton:kamino:dvi:unilateral:apgd:maxIterations` alone cannot resolve
         a stale correction. The correction loop stops early when its fresh residual
-        satisfies `newton:kamino:dvi:contact:apgd:tolerance`. Budget exhaustion returns
+        satisfies `newton:kamino:dvi:unilateral:apgd:tolerance`. Budget exhaustion returns
         the last accepted impulses, which may remain unconverged.
 
         Range: [1, inf)
@@ -665,7 +651,7 @@ class "NewtonKaminoDviSceneAPI" (
 
         This tolerance also controls full-system feasibility, bilateral velocity,
         and complementarity checks. The APGD natural-map tolerance is configured
-        separately through `newton:kamino:dvi:contact:apgd:tolerance`.
+        separately through `newton:kamino:dvi:unilateral:apgd:tolerance`.
 
         Range: [0, inf)"""
         limits = {

@@ -2,8 +2,9 @@
 
 ## Features
 
-- Added `NewtonKaminoDviSceneAPI`, which extends a `PhysicsScene` with Kamino DVI solver configuration
+- Added `NewtonKaminoDviSceneAPI`, which extends a `PhysicsScene` with bilateral and shared unilateral DVI solver controls
   - Applying `NewtonKaminoDviSceneAPI` implicitly applies `NewtonKaminoSceneAPI` and `NewtonSceneAPI` as well
+  - Defaults `newton:kamino:dynamicsSolver` to `"dvi"`; authored values and earlier explicitly applied APIs take precedence
 - Added dynamics backend selection, recovery times and speed caps, and contact and joint-limit compliance controls to `NewtonKaminoSceneAPI`
 - Added the `usd` and `usdex` extras, which install `usd-core` or `usd-exchange` respectively as the OpenUSD runtime
   - The extras are optional, and should not be combined. Any other OpenUSD runtime can still be installed separately.
