@@ -9,7 +9,7 @@ from validator_test_case import SUPPORTS_PYTHON_VALIDATORS, ValidatorTestCase, r
 
 import newton_usd_schemas
 from newton_usd_schemas import validators
-from newton_usd_schemas.validators._registration import register_prim_validator
+from newton_usd_schemas.validators._registration import Finding, native_prim_task, register_prim_validator
 
 if SUPPORTS_PYTHON_VALIDATORS:
     from pxr import UsdValidation
@@ -50,6 +50,19 @@ class TestValidatorsImport(unittest.TestCase):
             assert metadata.plugin, "expected metadata from plugInfo.json"
             """)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_VALIDATORS, "Python validators require OpenUSD 26.05 or newer")
+    def test_finding_severity(self):
+        stage = Usd.Stage.CreateInMemory()
+        prim = stage.DefinePrim("/Prim")
+        task = native_prim_task(
+            lambda prim, time_range: [Finding("Bad", prim, "bad"), Finding("Old", prim, "old", UsdValidation.ValidationErrorType.Warn)]
+        )
+        errors = task(prim, UsdValidation.ValidationTimeRange())
+        self.assertEqual(
+            [(error.GetName(), error.GetType()) for error in errors],
+            [("Bad", UsdValidation.ValidationErrorType.Error), ("Old", UsdValidation.ValidationErrorType.Warn)],
+        )
 
     @unittest.skipUnless(SUPPORTS_PYTHON_VALIDATORS, "Python validators require OpenUSD 26.05 or newer")
     def test_register_existing_validator(self):
