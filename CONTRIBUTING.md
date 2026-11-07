@@ -157,6 +157,12 @@ The validators in `newton_usd_schemas/validators` check content against requirem
 4. To add a fixer, pass a list of `UsdValidation.ValidationFixer`s as the third argument of `register_prim_validator`, built only when `SUPPORTS_PYTHON_FIXERS` is true, since Python fixers require OpenUSD 26.11 or newer. Its `errorName` must match the findings it fixes, and it must author in the edit target it is given. See `_collision.py` for an example.
 5. Add a changelog entry under `## Features` that states the requirement.
 
+### Renames and Deprecations
+
+Rename a property or schema by deprecating the old name first, keeping it defined until a later release removes it, and add a validator so existing content can be migrated. While the old name is still defined, the validator reports content that uses it as a warning. Once the old name is removed, the validator reports it as an error, since the content's values are then ignored.
+
+To rename an attribute, add the rename to `RENAMED_ATTRIBUTES` in `validators/_migration.py`. If the schema is new to it, also add the schema's TfType name to the `schemaTypes`, and its name to the `keywords`, of `RenamedAttributesValidator` in `validators/plugInfo.json`. The validator then reports content that still uses the old name, and its fixer renames it. The tests check every rename in `RENAMED_ATTRIBUTES`, and that `plugInfo.json` lists the same schemas, so a rename needs no new tests. Note in the breaking change's changelog entry that the validators report and fix the old name.
+
 ### Validator Tests
 
 Test each validator in its own `tests/test_validator_<name>.py`, using `ValidatorTestCase` from `tests/validator_test_case.py`, which skips the tests when Python validators are not supported. The tests must cover:

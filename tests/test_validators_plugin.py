@@ -9,6 +9,7 @@ from validator_test_case import SUPPORTS_PYTHON_VALIDATORS, ValidatorTestCase, r
 
 import newton_usd_schemas
 from newton_usd_schemas import validators
+from newton_usd_schemas.validators._migration import RENAMED_ATTRIBUTES
 from newton_usd_schemas.validators._registration import Finding, native_prim_task, register_prim_validator
 
 if SUPPORTS_PYTHON_VALIDATORS:
@@ -119,13 +120,31 @@ class TestValidatorMetadata(ValidatorTestCase):
         self.assertEqual(list(metadata.GetSchemaTypes()), [])
         self.assertTrue(metadata.isTimeDependent)
 
+    def test_renamed_attributes(self):
+        metadata = self.metadata(validators.RENAMED_ATTRIBUTES_VALIDATOR)
+        self.assertEqual(metadata.name, "newton_usd_schemas.validators:RenamedAttributesValidator")
+        self.assertTrue(metadata.doc)
+        # The keywords and schema types follow the renames, which test_validator_renamed_attributes.py checks
+        self.assertEqual(sorted(metadata.GetKeywords()), sorted(["NewtonMigration", "NewtonValidators", *RENAMED_ATTRIBUTES]))
+        self.assertEqual(
+            list(metadata.GetSchemaTypes()), [Usd.SchemaRegistry.GetTypeFromSchemaTypeName(schema).typeName for schema in RENAMED_ATTRIBUTES]
+        )
+        self.assertFalse(metadata.isTimeDependent)
+
 
 class TestValidatorKeywords(ValidatorTestCase):
     def names(self, keyword: str) -> list[str]:
         return sorted(metadata.name for metadata in UsdValidation.ValidationRegistry().GetValidatorMetadataForKeyword(keyword))
 
     def test_newton_validators(self):
-        expected = sorted([validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR, validators.MIMIC_JOINT_VALIDATOR, validators.SDF_MAX_RESOLUTION_VALIDATOR])
+        expected = sorted(
+            [
+                validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR,
+                validators.MIMIC_JOINT_VALIDATOR,
+                validators.RENAMED_ATTRIBUTES_VALIDATOR,
+                validators.SDF_MAX_RESOLUTION_VALIDATOR,
+            ]
+        )
         self.assertEqual(self.names("NewtonValidators"), expected)
 
     def test_newton_collision(self):
@@ -142,6 +161,9 @@ class TestValidatorKeywords(ValidatorTestCase):
 
     def test_newton_mimic_api(self):
         self.assertEqual(self.names("NewtonMimicAPI"), [validators.MIMIC_JOINT_VALIDATOR])
+
+    def test_newton_migration(self):
+        self.assertEqual(self.names("NewtonMigration"), [validators.RENAMED_ATTRIBUTES_VALIDATOR])
 
 
 if __name__ == "__main__":
