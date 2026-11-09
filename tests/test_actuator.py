@@ -533,6 +533,19 @@ class TestNewtonMaxEffortClampingAPI(unittest.TestCase):
         self.assertTrue(self.prim.HasAPI("NewtonActuatorClampingBaseAPI"))
         self.assertTrue(self.prim.HasAttribute("newton:maxEffort"))
 
+    def test_input_space(self):
+        self.assertFalse(self.prim.HasAttribute("newton:inputSpace"))
+
+        self.prim.ApplyAPI("NewtonMaxEffortClampingAPI")
+        attr = self.prim.GetAttribute("newton:inputSpace")
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "effort")
+        self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
+        self.assertEqual(attr.GetMetadata("allowedTokens"), ["effort"])
+
+        self.assertTrue(attr.Set("effort"))
+        self.assertTrue(attr.HasAuthoredValue())
+
     def test_max_effort(self):
         self.prim.ApplyAPI("NewtonMaxEffortClampingAPI")
         attr = self.prim.GetAttribute("newton:maxEffort")
@@ -576,6 +589,19 @@ class TestNewtonDCMotorClampingAPI(unittest.TestCase):
         self.assertTrue(self.prim.HasAttribute("newton:maxMotorEffort"))
         self.assertTrue(self.prim.HasAttribute("newton:saturationEffort"))
         self.assertTrue(self.prim.HasAttribute("newton:velocityLimit"))
+
+    def test_input_space(self):
+        self.assertFalse(self.prim.HasAttribute("newton:inputSpace"))
+
+        self.prim.ApplyAPI("NewtonDCMotorClampingAPI")
+        attr = self.prim.GetAttribute("newton:inputSpace")
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "effort")
+        self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
+        self.assertEqual(attr.GetMetadata("allowedTokens"), ["effort"])
+
+        self.assertTrue(attr.Set("effort"))
+        self.assertTrue(attr.HasAuthoredValue())
 
     def test_max_motor_effort(self):
         self.prim.ApplyAPI("NewtonDCMotorClampingAPI")
@@ -648,6 +674,19 @@ class TestNewtonPositionBasedClampingAPI(unittest.TestCase):
         self.assertTrue(self.prim.HasAttribute("newton:lookupPositions"))
         self.assertTrue(self.prim.HasAttribute("newton:lookupEfforts"))
 
+    def test_input_space(self):
+        self.assertFalse(self.prim.HasAttribute("newton:inputSpace"))
+
+        self.prim.ApplyAPI("NewtonPositionBasedClampingAPI")
+        attr = self.prim.GetAttribute("newton:inputSpace")
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "effort")
+        self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
+        self.assertEqual(attr.GetMetadata("allowedTokens"), ["effort"])
+
+        self.assertTrue(attr.Set("effort"))
+        self.assertTrue(attr.HasAuthoredValue())
+
     def test_lookup_positions(self):
         self.prim.ApplyAPI("NewtonPositionBasedClampingAPI")
         attr = self.prim.GetAttribute("newton:lookupPositions")
@@ -688,6 +727,19 @@ class TestNewtonCurrentDutyClampingAPI(unittest.TestCase):
         self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
         self.assertTrue(self.prim.HasAPI("NewtonCurrentDutyClampingAPI"))
         self.assertTrue(self.prim.HasAPI("NewtonActuatorClampingBaseAPI"))
+
+    def test_input_space(self):
+        self.assertFalse(self.prim.HasAttribute("newton:inputSpace"))
+
+        self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
+        attr = self.prim.GetAttribute("newton:inputSpace")
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "duty")
+        self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
+        self.assertEqual(attr.GetMetadata("allowedTokens"), ["duty"])
+
+        self.assertTrue(attr.Set("duty"))
+        self.assertTrue(attr.HasAuthoredValue())
 
     def test_max_current(self):
         self.assertFalse(self.prim.HasAttribute("newton:maxCurrent"))

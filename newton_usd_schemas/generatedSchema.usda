@@ -1942,16 +1942,15 @@ class NewtonNeuralControlAPI "NewtonNeuralControlAPI" (
 class NewtonActuatorClampingBaseAPI "NewtonActuatorClampingBaseAPI" (
     doc = """Base API for all actuator clamping strategies.
 
-    Each `NewtonActuatorClampingBaseAPI` derived schema bounds the output of the control law in a fixed space,
-    stated in its documentation: either the effort (i.e. force/torque for linear/rotational actuators), e.g.
-    `NewtonMaxEffortClampingAPI`, `NewtonDCMotorClampingAPI` and `NewtonPositionBasedClampingAPI`, or the duty,
-    e.g. `NewtonCurrentDutyClampingAPI`. The space must match `newton:outputSpace` of the control law: effort
-    clamping must not be combined with a motor, and duty clamping requires one. Parsers should raise an error
+    Each `NewtonActuatorClampingBaseAPI` derived schema bounds the output of the control law in the space given by
+    its `newton:inputSpace`, which must equal `newton:outputSpace` of the control law. Effort clamping (e.g.
+    `NewtonMaxEffortClampingAPI`, `NewtonDCMotorClampingAPI`, `NewtonPositionBasedClampingAPI`) bounds the effort
+    (i.e. force/torque for linear/rotational actuators) and must not be combined with a motor. Duty clamping
+    (e.g. `NewtonCurrentDutyClampingAPI`) bounds the duty and requires a motor. Parsers should raise an error
     otherwise.
 
-    Any number of effort clamping schemas may be applied to a `NewtonActuator`. The order of clamping is not
-    guaranteed to be preserved thus clamping operations must be order independent. A duty clamping schema must
-    be the only clamping of its actuator. Parsers should raise an error otherwise.
+    Any number of clamping schemas may be applied to a `NewtonActuator`. The order of clamping is not
+    guaranteed to be preserved thus clamping operations must be order independent.
 
     Applying any clamping API (e.g. `NewtonMaxEffortClampingAPI`, `NewtonCurrentDutyClampingAPI`) automatically
     applies this base. Check `prim.HasAPI('NewtonActuatorClampingBaseAPI')` to detect whether any clamping is present.
@@ -1968,6 +1967,16 @@ class NewtonMaxEffortClampingAPI "NewtonMaxEffortClampingAPI" (
     """
 )
 {
+    uniform token newton:inputSpace = "effort" (
+        allowedTokens = ["effort"]
+        doc = """Space of the control law output this clamping bounds.
+
+        Options:
+        - effort: the effort (force or torque, in joint space).
+
+        Must equal `newton:outputSpace` of the control law. Parsers should raise an error otherwise."""
+    )
+
     float newton:maxEffort = inf (
         doc = """Maximum output effort limit (in joint space).
 
@@ -2001,6 +2010,16 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
     """
 )
 {
+    uniform token newton:inputSpace = "effort" (
+        allowedTokens = ["effort"]
+        doc = """Space of the control law output this clamping bounds.
+
+        Options:
+        - effort: the effort (force or torque, in joint space).
+
+        Must equal `newton:outputSpace` of the control law. Parsers should raise an error otherwise."""
+    )
+
     float newton:maxMotorEffort = inf (
         doc = """Effort limit for the effort-speed curve (in joint space).
 
@@ -2062,6 +2081,16 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
     """
 )
 {
+    uniform token newton:inputSpace = "effort" (
+        allowedTokens = ["effort"]
+        doc = """Space of the control law output this clamping bounds.
+
+        Options:
+        - effort: the effort (force or torque, in joint space).
+
+        Must equal `newton:outputSpace` of the control law. Parsers should raise an error otherwise."""
+    )
+
     float[] newton:lookupPositions = [] (
         doc = """Sorted joint positions for the effort lookup table.
 
@@ -2099,8 +2128,7 @@ class NewtonCurrentDutyClampingAPI "NewtonCurrentDutyClampingAPI" (
     parameters. When they are not authored, the motor's `newton:kt` and `newton:resistance` are
     used; author them to model firmware estimates that differ from the motor.
 
-    Requires a motor (e.g. `NewtonDCMotorAPI`) on the same prim and must be the only clamping of the
-    actuator. Parsers should raise an error otherwise.
+    Requires a motor (e.g. `NewtonDCMotorAPI`) on the same prim. Parsers should raise an error otherwise.
 
     The current limit keeps the motor current within `[-maxCurrent, maxCurrent]` only while the
     estimates are accurate. The duty limit is applied last, so at high velocity the back-EMF can
@@ -2112,6 +2140,16 @@ class NewtonCurrentDutyClampingAPI "NewtonCurrentDutyClampingAPI" (
     """
 )
 {
+    uniform token newton:inputSpace = "duty" (
+        allowedTokens = ["duty"]
+        doc = """Space of the control law output this clamping bounds.
+
+        Options:
+        - duty: the duty of a control law with `newton:outputSpace = "duty"`.
+
+        Must equal `newton:outputSpace` of the control law. Parsers should raise an error otherwise."""
+    )
+
     float newton:maxCurrent = 0 (
         doc = """Firmware current limit.
 
