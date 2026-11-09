@@ -163,6 +163,10 @@ Rename a property or schema by deprecating the old name first, keeping it define
 
 To rename an attribute, add the rename to `RENAMED_ATTRIBUTES` in `validators/_migration.py`. If the schema is new to it, also add the schema's TfType name to the `schemaTypes`, and its name to the `keywords`, of `RenamedAttributesValidator` in `validators/plugInfo.json`. The validator then reports content that still uses the old name, and its fixer renames it. The tests check every rename in `RENAMED_ATTRIBUTES`, and that `plugInfo.json` lists the same schemas, so a rename needs no new tests. Note in the breaking change's changelog entry that the validators report and fix the old name.
 
+To rename an API schema, add the rename to `RENAMED_API_SCHEMAS` in `validators/_migration.py`. If the schema also renames attributes, add them to `RENAMED_ATTRIBUTES` under the new schema name: once the schema is migrated, the attribute validator migrates them. The tests check every rename in `RENAMED_API_SCHEMAS` too, so this needs no new tests either.
+
+Breaking changes that are not plain renames, such as moving settings to another prim, get their own validator with the `NewtonMigration` keyword. Build it on a plain migration function that its fixer calls, as `rename_attribute` and `rename_api_schema` are, so that the migration does not depend on how it is run.
+
 ### Validator Tests
 
 Test each validator in its own `tests/test_validator_<name>.py`, using `ValidatorTestCase` from `tests/validator_test_case.py`, which skips the tests when Python validators are not supported. The tests must cover:

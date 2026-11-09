@@ -25,7 +25,7 @@ for error in errors:
     print(error.GetErrorAsString())
 ```
 
-`NewtonValidators` selects all of the validators. To run a subset, use the keyword for a topic, such as `NewtonJoints`, or the name of the schema a validator checks, such as `NewtonMimicAPI`. Schemas that build on some of the Newton schemas can use the schema names to select only the validators for the schemas they use.
+The validators report problems as errors, and content that still works but is deprecated as warnings. `NewtonValidators` selects all of the validators. To run a subset, use the keyword for a topic, such as `NewtonJoints`, or the name of the schema a validator checks, such as `NewtonMimicAPI`. Schemas that build on some of the Newton schemas can use the schema names to select only the validators for the schemas they use.
 
 To run a single validator, load it by name:
 

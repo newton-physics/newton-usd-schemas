@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
-from pxr import Usd
+from pxr import Sdf, Usd
 
 from ._registration import (
     SUPPORTS_PYTHON_FIXERS,
@@ -15,6 +15,8 @@ from ._registration import (
 
 RENAMED_ATTRIBUTES_VALIDATOR = validator_name("RenamedAttributesValidator")
 RENAMED_ATTRIBUTE_ERROR = "RenamedAttribute"
+RENAMED_API_SCHEMAS_VALIDATOR = validator_name("RenamedAPISchemasValidator")
+RENAMED_API_SCHEMA_ERROR = "RenamedAPISchema"
 
 # Renamed attributes, by the API schema that defines their new names. The validator's schemaTypes
 # and keywords in plugInfo.json must list the same schemas.
@@ -73,7 +75,7 @@ def rename_attribute(attr: Usd.Attribute, new_name: str, edit_target: Usd.EditTa
     return True
 
 
-def _fixers() -> list | None:
+def _attribute_fixers() -> list | None:
     if not SUPPORTS_PYTHON_FIXERS:
         return None
 
@@ -96,4 +98,95 @@ def _fixers() -> list | None:
     ]
 
 
-register_prim_validator("RenamedAttributesValidator", native_prim_task(check_renamed_attributes), _fixers())
+register_prim_validator("RenamedAttributesValidator", native_prim_task(check_renamed_attributes), _attribute_fixers())
+
+
+# Renamed API schemas, from their old names to their new ones. Attributes that a renamed schema
+# also renames belong in RENAMED_ATTRIBUTES, under the new schema name.
+RENAMED_API_SCHEMAS: dict[str, str] = {}
+
+
+def authored_api_schemas(prim: Usd.Prim) -> list[str]:
+    """Return the API schemas that layers apply to the prim, excluding those built into other schemas."""
+    schemas: list[str] = []
+    for spec in reversed(prim.GetPrimStack()):
+        if spec.HasInfo("apiSchemas"):
+            schemas = list(spec.GetInfo("apiSchemas").ApplyOperations(schemas))
+    return schemas
+
+
+def check_renamed_api_schemas(prim: Usd.Prim, time_range: TimeRange) -> list[Finding]:
+    findings = []
+    for old in authored_api_schemas(prim):
+        new = RENAMED_API_SCHEMAS.get(old)
+        if new is None:
+            continue
+        if Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(old):
+            message = f"{old} on <{prim.GetPath()}> is deprecated. Use {new} instead."
+            findings.append(Finding(RENAMED_API_SCHEMA_ERROR, prim, message, UsdValidation.ValidationErrorType.Warn))
+        else:
+            message = f"{old} on <{prim.GetPath()}> was renamed to {new}, so it no longer applies."
+            findings.append(Finding(RENAMED_API_SCHEMA_ERROR, prim, message))
+    return findings
+
+
+def _replace_in_list_op(list_op: Sdf.TokenListOp, old: str, new: str) -> bool:
+    replaced = False
+    for field in ("explicitItems", "prependedItems", "appendedItems"):
+        items = list(getattr(list_op, field))
+        if old in items:
+            setattr(list_op, field, list(dict.fromkeys(new if item == old else item for item in items)))
+            replaced = True
+    return replaced
+
+
+def rename_api_schema(prim: Usd.Prim, old: str, new: str, edit_target: Usd.EditTarget) -> bool:
+    """Replace a renamed API schema with its new name, authoring in the edit target.
+
+    Where the edit target applies the old schema, the new one takes its place in the list. If other layers also apply
+    it, the edit target deletes the old schema and prepends the new one.
+    """
+    layer = edit_target.GetLayer()
+    path = edit_target.MapToSpecPath(prim.GetPath())
+    spec = layer.GetPrimAtPath(path)
+    if spec and spec.HasInfo("apiSchemas"):
+        list_op = spec.GetInfo("apiSchemas")
+        if _replace_in_list_op(list_op, old, new):
+            spec.SetInfo("apiSchemas", list_op)
+    schemas = authored_api_schemas(prim)
+    if old in schemas:
+        spec = spec or Sdf.CreatePrimInLayer(layer, path)
+        list_op = spec.GetInfo("apiSchemas") if spec.HasInfo("apiSchemas") else Sdf.TokenListOp()
+        list_op.deletedItems = [*list_op.deletedItems, old]
+        if new not in schemas:
+            list_op.prependedItems = [new, *list_op.prependedItems]
+        spec.SetInfo("apiSchemas", list_op)
+    return old not in authored_api_schemas(prim)
+
+
+def _api_schema_fixers() -> list | None:
+    if not SUPPORTS_PYTHON_FIXERS:
+        return None
+
+    def renamed(prim: Usd.Prim) -> list[str]:
+        return [schema for schema in authored_api_schemas(prim) if schema in RENAMED_API_SCHEMAS] if prim else []
+
+    def can_fix(error: UsdValidation.ValidationError, edit_target: Usd.EditTarget, time_code: Usd.TimeCode) -> bool:
+        return bool(renamed(error.GetSites()[0].GetPrim()))
+
+    def fix(error: UsdValidation.ValidationError, edit_target: Usd.EditTarget, time_code: Usd.TimeCode) -> bool:
+        prim = error.GetSites()[0].GetPrim()
+        return all(rename_api_schema(prim, old, RENAMED_API_SCHEMAS[old], edit_target) for old in renamed(prim))
+
+    return [
+        UsdValidation.ValidationFixer(
+            name="RenameAPISchema",
+            description="Replace a renamed API schema with its new name.",
+            fixerImplFn=fix,
+            canApplyFn=can_fix,
+            errorName=RENAMED_API_SCHEMA_ERROR,
+        )
+    ]
+
+
+register_prim_validator("RenamedAPISchemasValidator", native_prim_task(check_renamed_api_schemas), _api_schema_fixers())

@@ -131,6 +131,14 @@ class TestValidatorMetadata(ValidatorTestCase):
         )
         self.assertFalse(metadata.isTimeDependent)
 
+    def test_renamed_api_schemas(self):
+        metadata = self.metadata(validators.RENAMED_API_SCHEMAS_VALIDATOR)
+        self.assertEqual(metadata.name, "newton_usd_schemas.validators:RenamedAPISchemasValidator")
+        self.assertTrue(metadata.doc)
+        self.assertEqual(sorted(metadata.GetKeywords()), ["NewtonMigration", "NewtonValidators"])
+        self.assertEqual(list(metadata.GetSchemaTypes()), [])
+        self.assertFalse(metadata.isTimeDependent)
+
 
 class TestValidatorKeywords(ValidatorTestCase):
     def names(self, keyword: str) -> list[str]:
@@ -141,6 +149,7 @@ class TestValidatorKeywords(ValidatorTestCase):
             [
                 validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR,
                 validators.MIMIC_JOINT_VALIDATOR,
+                validators.RENAMED_API_SCHEMAS_VALIDATOR,
                 validators.RENAMED_ATTRIBUTES_VALIDATOR,
                 validators.SDF_MAX_RESOLUTION_VALIDATOR,
             ]
@@ -163,7 +172,7 @@ class TestValidatorKeywords(ValidatorTestCase):
         self.assertEqual(self.names("NewtonMimicAPI"), [validators.MIMIC_JOINT_VALIDATOR])
 
     def test_newton_migration(self):
-        self.assertEqual(self.names("NewtonMigration"), [validators.RENAMED_ATTRIBUTES_VALIDATOR])
+        self.assertEqual(self.names("NewtonMigration"), sorted([validators.RENAMED_API_SCHEMAS_VALIDATOR, validators.RENAMED_ATTRIBUTES_VALIDATOR]))
 
 
 if __name__ == "__main__":

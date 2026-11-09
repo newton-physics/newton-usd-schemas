@@ -24,6 +24,10 @@
                     "RenamedAttributesValidator": {
                         "doc": "Renamed attributes should be authored with their new names. The fixer moves values from the old names to the new ones.",
                         "keywords": ["NewtonMigration"]
+                    },
+                    "RenamedAPISchemasValidator": {
+                        "doc": "Renamed API schemas should be applied with their new names. The fixer replaces the old names with the new ones.",
+                        "keywords": ["NewtonMigration"]
                     }
                 }
             }
