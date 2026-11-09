@@ -6,13 +6,20 @@ license-files = ["LICENSE.md"]
 authors = [{ name = "Newton Developers" }]
 description = "OpenUSD schema definitions for the Newton physics engine"
 readme = "README.md"
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.10,<3.15"
 dependencies = []
 
 [project.urls]
 Homepage = "https://github.com/newton-physics/newton-usd-schemas"
 Repository = "https://github.com/newton-physics/newton-usd-schemas"
 Changelog = "https://github.com/newton-physics/newton-usd-schemas/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+usd = [
+    "usd-core>=25.5 ; python_version < '3.14'",
+    "usd-core>=26.11 ; python_version >= '3.14'",
+]
+usdex = ["usd-exchange>=3.0.1"]
 
 [dependency-groups]
 dev = [
@@ -21,8 +28,8 @@ dev = [
     "black>=25.1",
     "coverage>=7.4",
     "unittest-xml-reporting>=3.2.0",
-    "usd-core>=25.11 ; platform_machine != 'aarch64'",
-    "usd-exchange>=2.2 ; platform_machine == 'aarch64'",
+    "newton-usd-schemas[usd] ; platform_machine != 'aarch64' or python_version >= '3.14'",
+    "newton-usd-schemas[usdex] ; platform_machine == 'aarch64' and python_version < '3.14'",
 ]
 
 [build-system]
@@ -44,11 +51,15 @@ cmd = "python -m unittest discover -v -s ./tests"
 
 [tool.poe.tasks.test-ci]
 help = "Run the unittests with results and coverage reporting printed to console (for CI)"
-sequence = ["test-report", "generate-coverage-xml", "show-coverage-report"]
+sequence = ["test-report", "combine-coverage", "generate-coverage-xml", "show-coverage-report"]
 
 [tool.poe.tasks.test-report]
 help = "Run the unittests with coverage tracking and generate test report"
 cmd = "coverage run -m xmlrunner discover -v -s ./tests --output-file=.results.xml"
+
+[tool.poe.tasks.combine-coverage]
+help = "Combine the coverage data from the test process and its subprocesses"
+cmd = "coverage combine"
 
 [tool.poe.tasks.generate-coverage-xml]
 help = "Generate coverage XML report"
@@ -98,6 +109,7 @@ cmd  = "black ."
 
 [tool.coverage.run]
 source = ["newton_usd_schemas"]
+patch = ["subprocess"]
 
 [tool.coverage.report]
 exclude_lines = [
