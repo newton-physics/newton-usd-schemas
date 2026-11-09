@@ -1520,7 +1520,8 @@ class NewtonActuator "NewtonActuator" (
 
     Clamping behaviors can be added by applying `NewtonActuatorClampingBaseAPI` derived schemas. Each bounds
     either the effort (e.g. `NewtonMaxEffortClampingAPI`) or, with a motor, the duty (e.g.
-    `NewtonCurrentDutyClampingAPI`); see `NewtonActuatorClampingBaseAPI`.
+    `NewtonCurrentDutyClampingAPI`). The order of clamping is not guaranteed to be preserved thus
+    clamping operations must be order independent.
 
     A single motor can be added by applying a `NewtonActuatorMotorBaseAPI` derived schema (e.g.
     `NewtonDCMotorAPI`). With a motor, the control law must output a duty (`newton:outputSpace = "duty"`),
@@ -1590,10 +1591,6 @@ class NewtonConstantResistanceBattery "NewtonConstantResistanceBattery" (
     the actuators that draw from the battery:
 
         `voltage = max(nominalVoltage - resistance * max(0, sum(current)), minVoltage)`
-
-    This is BAM's battery law since Rhoban/bam commit `5f9341bd` (July 2026). Earlier versions, and
-    battery resistances fitted with them, estimate the current as the motor current
-    `sum(|torque|) / kt` instead, which drops the voltage more for the same resistance.
 
     The current of an actuator is the current its motor draws from the battery, e.g.
     `duty * current` for `NewtonDCMotorAPI`, since the battery supplies the motor current only
@@ -1777,16 +1774,14 @@ class NewtonPDControlAPI "NewtonPDControlAPI" (
         - effort: force or torque (in joint space), for an actuator without a motor.
         - duty: signed duty, bounded to [-1, 1] before the motor, for an actuator with a motor such as `NewtonDCMotorAPI`.
 
-        The units of the gains depend on this space."""
+        The units of `newton:constEffort` and of the gains depend on this space."""
     )
 
     float newton:constEffort = 0 (
         doc = """Constant bias added to the controller output (in joint space).
 
         Range: (-inf, inf)
-        Must be 0 with `newton:outputSpace = "duty"`. Parsers should raise an error otherwise.
-
-        Units: force or torque"""
+        Units: force or torque with `newton:outputSpace = "effort"`; dimensionless with `"duty"`"""
     )
 
     float newton:kp = 0 (
@@ -1842,16 +1837,14 @@ class NewtonPIDControlAPI "NewtonPIDControlAPI" (
         - effort: force or torque (in joint space), for an actuator without a motor.
         - duty: signed duty, bounded to [-1, 1] before the motor, for an actuator with a motor such as `NewtonDCMotorAPI`.
 
-        The units of the gains depend on this space."""
+        The units of `newton:constEffort` and of the gains depend on this space."""
     )
 
     float newton:constEffort = 0 (
         doc = """Constant bias added to the controller output (in joint space).
 
         Range: (-inf, inf)
-        Must be 0 with `newton:outputSpace = "duty"`. Parsers should raise an error otherwise.
-
-        Units: force or torque"""
+        Units: force or torque with `newton:outputSpace = "effort"`; dimensionless with `"duty"`"""
     )
 
     float newton:kp = 0 (
