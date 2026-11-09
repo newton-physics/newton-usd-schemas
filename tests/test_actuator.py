@@ -514,28 +514,6 @@ class TestNewtonActuatorClampingBaseAPI(unittest.TestCase):
         self.assertFalse(xform.CanApplyAPI("NewtonActuatorClampingBaseAPI"))
 
 
-class TestNewtonActuatorCommandClampingBaseAPI(unittest.TestCase):
-    def setUp(self):
-        self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
-        self.prim: Usd.Prim = self.stage.DefinePrim("/Actuator", "NewtonActuator")
-
-    def test_api_registered(self):
-        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsActuatorCommandClampingBaseAPI")
-        self.assertEqual(plug_type.typeName, "NewtonPhysicsActuatorCommandClampingBaseAPI")
-        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsActuatorCommandClampingBaseAPI")
-        self.assertEqual(schema_type, "NewtonActuatorCommandClampingBaseAPI")
-
-    def test_api_application(self):
-        self.assertFalse(self.prim.HasAPI("NewtonActuatorCommandClampingBaseAPI"))
-        self.prim.ApplyAPI("NewtonActuatorCommandClampingBaseAPI")
-        self.assertTrue(self.prim.HasAPI("NewtonActuatorCommandClampingBaseAPI"))
-        self.assertFalse(self.prim.HasAPI("NewtonActuatorClampingBaseAPI"))
-
-    def test_api_limitations(self):
-        xform = self.stage.DefinePrim("/NotActuator", "Xform")
-        self.assertFalse(xform.CanApplyAPI("NewtonActuatorCommandClampingBaseAPI"))
-
-
 class TestNewtonMaxEffortClampingAPI(unittest.TestCase):
     def setUp(self):
         self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
@@ -706,11 +684,10 @@ class TestNewtonCurrentDutyClampingAPI(unittest.TestCase):
 
     def test_api_application(self):
         self.assertFalse(self.prim.HasAPI("NewtonCurrentDutyClampingAPI"))
-        self.assertFalse(self.prim.HasAPI("NewtonActuatorCommandClampingBaseAPI"))
+        self.assertFalse(self.prim.HasAPI("NewtonActuatorClampingBaseAPI"))
         self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
         self.assertTrue(self.prim.HasAPI("NewtonCurrentDutyClampingAPI"))
-        self.assertTrue(self.prim.HasAPI("NewtonActuatorCommandClampingBaseAPI"))
-        self.assertFalse(self.prim.HasAPI("NewtonActuatorClampingBaseAPI"))
+        self.assertTrue(self.prim.HasAPI("NewtonActuatorClampingBaseAPI"))
 
     def test_max_current(self):
         self.assertFalse(self.prim.HasAttribute("newton:maxCurrent"))

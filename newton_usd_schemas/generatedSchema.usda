@@ -1518,16 +1518,13 @@ class NewtonActuator "NewtonActuator" (
     `NewtonActuatorInputProcessorBaseAPI` derived schemas (e.g. `NewtonActuatorDelayAPI`). The order of input
     processors is not guaranteed to be preserved thus input processors must be order independent.
 
-    Additional effort clamping behaviors can be added by applying any number of `NewtonActuatorClampingBaseAPI`
-    derived schemas (e.g. `NewtonMaxEffortClampingAPI`). The order of clamping is not guaranteed to be preserved thus
-    clamping operations must be order independent.
+    Clamping behaviors can be added by applying `NewtonActuatorClampingBaseAPI` derived schemas. Each bounds
+    either the effort (e.g. `NewtonMaxEffortClampingAPI`) or, with a motor, the duty (e.g.
+    `NewtonCurrentDutyClampingAPI`); see `NewtonActuatorClampingBaseAPI`.
 
     A single motor can be added by applying a `NewtonActuatorMotorBaseAPI` derived schema (e.g.
     `NewtonDCMotorAPI`). With a motor, the control law must output a duty (`newton:outputSpace = "duty"`),
     and the motor turns it into the effort of the motor. Effort clamping must not be combined with a motor.
-
-    With a motor, the duty can be bounded by applying a single `NewtonActuatorCommandClampingBaseAPI`
-    derived schema (e.g. `NewtonCurrentDutyClampingAPI`) before the motor.
 
     The motor of an actuator may draw from a battery shared with other actuators (e.g.
     `NewtonConstantResistanceBattery`) via the `newton:battery` relationship.
@@ -1745,9 +1742,8 @@ class NewtonActuatorControlBaseAPI "NewtonActuatorControlBaseAPI" (
     Control laws compute actuator output effort (i.e. force/torque for linear/rotational actuators),
     or a duty for a motor such as `NewtonDCMotorAPI`, from authored controller
     parameters, commanded inputs such as control targets and optional feedforward terms, and
-    simulation and actuator state. An effort may still be constrained by one or more applied
-    `NewtonActuatorClampingBaseAPI` derived schemas, and a duty by a single
-    `NewtonActuatorCommandClampingBaseAPI` derived schema.
+    simulation and actuator state. This output may still be constrained by applied
+    `NewtonActuatorClampingBaseAPI` derived schemas of the same space.
 
     Actuators must provide a single control law by applying a `NewtonActuatorControlBaseAPI` derived schema (e.g. `NewtonPDControlAPI`).
 
@@ -1953,31 +1949,19 @@ class NewtonNeuralControlAPI "NewtonNeuralControlAPI" (
 class NewtonActuatorClampingBaseAPI "NewtonActuatorClampingBaseAPI" (
     doc = """Base API for all actuator clamping strategies.
 
-    Any number of `NewtonActuatorClampingBaseAPI` derived schemas (e.g. `NewtonMaxEffortClampingAPI`) may be
-    applied to a `NewtonActuator` to constrain actuator output effort (i.e. force/torque for linear/rotational actuators). The order of clamping
-    is not guaranteed to be preserved thus clamping operations must be order independent.
+    Each `NewtonActuatorClampingBaseAPI` derived schema bounds the output of the control law in a fixed space,
+    stated in its documentation: either the effort (i.e. force/torque for linear/rotational actuators), e.g.
+    `NewtonMaxEffortClampingAPI`, `NewtonDCMotorClampingAPI` and `NewtonPositionBasedClampingAPI`, or the duty,
+    e.g. `NewtonCurrentDutyClampingAPI`. The space must match `newton:outputSpace` of the control law: effort
+    clamping must not be combined with a motor, and duty clamping requires one. Parsers should raise an error
+    otherwise.
 
-    Effort clamping must not be combined with a motor; bound the duty of an actuator with a motor with a
-    `NewtonActuatorCommandClampingBaseAPI` derived schema instead. Parsers should raise an error if both are applied.
+    Any number of effort clamping schemas may be applied to a `NewtonActuator`. The order of clamping is not
+    guaranteed to be preserved thus clamping operations must be order independent. A duty clamping schema must
+    be the only clamping of its actuator. Parsers should raise an error otherwise.
 
-    Applying any clamping API (e.g. `NewtonMaxEffortClampingAPI`, `NewtonDCMotorClampingAPI`, `NewtonPositionBasedClampingAPI`) automatically
+    Applying any clamping API (e.g. `NewtonMaxEffortClampingAPI`, `NewtonCurrentDutyClampingAPI`) automatically
     applies this base. Check `prim.HasAPI('NewtonActuatorClampingBaseAPI')` to detect whether any clamping is present.
-    """
-)
-{
-}
-
-class NewtonActuatorCommandClampingBaseAPI "NewtonActuatorCommandClampingBaseAPI" (
-    doc = """Base API for all actuator command clamping strategies.
-
-    A single `NewtonActuatorCommandClampingBaseAPI` derived schema (e.g. `NewtonCurrentDutyClampingAPI`) may be
-    applied to a `NewtonActuator` to bound the duty of its control law (`newton:outputSpace = "duty"`).
-
-    Command clamping is applied before the motor and requires one. It must be the only clamping of the
-    actuator. Parsers should raise an error if no motor is applied, or if any other clamping API is applied.
-
-    Applying any command clamping API (e.g. `NewtonCurrentDutyClampingAPI`) automatically
-    applies this base. Check `prim.HasAPI('NewtonActuatorCommandClampingBaseAPI')` to detect whether any command clamping is present.
     """
 )
 {
@@ -2103,7 +2087,7 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
 }
 
 class NewtonCurrentDutyClampingAPI "NewtonCurrentDutyClampingAPI" (
-    apiSchemas = ["NewtonActuatorCommandClampingBaseAPI"]
+    apiSchemas = ["NewtonActuatorClampingBaseAPI"]
     doc = """Current and duty limits of the firmware of a servo, as in BAM (Better Actuator Models).
 
     This follows the voltage-controlled servo model of the [Rhoban/bam](https://github.com/Rhoban/bam)
@@ -2233,7 +2217,7 @@ class NewtonActuatorMotorBaseAPI "NewtonActuatorMotorBaseAPI" (
     doc = """Base API for all actuator motors.
 
     Motors turn the duty of the control law (`newton:outputSpace = "duty"`),
-    bounded by any applied `NewtonActuatorCommandClampingBaseAPI` derived schema, into the effort of the
+    bounded by any applied duty clamping (e.g. `NewtonCurrentDutyClampingAPI`), into the effort of the
     motor. Effort clamping (`NewtonActuatorClampingBaseAPI` derived schemas) must not be combined with a
     motor. Parsers should raise an error if any is applied.
 
@@ -2256,7 +2240,7 @@ class NewtonDCMotorAPI "NewtonDCMotorAPI" (
     for the Physics Simulation of Servo Actuators".
 
     The motor computes the effort from the duty of the control law (`newton:outputSpace = "duty"`),
-    bounded by command clamping (e.g. `NewtonCurrentDutyClampingAPI`), and the supply voltage `V`:
+    bounded by duty clamping (e.g. `NewtonCurrentDutyClampingAPI`), and the supply voltage `V`:
 
         `voltage = clamp(duty, -1, 1) * V`
         `current = (voltage - kt*v) / resistance`
