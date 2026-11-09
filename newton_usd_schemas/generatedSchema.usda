@@ -1524,12 +1524,10 @@ class NewtonActuator "NewtonActuator" (
 
     A single motor can be added by applying a `NewtonActuatorMotorBaseAPI` derived schema (e.g.
     `NewtonDCMotorAPI`). With a motor, the control law must output a duty (`newton:outputSpace = "duty"`),
-    and the motor turns it into the effort of the motor, which the clamping bounds.
+    and the motor turns it into the effort of the motor. Effort clamping must not be combined with a motor.
 
-    With a motor, command clamping behaviors can be added by applying any number of
-    `NewtonActuatorCommandClampingBaseAPI` derived schemas (e.g. `NewtonCurrentPWMClampingAPI`). They bound
-    the motor command before the motor. The order of command clamping is not guaranteed to be preserved thus
-    command clamping operations must be order independent.
+    With a motor, the duty can be bounded by applying a single `NewtonActuatorCommandClampingBaseAPI`
+    derived schema (e.g. `NewtonCurrentDutyClampingAPI`) before the motor.
 
     The motor of an actuator may draw from a battery shared with other actuators (e.g.
     `NewtonConstantResistanceBattery`) via the `newton:battery` relationship.
@@ -1612,8 +1610,8 @@ class NewtonConstantResistanceBattery "NewtonConstantResistanceBattery" (
 
     This feedback loop settles only while the battery resistance is small enough. For
     `NewtonDCMotorAPI` actuators with a duty control law and
-    `NewtonCurrentPWMClampingAPI` without an active current limit, it settles while
-    `resistance * sum(maxPwm^2 / r) < 1`, where `resistance` is the battery's
+    `NewtonCurrentDutyClampingAPI` without an active current limit, it settles while
+    `resistance * sum(maxDuty^2 / r) < 1`, where `resistance` is the battery's
     `newton:resistance` and `r` is each actuator's motor `newton:resistance`. Above that
     bound, or while a current limit is active, the voltage may oscillate instead of
     converging."""
@@ -1966,13 +1964,13 @@ class NewtonActuatorClampingBaseAPI "NewtonActuatorClampingBaseAPI" (
 class NewtonActuatorCommandClampingBaseAPI "NewtonActuatorCommandClampingBaseAPI" (
     doc = """Base API for all actuator command clamping strategies.
 
-    Any number of `NewtonActuatorCommandClampingBaseAPI` derived schemas (e.g. `NewtonCurrentPWMClampingAPI`) may be
-    applied to a `NewtonActuator` to constrain the motor command (e.g. a voltage for `NewtonDCMotorAPI`). The order of command clamping
-    is not guaranteed to be preserved thus command clamping operations must be order independent.
+    A single `NewtonActuatorCommandClampingBaseAPI` derived schema (e.g. `NewtonCurrentDutyClampingAPI`) may be
+    applied to a `NewtonActuator` to bound the duty of its control law (`newton:outputSpace = "duty"`).
 
-    Command clamping is applied before the motor and requires one. Parsers should raise an error if none is applied.
+    Command clamping is applied before the motor and requires one. It must be the only clamping of the
+    actuator. Parsers should raise an error if no motor is applied, or if any other clamping API is applied.
 
-    Applying any command clamping API (e.g. `NewtonCurrentPWMClampingAPI`) automatically
+    Applying any command clamping API (e.g. `NewtonCurrentDutyClampingAPI`) automatically
     applies this base. Check `prim.HasAPI('NewtonActuatorCommandClampingBaseAPI')` to detect whether any command clamping is present.
     """
 )
@@ -2098,28 +2096,36 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
     )
 }
 
-class NewtonCurrentPWMClampingAPI "NewtonCurrentPWMClampingAPI" (
+class NewtonCurrentDutyClampingAPI "NewtonCurrentDutyClampingAPI" (
     apiSchemas = ["NewtonActuatorCommandClampingBaseAPI"]
-    doc = """Current and PWM limits of the firmware of a servo, as in BAM (Better Actuator Models).
+    doc = """Current and duty limits of the firmware of a servo, as in BAM (Better Actuator Models).
 
     This follows the voltage-controlled servo model of the [Rhoban/bam](https://github.com/Rhoban/bam)
     library, whose identified fits are described in the ICRA 2025 paper "Extended Friction Models
     for the Physics Simulation of Servo Actuators".
 
-    Bounds the voltage command of a motor (from a duty control law) first by the
-    current limit and then by the PWM limit, in this fixed order:
+    Bounds the duty of the control law (`newton:outputSpace = "duty"`) first by the current limit
+    and then by the duty limit, in this fixed order:
 
-        `voltage = clamp(voltage, kt*v - resistance*maxCurrent, kt*v + resistance*maxCurrent)`
-        `voltage = clamp(voltage, -maxPwm*V, maxPwm*V)`
+        `duty = clamp(duty, (ktEstimate*v - resistanceEstimate*maxCurrent) / V, (ktEstimate*v + resistanceEstimate*maxCurrent) / V)`
+        `duty = clamp(duty, -maxDuty, maxDuty)`
 
-    The current limit is skipped when `newton:maxCurrent` is 0. `V` is the supply voltage of the
-    motor. `kt` and `resistance` are `newton:kt` and `newton:resistance` of the motor, which
-    requires a `NewtonDCMotorAPI` on the same prim. Parsers should raise an error if none is
-    applied.
+    `V` is the firmware's voltage estimate, selected by `newton:voltageSource`. The current limit is
+    skipped when `newton:maxCurrent` is 0 or when `V` is at or below `newton:vMin`.
+    `newton:ktEstimate` and `newton:resistanceEstimate` are the firmware's estimates of the motor
+    parameters and need not match `newton:kt` and `newton:resistance` of the motor.
 
-    The current limit keeps the motor current within `[-maxCurrent, maxCurrent]`. The PWM limit
-    is applied last, so at high velocity the back-EMF can still drive the current above
-    `newton:maxCurrent`. For a BAM fit, both are firmware limits of the servo, not fitted values.
+    Requires a motor (e.g. `NewtonDCMotorAPI`) on the same prim and must be the only clamping of the
+    actuator. Parsers should raise an error otherwise.
+
+    The current limit keeps the motor current within `[-maxCurrent, maxCurrent]` only while the
+    estimates are accurate. The duty limit is applied last, so at high velocity the back-EMF can
+    still drive the current above `newton:maxCurrent`. For a BAM fit, both are firmware limits of
+    the servo, not fitted values.
+
+    `newton:ktEstimate` and `newton:resistanceEstimate` have no fallback values and must be
+    authored, as must `newton:nominalVoltage` with `newton:voltageSource = "nominal"`. Parsers
+    should raise an error if any of them is missing.
     """
 )
 {
@@ -2137,8 +2143,8 @@ class NewtonCurrentPWMClampingAPI "NewtonCurrentPWMClampingAPI" (
         }
     )
 
-    float newton:maxPwm = 1 (
-        doc = """Largest duty cycle magnitude.
+    float newton:maxDuty = 1 (
+        doc = """Largest duty magnitude.
 
         A value of 1 allows the full duty cycle.
 
@@ -2151,15 +2157,75 @@ class NewtonCurrentPWMClampingAPI "NewtonCurrentPWMClampingAPI" (
             }
         }
     )
+
+    float newton:ktEstimate (
+        doc = """Firmware estimate of the motor torque constant (in joint space).
+
+        Range: (0, inf)
+        Units: force / ampere or torque / ampere"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:resistanceEstimate (
+        doc = """Firmware estimate of the motor winding resistance.
+
+        Range: (0, inf)
+        Units: ohm"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform token newton:voltageSource = "input" (
+        allowedTokens = ["input", "nominal"]
+        doc = """Voltage the firmware uses in its current estimate.
+
+        Options:
+        - input: the supply voltage of the motor.
+        - nominal: `newton:nominalVoltage`, independent of the actual supply voltage."""
+    )
+
+    float newton:nominalVoltage (
+        doc = """Firmware voltage estimate with `newton:voltageSource = "nominal"`.
+
+        Must not be authored with `newton:voltageSource = "input"`. Parsers should raise an error if it is.
+
+        Range: (0, inf)
+        Units: volt"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:vMin = 0.000001 (
+        doc = """Voltage estimate at or below which the current limit is skipped, to avoid dividing
+        by a near-zero voltage. It does not change the voltage delivered to the motor.
+
+        Range: (0, inf)
+        Units: volt"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
 }
 
 class NewtonActuatorMotorBaseAPI "NewtonActuatorMotorBaseAPI" (
     doc = """Base API for all actuator motors.
 
     Motors turn the duty of the control law (`newton:outputSpace = "duty"`),
-    bounded by any applied `NewtonActuatorCommandClampingBaseAPI` derived schemas, into the effort of the
-    motor. This effort may still be constrained by one or more applied `NewtonActuatorClampingBaseAPI`
-    derived schemas.
+    bounded by any applied `NewtonActuatorCommandClampingBaseAPI` derived schema, into the effort of the
+    motor. Effort clamping (`NewtonActuatorClampingBaseAPI` derived schemas) must not be combined with a
+    motor. Parsers should raise an error if any is applied.
 
     Actuators may provide a single motor by applying a `NewtonActuatorMotorBaseAPI` derived schema (e.g. `NewtonDCMotorAPI`).
 
@@ -2180,7 +2246,7 @@ class NewtonDCMotorAPI "NewtonDCMotorAPI" (
     for the Physics Simulation of Servo Actuators".
 
     The motor computes the effort from the duty of the control law (`newton:outputSpace = "duty"`),
-    bounded by command clamping (e.g. `NewtonCurrentPWMClampingAPI`), and the supply voltage `V`:
+    bounded by command clamping (e.g. `NewtonCurrentDutyClampingAPI`), and the supply voltage `V`:
 
         `voltage = clamp(duty, -1, 1) * V`
         `current = (voltage - kt*v) / resistance`

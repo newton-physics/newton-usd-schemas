@@ -693,29 +693,29 @@ class TestNewtonPositionBasedClampingAPI(unittest.TestCase):
         self.assertFalse(xform.CanApplyAPI("NewtonPositionBasedClampingAPI"))
 
 
-class TestNewtonCurrentPWMClampingAPI(unittest.TestCase):
+class TestNewtonCurrentDutyClampingAPI(unittest.TestCase):
     def setUp(self):
         self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
         self.prim: Usd.Prim = self.stage.DefinePrim("/Actuator", "NewtonActuator")
 
     def test_api_registered(self):
-        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsCurrentPWMClampingAPI")
-        self.assertEqual(plug_type.typeName, "NewtonPhysicsCurrentPWMClampingAPI")
-        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsCurrentPWMClampingAPI")
-        self.assertEqual(schema_type, "NewtonCurrentPWMClampingAPI")
+        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsCurrentDutyClampingAPI")
+        self.assertEqual(plug_type.typeName, "NewtonPhysicsCurrentDutyClampingAPI")
+        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsCurrentDutyClampingAPI")
+        self.assertEqual(schema_type, "NewtonCurrentDutyClampingAPI")
 
     def test_api_application(self):
-        self.assertFalse(self.prim.HasAPI("NewtonCurrentPWMClampingAPI"))
+        self.assertFalse(self.prim.HasAPI("NewtonCurrentDutyClampingAPI"))
         self.assertFalse(self.prim.HasAPI("NewtonActuatorCommandClampingBaseAPI"))
-        self.prim.ApplyAPI("NewtonCurrentPWMClampingAPI")
-        self.assertTrue(self.prim.HasAPI("NewtonCurrentPWMClampingAPI"))
+        self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
+        self.assertTrue(self.prim.HasAPI("NewtonCurrentDutyClampingAPI"))
         self.assertTrue(self.prim.HasAPI("NewtonActuatorCommandClampingBaseAPI"))
         self.assertFalse(self.prim.HasAPI("NewtonActuatorClampingBaseAPI"))
 
     def test_max_current(self):
         self.assertFalse(self.prim.HasAttribute("newton:maxCurrent"))
 
-        self.prim.ApplyAPI("NewtonCurrentPWMClampingAPI")
+        self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
         attr = self.prim.GetAttribute("newton:maxCurrent")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 0.0)
@@ -730,11 +730,11 @@ class TestNewtonCurrentPWMClampingAPI(unittest.TestCase):
             self.assertAlmostEqual(hard.GetMinimum(), 0.0)
             self.assertIsNone(hard.GetMaximum())
 
-    def test_max_pwm(self):
-        self.assertFalse(self.prim.HasAttribute("newton:maxPwm"))
+    def test_max_duty(self):
+        self.assertFalse(self.prim.HasAttribute("newton:maxDuty"))
 
-        self.prim.ApplyAPI("NewtonCurrentPWMClampingAPI")
-        attr = self.prim.GetAttribute("newton:maxPwm")
+        self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
+        attr = self.prim.GetAttribute("newton:maxDuty")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 1.0)
 
@@ -748,9 +748,95 @@ class TestNewtonCurrentPWMClampingAPI(unittest.TestCase):
             self.assertAlmostEqual(hard.GetMinimum(), 0.0)
             self.assertAlmostEqual(hard.GetMaximum(), 1.0)
 
+    def test_kt_estimate(self):
+        self.assertFalse(self.prim.HasAttribute("newton:ktEstimate"))
+
+        self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
+        attr = self.prim.GetAttribute("newton:ktEstimate")
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertIsNone(attr.Get())
+
+        self.assertTrue(attr.Set(0.6))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.6, places=6)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_resistance_estimate(self):
+        self.assertFalse(self.prim.HasAttribute("newton:resistanceEstimate"))
+
+        self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
+        attr = self.prim.GetAttribute("newton:resistanceEstimate")
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertIsNone(attr.Get())
+
+        self.assertTrue(attr.Set(2.5))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 2.5, places=6)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_voltage_source(self):
+        self.assertFalse(self.prim.HasAttribute("newton:voltageSource"))
+
+        self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
+        attr = self.prim.GetAttribute("newton:voltageSource")
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "input")
+        self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
+        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"input", "nominal"})
+
+        self.assertTrue(attr.Set("nominal"))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "nominal")
+
+    def test_nominal_voltage(self):
+        self.assertFalse(self.prim.HasAttribute("newton:nominalVoltage"))
+
+        self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
+        attr = self.prim.GetAttribute("newton:nominalVoltage")
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertIsNone(attr.Get())
+
+        self.assertTrue(attr.Set(12.0))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 12.0, places=6)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
+    def test_v_min(self):
+        self.assertFalse(self.prim.HasAttribute("newton:vMin"))
+
+        self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
+        attr = self.prim.GetAttribute("newton:vMin")
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 1.0e-6)
+
+        self.assertTrue(attr.Set(0.5))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertAlmostEqual(attr.Get(), 0.5, places=6)
+
+        if USD_HAS_LIMITS:
+            hard = attr.GetHardLimits()
+            self.assertTrue(hard.IsValid())
+            self.assertAlmostEqual(hard.GetMinimum(), 0.0)
+            self.assertIsNone(hard.GetMaximum())
+
     def test_api_limitations(self):
         xform = self.stage.DefinePrim("/NotActuator", "Xform")
-        self.assertFalse(xform.CanApplyAPI("NewtonCurrentPWMClampingAPI"))
+        self.assertFalse(xform.CanApplyAPI("NewtonCurrentDutyClampingAPI"))
 
 
 class TestNewtonActuatorMotorBaseAPI(unittest.TestCase):
@@ -793,7 +879,7 @@ class TestNewtonDCMotorAPI(unittest.TestCase):
         self.assertTrue(self.prim.HasAPI("NewtonActuatorMotorBaseAPI"))
         for name in ("kt", "resistance", "vin"):
             self.assertTrue(self.prim.HasAttribute(f"newton:{name}"), name)
-        for name in ("maxPwm", "maxCurrent"):
+        for name in ("maxDuty", "maxCurrent"):
             self.assertFalse(self.prim.HasAttribute(f"newton:{name}"), name)
 
     def test_kt(self):
