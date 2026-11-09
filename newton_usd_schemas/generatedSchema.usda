@@ -1745,13 +1745,14 @@ class NewtonActuatorControlBaseAPI "NewtonActuatorControlBaseAPI" (
     Control laws compute actuator output effort (i.e. force/torque for linear/rotational actuators),
     or a duty for a motor such as `NewtonDCMotorAPI`, from authored controller
     parameters, commanded inputs such as control targets and optional feedforward terms, and
-    simulation and actuator state. This output may still be constrained by one or more applied
-    `NewtonActuatorClampingBaseAPI` derived schemas.
+    simulation and actuator state. An effort may still be constrained by one or more applied
+    `NewtonActuatorClampingBaseAPI` derived schemas, and a duty by a single
+    `NewtonActuatorCommandClampingBaseAPI` derived schema.
 
     Actuators must provide a single control law by applying a `NewtonActuatorControlBaseAPI` derived schema (e.g. `NewtonPDControlAPI`).
 
     Control laws with a `newton:outputSpace` attribute output either an effort (`"effort"`) or a
-    signed duty in [-1, 1] (`"duty"`), and the units of their gains follow that space. A control law
+    signed duty (`"duty"`), and the units of their gains follow that space. A control law
     that outputs an effort must not be combined with a motor, and a control law that outputs a duty
     requires one. Parsers should raise an error for either combination.
 
@@ -1778,16 +1779,18 @@ class NewtonPDControlAPI "NewtonPDControlAPI" (
 
         Options:
         - effort: force or torque (in joint space), for an actuator without a motor.
-        - duty: signed duty in [-1, 1], for an actuator with a motor such as `NewtonDCMotorAPI`.
+        - duty: signed duty, bounded to [-1, 1] before the motor, for an actuator with a motor such as `NewtonDCMotorAPI`.
 
-        The units of `newton:constEffort` and of the gains depend on this space."""
+        The units of the gains depend on this space."""
     )
 
     float newton:constEffort = 0 (
         doc = """Constant bias added to the controller output (in joint space).
 
         Range: (-inf, inf)
-        Units: force or torque with `newton:outputSpace = "effort"`; dimensionless with `"duty"`"""
+        Must be 0 with `newton:outputSpace = "duty"`. Parsers should raise an error otherwise.
+
+        Units: force or torque"""
     )
 
     float newton:kp = 0 (
@@ -1841,16 +1844,18 @@ class NewtonPIDControlAPI "NewtonPIDControlAPI" (
 
         Options:
         - effort: force or torque (in joint space), for an actuator without a motor.
-        - duty: signed duty in [-1, 1], for an actuator with a motor such as `NewtonDCMotorAPI`.
+        - duty: signed duty, bounded to [-1, 1] before the motor, for an actuator with a motor such as `NewtonDCMotorAPI`.
 
-        The units of `newton:constEffort` and of the gains depend on this space."""
+        The units of the gains depend on this space."""
     )
 
     float newton:constEffort = 0 (
         doc = """Constant bias added to the controller output (in joint space).
 
         Range: (-inf, inf)
-        Units: force or torque with `newton:outputSpace = "effort"`; dimensionless with `"duty"`"""
+        Must be 0 with `newton:outputSpace = "duty"`. Parsers should raise an error otherwise.
+
+        Units: force or torque"""
     )
 
     float newton:kp = 0 (
@@ -1935,7 +1940,7 @@ class NewtonNeuralControlAPI "NewtonNeuralControlAPI" (
 
         Options:
         - effort: force or torque (in joint space), for an actuator without a motor.
-        - duty: signed duty in [-1, 1], for an actuator with a motor such as `NewtonDCMotorAPI`.
+        - duty: signed duty, bounded to [-1, 1] before the motor, for an actuator with a motor such as `NewtonDCMotorAPI`.
 
         The model output is read in this space."""
     )
@@ -1952,7 +1957,8 @@ class NewtonActuatorClampingBaseAPI "NewtonActuatorClampingBaseAPI" (
     applied to a `NewtonActuator` to constrain actuator output effort (i.e. force/torque for linear/rotational actuators). The order of clamping
     is not guaranteed to be preserved thus clamping operations must be order independent.
 
-    In an actuator with a motor, clamping is applied after the motor and bounds the effort of the motor.
+    Effort clamping must not be combined with a motor; bound the duty of an actuator with a motor with a
+    `NewtonActuatorCommandClampingBaseAPI` derived schema instead. Parsers should raise an error if both are applied.
 
     Applying any clamping API (e.g. `NewtonMaxEffortClampingAPI`, `NewtonDCMotorClampingAPI`, `NewtonPositionBasedClampingAPI`) automatically
     applies this base. Check `prim.HasAPI('NewtonActuatorClampingBaseAPI')` to detect whether any clamping is present.
@@ -2111,9 +2117,10 @@ class NewtonCurrentDutyClampingAPI "NewtonCurrentDutyClampingAPI" (
         `duty = clamp(duty, -maxDuty, maxDuty)`
 
     `V` is the firmware's voltage estimate, selected by `newton:voltageSource`. The current limit is
-    skipped when `newton:maxCurrent` is 0 or when `V` is at or below `newton:vMin`.
+    skipped when `newton:maxCurrent` is 0 or when `V` is at or below `newton:minVoltage`.
     `newton:ktEstimate` and `newton:resistanceEstimate` are the firmware's estimates of the motor
-    parameters and need not match `newton:kt` and `newton:resistance` of the motor.
+    parameters. When they are not authored, the motor's `newton:kt` and `newton:resistance` are
+    used; author them to model firmware estimates that differ from the motor.
 
     Requires a motor (e.g. `NewtonDCMotorAPI`) on the same prim and must be the only clamping of the
     actuator. Parsers should raise an error otherwise.
@@ -2123,9 +2130,8 @@ class NewtonCurrentDutyClampingAPI "NewtonCurrentDutyClampingAPI" (
     still drive the current above `newton:maxCurrent`. For a BAM fit, both are firmware limits of
     the servo, not fitted values.
 
-    `newton:ktEstimate` and `newton:resistanceEstimate` have no fallback values and must be
-    authored, as must `newton:nominalVoltage` with `newton:voltageSource = "nominal"`. Parsers
-    should raise an error if any of them is missing.
+    `newton:nominalVoltage` has no fallback value and must be authored with
+    `newton:voltageSource = "nominal"`. Parsers should raise an error if it is missing.
     """
 )
 {
@@ -2161,6 +2167,8 @@ class NewtonCurrentDutyClampingAPI "NewtonCurrentDutyClampingAPI" (
     float newton:ktEstimate (
         doc = """Firmware estimate of the motor torque constant (in joint space).
 
+        When not authored, the motor's `newton:kt` is used.
+
         Range: (0, inf)
         Units: force / ampere or torque / ampere"""
         limits = {
@@ -2172,6 +2180,8 @@ class NewtonCurrentDutyClampingAPI "NewtonCurrentDutyClampingAPI" (
 
     float newton:resistanceEstimate (
         doc = """Firmware estimate of the motor winding resistance.
+
+        When not authored, the motor's `newton:resistance` is used.
 
         Range: (0, inf)
         Units: ohm"""
@@ -2205,7 +2215,7 @@ class NewtonCurrentDutyClampingAPI "NewtonCurrentDutyClampingAPI" (
         }
     )
 
-    float newton:vMin = 0.000001 (
+    float newton:minVoltage = 0.000001 (
         doc = """Voltage estimate at or below which the current limit is skipped, to avoid dividing
         by a near-zero voltage. It does not change the voltage delivered to the motor.
 
@@ -2239,7 +2249,7 @@ class NewtonActuatorMotorBaseAPI "NewtonActuatorMotorBaseAPI" (
 
 class NewtonDCMotorAPI "NewtonDCMotorAPI" (
     apiSchemas = ["NewtonActuatorMotorBaseAPI"]
-    doc = """DC motor driven by a PWM voltage, as in BAM (Better Actuator Models).
+    doc = """DC motor driven by an average terminal voltage, as in BAM (Better Actuator Models).
 
     This follows the voltage-controlled servo model of the [Rhoban/bam](https://github.com/Rhoban/bam)
     library, whose identified fits are described in the ICRA 2025 paper "Extended Friction Models
@@ -2264,8 +2274,10 @@ class NewtonDCMotorAPI "NewtonDCMotorAPI" (
     The actuator then draws the current `duty * current` from the battery.
 
     For a BAM fit, `newton:kt` and `newton:resistance` are the fit's `kt` and `R`, and
-    `newton:vin` is the supply voltage of the servo, not a fitted value. The rest of a fit is
-    modeled outside the actuator: its armature on the actuated joint and its command delay with
+    `newton:vin` is the supply voltage of the servo, not a fitted value. The firmware P controller
+    is `NewtonPDControlAPI` with `newton:outputSpace = "duty"`, `newton:kp` set to the firmware
+    gain times the error gain of the servo and `newton:kd = 0`, and its limits are
+    `NewtonCurrentDutyClampingAPI`. The rest of a fit is modeled outside the actuator: its armature on the actuated joint and its command delay with
     `NewtonActuatorDelayAPI`. Its friction is not modeled, and BAM's current-controlled servo
     models are not covered.
 

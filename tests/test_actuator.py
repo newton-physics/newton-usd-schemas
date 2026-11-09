@@ -816,11 +816,11 @@ class TestNewtonCurrentDutyClampingAPI(unittest.TestCase):
             self.assertAlmostEqual(hard.GetMinimum(), 0.0)
             self.assertIsNone(hard.GetMaximum())
 
-    def test_v_min(self):
-        self.assertFalse(self.prim.HasAttribute("newton:vMin"))
+    def test_min_voltage(self):
+        self.assertFalse(self.prim.HasAttribute("newton:minVoltage"))
 
         self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
-        attr = self.prim.GetAttribute("newton:vMin")
+        attr = self.prim.GetAttribute("newton:minVoltage")
         self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 1.0e-6)
 
