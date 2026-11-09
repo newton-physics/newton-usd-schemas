@@ -1744,10 +1744,8 @@ class NewtonActuatorControlBaseAPI "NewtonActuatorControlBaseAPI" (
 
     Actuators must provide a single control law by applying a `NewtonActuatorControlBaseAPI` derived schema (e.g. `NewtonPDControlAPI`).
 
-    Control laws with a `newton:outputSpace` attribute output either an effort (`"effort"`) or a
-    signed duty (`"duty"`), and the units of their gains follow that space. A control law
-    that outputs an effort must not be combined with a motor, and a control law that outputs a duty
-    requires one. Parsers should raise an error for either combination.
+    `newton:outputSpace` selects whether the control law outputs an effort (`"effort"`) or a signed
+    duty (`"duty"`).
 
     Applying any control law API (e.g. PD, PID, Network) automatically applies this base.
     Check `prim.HasAPI('NewtonActuatorControlBaseAPI')` to detect whether any control law is present.
@@ -1755,6 +1753,19 @@ class NewtonActuatorControlBaseAPI "NewtonActuatorControlBaseAPI" (
     Only one control law API should be applied to a given `NewtonActuator` prim."""
 )
 {
+    uniform token newton:outputSpace = "effort" (
+        allowedTokens = ["effort", "duty"]
+        doc = """Space of the control law output.
+
+        Options:
+        - effort: force or torque (in joint space), for an actuator without a motor.
+        - duty: signed duty, bounded to [-1, 1] before the motor, for an actuator with a motor such as `NewtonDCMotorAPI`.
+
+        The units of the control law's parameters, e.g. gains or a constant bias, and of a neural model's
+        output follow this space. An effort must not be combined with a motor, and a duty requires one.
+        A control law that supports only one space overrides this attribute with that space as its
+        fallback and only allowed token. Parsers should raise an error otherwise."""
+    )
 }
 
 class NewtonPDControlAPI "NewtonPDControlAPI" (
@@ -1766,17 +1777,6 @@ class NewtonPDControlAPI "NewtonPDControlAPI" (
     The output is an effort or a duty, as set by `newton:outputSpace`."""
 )
 {
-    uniform token newton:outputSpace = "effort" (
-        allowedTokens = ["effort", "duty"]
-        doc = """Space of the control law output.
-
-        Options:
-        - effort: force or torque (in joint space), for an actuator without a motor.
-        - duty: signed duty, bounded to [-1, 1] before the motor, for an actuator with a motor such as `NewtonDCMotorAPI`.
-
-        The units of `newton:constEffort` and of the gains depend on this space."""
-    )
-
     float newton:constEffort = 0 (
         doc = """Constant bias added to the controller output (in joint space).
 
@@ -1829,17 +1829,6 @@ class NewtonPIDControlAPI "NewtonPIDControlAPI" (
     The output is an effort or a duty, as set by `newton:outputSpace`."""
 )
 {
-    uniform token newton:outputSpace = "effort" (
-        allowedTokens = ["effort", "duty"]
-        doc = """Space of the control law output.
-
-        Options:
-        - effort: force or torque (in joint space), for an actuator without a motor.
-        - duty: signed duty, bounded to [-1, 1] before the motor, for an actuator with a motor such as `NewtonDCMotorAPI`.
-
-        The units of `newton:constEffort` and of the gains depend on this space."""
-    )
-
     float newton:constEffort = 0 (
         doc = """Constant bias added to the controller output (in joint space).
 
@@ -1923,17 +1912,6 @@ class NewtonNeuralControlAPI "NewtonNeuralControlAPI" (
     """
 )
 {
-    uniform token newton:outputSpace = "effort" (
-        allowedTokens = ["effort", "duty"]
-        doc = """Space of the control law output.
-
-        Options:
-        - effort: force or torque (in joint space), for an actuator without a motor.
-        - duty: signed duty, bounded to [-1, 1] before the motor, for an actuator with a motor such as `NewtonDCMotorAPI`.
-
-        The model output is read in this space."""
-    )
-
     asset newton:modelPath (
         doc = """Path to the pre-trained neural model file (e.g. TorchScript .pt)."""
     )
@@ -1957,6 +1935,18 @@ class NewtonActuatorClampingBaseAPI "NewtonActuatorClampingBaseAPI" (
     """
 )
 {
+    uniform token newton:inputSpace = "effort" (
+        allowedTokens = ["effort", "duty"]
+        doc = """Space of the control law output this clamping bounds.
+
+        Options:
+        - effort: force or torque (in joint space), for an actuator without a motor.
+        - duty: signed duty, for an actuator with a motor such as `NewtonDCMotorAPI`.
+
+        Must equal `newton:outputSpace` of the control law. A clamping schema that supports only one space
+        overrides this attribute with that space as its fallback and only allowed token. Parsers should raise
+        an error otherwise."""
+    )
 }
 
 class NewtonMaxEffortClampingAPI "NewtonMaxEffortClampingAPI" (
@@ -1969,12 +1959,10 @@ class NewtonMaxEffortClampingAPI "NewtonMaxEffortClampingAPI" (
 {
     uniform token newton:inputSpace = "effort" (
         allowedTokens = ["effort"]
-        doc = """Space of the control law output this clamping bounds.
-
-        Options:
-        - effort: the effort (force or torque, in joint space).
-
-        Must equal `newton:outputSpace` of the control law. Parsers should raise an error otherwise."""
+        customData = {
+            bool apiSchemaOverride = true
+        }
+        doc = """Space of the control law output this clamping bounds. This clamping supports only `"effort"`."""
     )
 
     float newton:maxEffort = inf (
@@ -2012,12 +2000,10 @@ class NewtonDCMotorClampingAPI "NewtonDCMotorClampingAPI" (
 {
     uniform token newton:inputSpace = "effort" (
         allowedTokens = ["effort"]
-        doc = """Space of the control law output this clamping bounds.
-
-        Options:
-        - effort: the effort (force or torque, in joint space).
-
-        Must equal `newton:outputSpace` of the control law. Parsers should raise an error otherwise."""
+        customData = {
+            bool apiSchemaOverride = true
+        }
+        doc = """Space of the control law output this clamping bounds. This clamping supports only `"effort"`."""
     )
 
     float newton:maxMotorEffort = inf (
@@ -2083,12 +2069,10 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
 {
     uniform token newton:inputSpace = "effort" (
         allowedTokens = ["effort"]
-        doc = """Space of the control law output this clamping bounds.
-
-        Options:
-        - effort: the effort (force or torque, in joint space).
-
-        Must equal `newton:outputSpace` of the control law. Parsers should raise an error otherwise."""
+        customData = {
+            bool apiSchemaOverride = true
+        }
+        doc = """Space of the control law output this clamping bounds. This clamping supports only `"effort"`."""
     )
 
     float[] newton:lookupPositions = [] (
@@ -2142,12 +2126,10 @@ class NewtonCurrentDutyClampingAPI "NewtonCurrentDutyClampingAPI" (
 {
     uniform token newton:inputSpace = "duty" (
         allowedTokens = ["duty"]
-        doc = """Space of the control law output this clamping bounds.
-
-        Options:
-        - duty: the duty of a control law with `newton:outputSpace = "duty"`.
-
-        Must equal `newton:outputSpace` of the control law. Parsers should raise an error otherwise."""
+        customData = {
+            bool apiSchemaOverride = true
+        }
+        doc = """Space of the control law output this clamping bounds. This clamping supports only `"duty"`."""
     )
 
     float newton:maxCurrent = 0 (
