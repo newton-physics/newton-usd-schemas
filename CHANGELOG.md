@@ -10,6 +10,20 @@
   - See [Validation](https://github.com/newton-physics/newton-usd-schemas/blob/main/docs/validation.md) for details
 - Added the `usd` and `usdex` extras, which install `usd-core` or `usd-exchange` respectively as the OpenUSD runtime
   - The extras are optional, and should not be combined. Any other OpenUSD runtime can still be installed separately.
+- Added `NewtonActuatorMotorBaseAPI`, the base of all actuator motors, which turn the motor command into the effort of a motor; at most one motor may be applied to an actuator
+- Added `NewtonDCMotorAPI`, a DC motor driven by an average terminal voltage following the voltage-controlled servo model of [Rhoban/bam](https://github.com/Rhoban/bam), with `newton:kt`, `newton:resistance` and `newton:vin`, which turns the motor command into the effort of a motor
+  - With a motor, the control law must output a duty (`newton:outputSpace = "duty"`), and duty clamping such as `NewtonCurrentDutyClampingAPI` bounds that duty. Control laws that output an effort and effort clamping must not be combined with a motor.
+- Added `newton:outputSpace` to `NewtonActuatorControlBaseAPI`, so every control law has it, which selects whether the control law outputs an effort (`"effort"`, the default) or a signed duty for a motor (`"duty"`); the units of the gains follow that space
+  - A BAM voltage-controlled servo uses `NewtonPDControlAPI` with `newton:outputSpace = "duty"`, `newton:kp` set to its firmware gain times its error gain and `newton:kd = 0`.
+- Added `newton:inputSpace` to `NewtonActuatorClampingBaseAPI`, which declares whether a clamping bounds an effort (`"effort"`) or a duty (`"duty"`); it must equal `newton:outputSpace` of the control law. `NewtonMaxEffortClampingAPI`, `NewtonDCMotorClampingAPI` and `NewtonPositionBasedClampingAPI` support only `"effort"`, and `NewtonCurrentDutyClampingAPI` only `"duty"`
+- Added `NewtonCurrentDutyClampingAPI`, a duty clamping with the current and duty limits of the firmware of a servo, with `newton:maxCurrent` and `newton:maxDuty`, applied in this order to the duty, using the firmware estimates `newton:ktEstimate` and `newton:resistanceEstimate`, by default the motor's `newton:kt` and `newton:resistance`, and a voltage estimate selected by `newton:voltageSource` (`newton:nominalVoltage`, `newton:minVoltage`)
+  - Together they reproduce a BAM voltage-controlled servo; friction is not modeled, and the command delay and armature are authored with `NewtonActuatorDelayAPI` and on the joint.
+- Added `NewtonActuatorInputProcessorBaseAPI`, the base of all actuator input processors, which transform the inputs of the control law
+  - `NewtonActuatorDelayAPI` now applies it implicitly.
+- Added `NewtonActuatorEncoderAPI`, an input processor that models the position encoder of an actuator, mounted behind a passive output joint named by the `newton:outputJoint` relationship, e.g. to capture gearbox backlash
+- Added `NewtonBattery`, an abstract base for batteries shared by the motors of several actuators, and `NewtonConstantResistanceBattery`, an ideal voltage source behind a constant internal resistance with `newton:nominalVoltage`, `newton:resistance` and `newton:minVoltage`
+  - Actuators draw from a battery with the new `newton:battery` relationship on `NewtonActuator`.
+  - Motors that provide a supply voltage, such as `NewtonDCMotorAPI`, use the battery's voltage instead of `newton:vin`.
 
 # 0.6.0
 
