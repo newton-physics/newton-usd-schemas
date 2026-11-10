@@ -1,0 +1,119 @@
+#usda 1.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+(
+    defaultPrim = "Rig"
+    metersPerUnit = 1
+    kilogramsPerUnit = 1
+    upAxis = "Y"
+)
+
+# Authoring and composition fixture for native routed tendon schemas.
+def Xform "Rig"
+{
+    def PhysicsScene "Scene" (
+        prepend apiSchemas = ["NewtonXpbdSceneAPI", "NewtonTendonSceneAPI"]
+    )
+    {
+        vector3f physics:gravityDirection = (0, -1, 0)
+        float physics:gravityMagnitude = 9.81
+        uniform int newton:tendon:maxSweeps = 256
+    }
+
+    def Xform "Frames"
+    {
+        def Xform "Start"
+        {
+            double3 xformOp:translate = (-0.2, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Pinhole"
+        {
+            double3 xformOp:translate = (-0.1, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Xform "Pulley" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        rel physics:simulationOwner = </Rig/Scene>
+        float physics:mass = 0.1
+        float3 physics:diagonalInertia = (0.00001, 0.00001, 0.00001)
+
+        def Xform "GuideFrame"
+        {
+        }
+    }
+
+    def Xform "Load" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        rel physics:simulationOwner = </Rig/Scene>
+        float physics:mass = 0.1
+        float3 physics:diagonalInertia = (0.00001, 0.00001, 0.00001)
+        double3 xformOp:translate = (0.15, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Sphere "AttachmentSite" (
+            prepend apiSchemas = ["NewtonSiteAPI"]
+        )
+        {
+            double radius = 0.005
+            double3 xformOp:translate = (0.01, 0.02, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def NewtonTendon "Cable"
+    {
+        rel physics:simulationOwner = </Rig/Scene>
+        rel newton:tendon:guides = [
+            </Rig/Cable/Start>,
+            </Rig/Cable/Pinhole>,
+            </Rig/Cable/Roller>,
+            </Rig/Cable/End>
+        ]
+
+        def NewtonTendonGuide "Start" (
+            prepend apiSchemas = ["NewtonTendonAnchorAPI"]
+        )
+        {
+            rel newton:tendon:frame = </Rig/Frames/Start>
+        }
+
+        def NewtonTendonGuide "Pinhole" (
+            prepend apiSchemas = ["NewtonTendonPinholeAPI", "NewtonTendonSpanAPI"]
+        )
+        {
+            rel newton:tendon:frame = </Rig/Frames/Pinhole>
+            uniform float newton:tendon:friction = 0.1
+            uniform float newton:tendon:span:compliance = 0.0001
+            uniform float newton:tendon:span:damping = 0.01
+        }
+
+        def NewtonTendonGuide "Roller" (
+            prepend apiSchemas = ["NewtonTendonRollerAPI", "NewtonRollerCircleAPI", "NewtonTendonSpanAPI"]
+        )
+        {
+            rel newton:tendon:frame = </Rig/Pulley/GuideFrame>
+            uniform float newton:roller:radius = 0.03
+            uniform float newton:tendon:friction = 0.2
+            uniform bool newton:tendon:dynamic = true
+            uniform float newton:tendon:span:compliance = 0.0001
+            uniform float newton:tendon:span:damping = 0.01
+        }
+
+        def NewtonTendonGuide "End" (
+            prepend apiSchemas = ["NewtonTendonAnchorAPI", "NewtonTendonSpanAPI"]
+        )
+        {
+            rel newton:tendon:frame = </Rig/Load/AttachmentSite>
+            uniform float newton:tendon:span:compliance = 0.0001
+            uniform float newton:tendon:span:damping = 0.01
+        }
+    }
+}

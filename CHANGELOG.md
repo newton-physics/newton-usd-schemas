@@ -2,6 +2,11 @@
 
 ## Features
 
+- Added native routed-tendon schemas
+  - `NewtonTendon` owns ordered guide definitions and span parameters; each `NewtonTendonGuide` references a USD frame for placement and body attachment.
+  - Guide-kind, circular-profile, and incoming-span APIs keep routing geometry independent of collision shapes.
+  - `NewtonTendonSceneAPI` describes shared XPBD/VBD material-solve and activation settings.
+  - Includes an authoring fixture, a three-guide diagram, and a conversion assessment for spatial `MjcTendon`.
 - Added automated validation for a subset of the Newton schemas
   - `NewtonSDFCollisionAPI`: `newton:sdfMaxResolution` must be divisible by 8. A fix rounds it to the nearest multiple of 8.
   - `NewtonMimicAPI`: `newton:mimicJoint` must target exactly one other joint, of the same joint type as the follower, unless the mimic is disabled
