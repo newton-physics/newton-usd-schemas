@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from pxr import Sdf, Usd, UsdGeom, UsdPhysics, Vt
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics, Vt
 from validator_test_case import SUPPORTS_PYTHON_FIXERS, SUPPORTS_PYTHON_VALIDATORS, ValidatorTestCase
 
 from newton_usd_schemas import validators
@@ -72,13 +72,10 @@ def author_distinctive_value(prim: Usd.Prim, schema: str, old: str, new: str):
 
 class TestRenamedAttributesTable(unittest.TestCase):
     def test_new_names_are_defined_by_their_schemas(self):
-        for schema, old, new in registered_renames():
+        for schema, _, new in registered_renames():
             definition = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(schema)
             with self.subTest(schema=schema, attribute=new):
                 self.assertTrue(definition.GetPropertyDefinition(new))
-                # A deprecated name is still defined, and must keep the same type
-                if definition.GetPropertyDefinition(old):
-                    self.assertEqual(definition.GetSchemaAttributeSpec(old).typeName, definition.GetSchemaAttributeSpec(new).typeName)
 
 
 class TestRenameAttribute(unittest.TestCase):
@@ -140,13 +137,24 @@ class TestRenameAttribute(unittest.TestCase):
         self.assertTrue(self.new.Get(1.0))
         self.assertIsNone(self.new.Get(2.0))
 
-    def test_type_mismatch_authors_nothing(self):
+    def test_converts_to_the_new_type(self):
+        prim = UsdGeom.Cube.Define(self.stage, "/Collider").GetPrim()
+        prim.ApplyAPI("NewtonCollisionAPI")
+        old = prim.CreateAttribute("newton:legacyGap", Sdf.ValueTypeNames.Double)
+        old.Set(0.1)
+        old.Set(0.2, 1.0)
+        self.assertTrue(rename_attribute(old, "newton:contactGap", self.stage.GetEditTarget()))
+        new = prim.GetAttribute("newton:contactGap")
+        self.assertAlmostEqual(new.Get(), 0.1, places=6)
+        self.assertAlmostEqual(new.Get(1.0), 0.2, places=6)
+
+    def test_inconvertible_type_authors_nothing(self):
         self.prim.RemoveProperty(OLD)
-        old = self.prim.CreateAttribute(OLD, Sdf.ValueTypeNames.Float)
-        old.Set(0.5)
+        old = self.prim.CreateAttribute(OLD, Sdf.ValueTypeNames.Float3)
+        old.Set(Gf.Vec3f(1, 2, 3))
         self.assertFalse(rename_attribute(old, NEW, self.stage.GetEditTarget()))
         self.assertFalse(self.new.HasAuthoredValue())
-        self.assertEqual(old.Get(), 0.5)
+        self.assertEqual(old.Get(), Gf.Vec3f(1, 2, 3))
 
     def test_old_name_from_an_internal_reference(self):
         source = define_follower(self.stage, "/Source")
@@ -280,7 +288,7 @@ class TestRenamedAttributesValidator(ValidatorTestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             stage = Usd.Stage.CreateNew((pathlib.Path(tmpdir) / "asset.usda").as_posix())
             prim = define_follower(stage)
-            prim.CreateAttribute(OLD, Sdf.ValueTypeNames.Float).Set(0.5)
+            prim.CreateAttribute(OLD, Sdf.ValueTypeNames.Float3).Set(Gf.Vec3f(1, 2, 3))
             (error,) = self.validator.Validate(prim)
             (fixer,) = error.GetFixersByErrorName()
             self.assertFalse(fixer.ApplyFix(error, stage.GetEditTarget()))

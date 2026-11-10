@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
-from pxr import Sdf, Usd
+from pxr import Sdf, Tf, Usd
 
 from ._registration import (
     SUPPORTS_PYTHON_FIXERS,
@@ -54,16 +54,25 @@ def check_renamed_attributes(prim: Usd.Prim, time_range: TimeRange) -> list[Find
     return findings
 
 
+def _can_set(values: list[tuple[Usd.TimeCode, object]], type_name: Sdf.ValueTypeName) -> bool:
+    """Whether every value can be set on an attribute of the type, converting it as `Usd.Attribute.Set` does."""
+    stage = Usd.Stage.CreateInMemory()
+    scratch = stage.DefinePrim("/Scratch").CreateAttribute("value", type_name)
+    try:
+        return all(scratch.Set(value, time) for time, value in values)
+    except Tf.ErrorException:
+        return False
+
+
 def rename_attribute(attr: Usd.Attribute, new_name: str, edit_target: Usd.EditTarget) -> bool:
     """Move the authored values of a renamed attribute to its new name, authoring in the edit target.
 
     Values already authored on the new name are kept. The old attribute is removed from the edit target, or blocked if
-    other opinions also author it. Returns False, without authoring anything, if the values cannot be moved.
+    other opinions also author it. Values are converted to the new attribute's type, as `Usd.Attribute.Set` does. Returns
+    False, without authoring anything, if a value cannot be converted.
     """
     prim = attr.GetPrim()
     new_attr = prim.GetAttribute(new_name)
-    if attr.GetTypeName() != new_attr.GetTypeName():
-        return False
     # Gather every value before authoring any, so a migration cannot stop part way and look complete when retried
     values = []
     if not new_attr.HasAuthoredValue():
@@ -75,6 +84,8 @@ def rename_attribute(attr: Usd.Attribute, new_name: str, edit_target: Usd.EditTa
         for time in attr.GetTimeSamples():
             value = attr.Get(time)
             values.append((Usd.TimeCode(time), Sdf.ValueBlock() if value is None else value))
+    if not _can_set(values, new_attr.GetTypeName()):
+        return False
     # Removing the old attribute only suppresses opinions authored on this prim in the edit target, not ones that
     # arrive through references, even from the same layer
     path = edit_target.MapToSpecPath(attr.GetPath())
