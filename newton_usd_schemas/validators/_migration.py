@@ -145,7 +145,7 @@ def check_renamed_api_schemas(prim: Usd.Prim, time_range: TimeRange) -> list[Fin
 
 def _replace_in_list_op(list_op: Sdf.TokenListOp, old: str, new: str) -> bool:
     replaced = False
-    for field in ("explicitItems", "prependedItems", "appendedItems"):
+    for field in ("explicitItems", "addedItems", "prependedItems", "appendedItems", "orderedItems"):
         items = list(getattr(list_op, field))
         if old in items:
             setattr(list_op, field, list(dict.fromkeys(new if item == old else item for item in items)))

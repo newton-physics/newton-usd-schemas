@@ -35,6 +35,17 @@ def apply_schemas(prim: Usd.Prim, *schemas: str) -> None:
     prim.SetMetadata("apiSchemas", Sdf.TokenListOp.Create(prependedItems=list(schemas)))
 
 
+def assert_saved_schemas(test: unittest.TestCase, stage: Usd.Stage, path: Sdf.Path, applied: list[str], removed: list[str]) -> None:
+    """Reopen the saved asset, rather than the cached layer, and check its composed schemas without the migration helpers."""
+    saved_stage = Usd.Stage.Open(Sdf.Layer.OpenAsAnonymous(stage.GetRootLayer().realPath))
+    saved = saved_stage.GetPrimAtPath(path)
+    for schema in applied:
+        test.assertTrue(saved.HasAPI(schema), schema)
+    composed = saved.GetMetadata("apiSchemas").ApplyOperations([])
+    for schema in removed:
+        test.assertNotIn(schema, composed)
+
+
 class TestAuthoredAPISchemas(unittest.TestCase):
     def test_excludes_built_in_schemas(self):
         stage = Usd.Stage.CreateInMemory()
@@ -74,6 +85,23 @@ class TestRenameAPISchema(unittest.TestCase):
         list_op = self.prim.GetPrimStack()[0].GetInfo("apiSchemas")
         self.assertTrue(list_op.isExplicit)
         self.assertEqual(list(list_op.explicitItems), [NEW, "NewtonCollisionAPI"])
+
+    def test_legacy_added_items(self):
+        list_op = Sdf.TokenListOp()
+        list_op.addedItems = [OLD, "NewtonCollisionAPI"]
+        self.prim.SetMetadata("apiSchemas", list_op)
+        self.assertTrue(rename_api_schema(self.prim, OLD, NEW, self.stage.GetEditTarget()))
+        self.assertEqual(list(self.prim.GetPrimStack()[0].GetInfo("apiSchemas").addedItems), [NEW, "NewtonCollisionAPI"])
+        self.assertTrue(self.prim.HasAPI(NEW))
+
+    def test_old_schema_from_an_internal_reference(self):
+        source = UsdPhysics.RevoluteJoint.Define(self.stage, "/Source").GetPrim()
+        apply_schemas(source, OLD)
+        instance = self.stage.DefinePrim("/Instance")
+        instance.GetReferences().AddInternalReference("/Source")
+        self.assertTrue(rename_api_schema(instance, OLD, NEW, self.stage.GetEditTarget()))
+        self.assertTrue(instance.HasAPI(NEW))
+        self.assertEqual(authored_api_schemas(source), [OLD])
 
     def test_new_schema_already_applied(self):
         apply_schemas(self.prim, OLD, NEW)
@@ -156,9 +184,9 @@ class TestRenamedAPISchemasValidator(ValidatorTestCase):
             fixer = errors[0].GetFixersByErrorName()[0]
             self.assertTrue(fixer.CanApplyFix(errors[0], stage.GetEditTarget()))
             self.assertTrue(fixer.ApplyFix(errors[0], stage.GetEditTarget()))
-            self.assertEqual(authored_api_schemas(prim), [NEW, REPLACEMENT])
             self.assertFalse(stage.GetRootLayer().dirty)
             self.assertEqual(self.validator.Validate(prim), [])
+            assert_saved_schemas(self, stage, prim.GetPath(), applied=[NEW, REPLACEMENT], removed=[OLD, DEPRECATED])
 
 
 class TestRegisteredAPISchemaRenames(ValidatorTestCase):
@@ -190,7 +218,7 @@ class TestRegisteredAPISchemaRenames(ValidatorTestCase):
                 (error,) = self.validator.Validate(prim)
                 (fixer,) = error.GetFixersByErrorName()
                 self.assertTrue(fixer.ApplyFix(error, stage.GetEditTarget()))
-                self.assertEqual(authored_api_schemas(prim), [new])
+                assert_saved_schemas(self, stage, prim.GetPath(), applied=[new], removed=[old])
 
 
 if __name__ == "__main__":
