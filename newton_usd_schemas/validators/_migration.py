@@ -58,20 +58,31 @@ def rename_attribute(attr: Usd.Attribute, new_name: str, edit_target: Usd.EditTa
     """Move the authored values of a renamed attribute to its new name, authoring in the edit target.
 
     Values already authored on the new name are kept. The old attribute is removed from the edit target, or blocked if
-    it is also authored in other layers.
+    other opinions also author it. Returns False, without authoring anything, if the values cannot be moved.
     """
     prim = attr.GetPrim()
     new_attr = prim.GetAttribute(new_name)
+    if attr.GetTypeName() != new_attr.GetTypeName():
+        return False
+    # Gather every value before authoring any, so a migration cannot stop part way and look complete when retried
+    values = []
+    if not new_attr.HasAuthoredValue():
+        # Only an authored default needs to move, and only if the new attribute's fallback would not resolve to it
+        if attr.GetResolveInfo(Usd.TimeCode.Default()).GetSource() == Usd.ResolveInfoSourceDefault:
+            default = attr.Get(Usd.TimeCode.Default())
+            if default != prim.GetPrimDefinition().GetAttributeFallbackValue(new_name):
+                values.append((Usd.TimeCode.Default(), default))
+        for time in attr.GetTimeSamples():
+            value = attr.Get(time)
+            values.append((Usd.TimeCode(time), Sdf.ValueBlock() if value is None else value))
+    # Removing the old attribute only suppresses opinions authored on this prim in the edit target, not ones that
+    # arrive through references, even from the same layer
+    path = edit_target.MapToSpecPath(attr.GetPath())
+    local = all(spec.layer == edit_target.GetLayer() and spec.path == path for spec in attr.GetPropertyStack())
     with Usd.EditContext(prim.GetStage(), edit_target):
-        if not new_attr.HasAuthoredValue():
-            # Only an authored default needs to move, and only if the new attribute's fallback would not resolve to it
-            if attr.GetResolveInfo(Usd.TimeCode.Default()).GetSource() == Usd.ResolveInfoSourceDefault:
-                default = attr.Get(Usd.TimeCode.Default())
-                if default != prim.GetPrimDefinition().GetAttributeFallbackValue(new_name):
-                    new_attr.Set(default)
-            for time in attr.GetTimeSamples():
-                new_attr.Set(attr.Get(time), time)
-        if all(spec.layer == edit_target.GetLayer() for spec in attr.GetPropertyStack()):
+        for time, value in values:
+            new_attr.Set(value, time)
+        if local:
             return prim.RemoveProperty(attr.GetName())
         attr.Block()
     return True

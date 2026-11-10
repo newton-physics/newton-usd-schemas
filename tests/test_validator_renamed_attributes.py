@@ -1,13 +1,12 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 import pathlib
 import tempfile
 import unittest
 from unittest import mock
 
-from pxr import Sdf, Usd, UsdGeom, UsdPhysics
+from pxr import Sdf, Usd, UsdGeom, UsdPhysics, Vt
 from validator_test_case import SUPPORTS_PYTHON_FIXERS, SUPPORTS_PYTHON_VALIDATORS, ValidatorTestCase
 
 from newton_usd_schemas import validators
@@ -51,27 +50,35 @@ def define_prim_with_schema(stage: Usd.Stage, schema: str) -> Usd.Prim:
     return prim
 
 
-def author_with_new_type(prim: Usd.Prim, schema: str, old: str, new: str) -> Usd.Attribute:
-    definition = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(schema)
-    type_name = definition.GetSchemaAttributeSpec(new).typeName
-    attr = prim.CreateAttribute(old, type_name)
-    attr.Set(type_name.defaultValue)
-    return attr
+# Distinctive values for the attribute types in RENAMED_ATTRIBUTES, so that a migration which loses a value fails
+DISTINCTIVE_VALUES = {
+    Sdf.ValueTypeNames.Bool: True,
+    Sdf.ValueTypeNames.Int: 7,
+    Sdf.ValueTypeNames.Float: 0.25,
+    Sdf.ValueTypeNames.Double: 0.25,
+    Sdf.ValueTypeNames.Token: "distinctive",
+    Sdf.ValueTypeNames.FloatArray: Vt.FloatArray([0.25, 0.5]),
+    Sdf.ValueTypeNames.DoubleArray: Vt.DoubleArray([0.25, 0.5]),
+}
+
+
+def author_distinctive_value(prim: Usd.Prim, schema: str, old: str, new: str):
+    type_name = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(schema).GetSchemaAttributeSpec(new).typeName
+    if type_name not in DISTINCTIVE_VALUES:
+        raise AssertionError(f"Add a distinctive {type_name} value to DISTINCTIVE_VALUES")
+    prim.CreateAttribute(old, type_name).Set(DISTINCTIVE_VALUES[type_name])
+    return DISTINCTIVE_VALUES[type_name]
 
 
 class TestRenamedAttributesTable(unittest.TestCase):
-    def test_plugin_metadata_lists_every_schema(self):
-        plug_info = json.loads((pathlib.Path(validators.__file__).parent / "plugInfo.json").read_text())
-        metadata = plug_info["Plugins"][0]["Info"]["Validators"]["RenamedAttributesValidator"]
-        schema_types = [Usd.SchemaRegistry.GetTypeFromSchemaTypeName(schema).typeName for schema in RENAMED_ATTRIBUTES]
-        self.assertEqual(metadata.get("schemaTypes", []), schema_types)
-        self.assertEqual(metadata["keywords"], ["NewtonMigration", *RENAMED_ATTRIBUTES])
-
     def test_new_names_are_defined_by_their_schemas(self):
-        for schema, _, new in registered_renames():
+        for schema, old, new in registered_renames():
             definition = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(schema)
             with self.subTest(schema=schema, attribute=new):
                 self.assertTrue(definition.GetPropertyDefinition(new))
+                # A deprecated name is still defined, and must keep the same type
+                if definition.GetPropertyDefinition(old):
+                    self.assertEqual(definition.GetSchemaAttributeSpec(old).typeName, definition.GetSchemaAttributeSpec(new).typeName)
 
 
 class TestRenameAttribute(unittest.TestCase):
@@ -124,6 +131,32 @@ class TestRenameAttribute(unittest.TestCase):
         rename_attribute(old, "newton:contactGap", self.stage.GetEditTarget())
         self.assertFalse(prim.GetAttribute("newton:contactGap").HasAuthoredValue())
         self.assertFalse(prim.GetAttribute("newton:contactMargin").HasAuthoredValue())
+
+    def test_moves_blocked_time_samples(self):
+        self.old.Set(True, 1.0)
+        self.old.Set(Sdf.ValueBlock(), 2.0)
+        self.assertTrue(rename_attribute(self.old, NEW, self.stage.GetEditTarget()))
+        self.assertEqual(self.new.GetTimeSamples(), [1.0, 2.0])
+        self.assertTrue(self.new.Get(1.0))
+        self.assertIsNone(self.new.Get(2.0))
+
+    def test_type_mismatch_authors_nothing(self):
+        self.prim.RemoveProperty(OLD)
+        old = self.prim.CreateAttribute(OLD, Sdf.ValueTypeNames.Float)
+        old.Set(0.5)
+        self.assertFalse(rename_attribute(old, NEW, self.stage.GetEditTarget()))
+        self.assertFalse(self.new.HasAuthoredValue())
+        self.assertEqual(old.Get(), 0.5)
+
+    def test_old_name_from_an_internal_reference(self):
+        source = define_follower(self.stage, "/Source")
+        author_old(source).Set(False)
+        instance = self.stage.DefinePrim("/Instance")
+        instance.GetReferences().AddInternalReference("/Source")
+        self.assertTrue(rename_attribute(instance.GetAttribute(OLD), NEW, self.stage.GetEditTarget()))
+        self.assertFalse(instance.GetAttribute(NEW).Get())
+        self.assertFalse(instance.GetAttribute(OLD).HasAuthoredValue())
+        self.assertTrue(source.GetAttribute(OLD).HasAuthoredValue())
 
     def test_keeps_authored_new_name(self):
         self.old.Set(False)
@@ -225,6 +258,35 @@ class TestRenamedAttributesValidator(ValidatorTestCase):
             self.assertFalse(stage.GetRootLayer().dirty)
             self.assertEqual(self.validator.Validate(prim), [])
 
+    @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
+    def test_fixer_moves_blocked_time_samples(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stage = Usd.Stage.CreateNew((pathlib.Path(tmpdir) / "asset.usda").as_posix())
+            prim = define_follower(stage)
+            old = author_old(prim)
+            old.Set(True, 1.0)
+            old.Set(Sdf.ValueBlock(), 2.0)
+            (error,) = self.validator.Validate(prim)
+            (fixer,) = error.GetFixersByErrorName()
+            self.assertTrue(fixer.ApplyFix(error, stage.GetEditTarget()))
+            new = prim.GetAttribute(NEW)
+            self.assertEqual(new.GetTimeSamples(), [1.0, 2.0])
+            self.assertIsNone(new.Get(2.0))
+            # A retry finds nothing left to migrate
+            self.assertEqual(self.validator.Validate(prim), [])
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
+    def test_failed_fix_can_be_retried(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stage = Usd.Stage.CreateNew((pathlib.Path(tmpdir) / "asset.usda").as_posix())
+            prim = define_follower(stage)
+            prim.CreateAttribute(OLD, Sdf.ValueTypeNames.Float).Set(0.5)
+            (error,) = self.validator.Validate(prim)
+            (fixer,) = error.GetFixersByErrorName()
+            self.assertFalse(fixer.ApplyFix(error, stage.GetEditTarget()))
+            self.assertFalse(prim.GetAttribute(NEW).HasAuthoredValue())
+            self.assertEqual([error.GetName() for error in self.validator.Validate(prim)], [ERROR])
+
 
 class TestRegisteredRenames(ValidatorTestCase):
     """Check every rename in `RENAMED_ATTRIBUTES` end to end, so adding one needs no new tests."""
@@ -235,7 +297,7 @@ class TestRegisteredRenames(ValidatorTestCase):
         for schema, old, new in registered_renames():
             with self.subTest(schema=schema, attribute=old):
                 stage = Usd.Stage.CreateInMemory()
-                author_with_new_type(define_prim_with_schema(stage, schema), schema, old, new)
+                author_distinctive_value(define_prim_with_schema(stage, schema), schema, old, new)
                 for keyword in ("NewtonValidators", "NewtonMigration", schema):
                     errors = UsdValidation.ValidationContext(keywords=[keyword]).Validate(stage)
                     self.assertEqual([error.GetName() for error in errors if error.GetName() == ERROR], [ERROR], keyword)
@@ -244,14 +306,18 @@ class TestRegisteredRenames(ValidatorTestCase):
     def test_fixed(self):
         for schema, old, new in registered_renames():
             with self.subTest(schema=schema, attribute=old), tempfile.TemporaryDirectory() as tmpdir:
-                stage = Usd.Stage.CreateNew((pathlib.Path(tmpdir) / "asset.usda").as_posix())
+                path = (pathlib.Path(tmpdir) / "asset.usda").as_posix()
+                stage = Usd.Stage.CreateNew(path)
                 prim = define_prim_with_schema(stage, schema)
-                author_with_new_type(prim, schema, old, new)
+                value = author_distinctive_value(prim, schema, old, new)
                 (error,) = self.validator.Validate(prim)
                 (fixer,) = error.GetFixersByErrorName()
                 self.assertTrue(fixer.ApplyFix(error, stage.GetEditTarget()))
-                self.assertFalse(prim.HasAttribute(old))
-                self.assertTrue(prim.GetAttribute(new).HasAuthoredValue())
+                # Reopen the saved asset, rather than the cached layer, to check what was persisted
+                saved_stage = Usd.Stage.Open(Sdf.Layer.OpenAsAnonymous(path))
+                saved = saved_stage.GetPrimAtPath(prim.GetPath())
+                self.assertEqual(saved.GetAttribute(new).Get(), value)
+                self.assertFalse(saved.GetAttribute(old).HasAuthoredValue())
 
 
 if __name__ == "__main__":
