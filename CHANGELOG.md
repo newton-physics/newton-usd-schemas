@@ -10,6 +10,9 @@
   - See [Validation](https://github.com/newton-physics/newton-usd-schemas/blob/main/docs/validation.md) for details
 - Added the `usd` and `usdex` extras, which install `usd-core` or `usd-exchange` respectively as the OpenUSD runtime
   - The extras are optional, and should not be combined. Any other OpenUSD runtime can still be installed separately.
+- Added support for Python 3.14, and removed the upper bound on the Python version
+  - On Python 3.14, the `usd` extra installs `usd-core` 26.11 or newer, the first release with Python 3.14 wheels on all platforms.
+  - The `usdex` extra fails to install on Python 3.14 and newer, and the `usd` extra on Python 3.15 and newer, until `usd-exchange` and `usd-core` support them. Any other OpenUSD runtime that supports them can still be installed separately.
 
 # 0.6.0
 

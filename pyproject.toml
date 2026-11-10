@@ -6,7 +6,7 @@ license-files = ["LICENSE.md"]
 authors = [{ name = "Newton Developers" }]
 description = "OpenUSD schema definitions for the Newton physics engine"
 readme = "README.md"
-requires-python = ">=3.10,<3.15"
+requires-python = ">=3.10"
 dependencies = []
 
 [project.urls]
