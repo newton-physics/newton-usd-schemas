@@ -35,7 +35,7 @@ class TimeRange(NamedTuple):
 
 
 class Finding(NamedTuple):
-    """A single validation failure, independent of the `UsdValidation` version."""
+    """A single validation failure, reported as a `UsdValidation.ValidationError` or a `usd-validation-nvidia` issue."""
 
     name: str
     site: Usd.Object

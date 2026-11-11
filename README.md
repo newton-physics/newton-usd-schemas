@@ -46,7 +46,7 @@ Once a USD layer is authored to storage, it can be loaded into a Newton runtime 
 
 # Validation
 
-Some of the Newton schemas have automated validation, which can be run with OpenUSD's [UsdValidation](https://openusd.org/release/api/usd_validation_page_front.html) framework. More of the schemas will gain validation as they evolve.
+Some of the Newton schemas have automated validation, which can be run with OpenUSD's [UsdValidation](https://openusd.org/release/api/usd_validation_page_front.html) framework, or as [usd-validation-nvidia](https://github.com/NVIDIA-Omniverse/usd-validation-nvidia) rules via the `validation` extra. More of the schemas will gain validation as they evolve.
 
 See [Validation](https://github.com/newton-physics/newton-usd-schemas/blob/main/docs/validation.md) for how to validate content.
 
