@@ -164,7 +164,86 @@ class TestRenameAttribute(unittest.TestCase):
         self.assertTrue(rename_attribute(instance.GetAttribute(OLD), NEW, self.stage.GetEditTarget()))
         self.assertFalse(instance.GetAttribute(NEW).Get())
         self.assertFalse(instance.GetAttribute(OLD).HasAuthoredValue())
-        self.assertTrue(source.GetAttribute(OLD).HasAuthoredValue())
+        # The old opinion is renamed where it is authored, which migrates the referenced prim too
+        self.assertFalse(source.GetAttribute(OLD).HasAuthoredValue())
+        self.assertFalse(source.GetAttribute(NEW).Get())
+
+    def test_migrates_the_selected_variant(self):
+        variants = self.prim.GetVariantSets().AddVariantSet("mimic")
+        for name, value in (("a", False), ("b", True)):
+            variants.AddVariant(name)
+            variants.SetVariantSelection(name)
+            with variants.GetVariantEditContext():
+                author_old(self.prim).Set(value)
+        variants.SetVariantSelection("a")
+        self.prim.RemoveProperty(OLD)
+        self.assertTrue(rename_attribute(self.prim.GetAttribute(OLD), NEW, self.stage.GetEditTarget()))
+        layer = self.stage.GetRootLayer()
+        self.assertFalse(layer.GetAttributeAtPath(f"/Follower{{mimic=a}}.{NEW}").default)
+        self.assertIsNone(layer.GetAttributeAtPath(f"/Follower{{mimic=a}}.{OLD}"))
+        self.assertIsNone(layer.GetAttributeAtPath(f"/Follower.{NEW}"))
+        # The other variant keeps its own value, and is migrated when it is selected
+        self.assertIsNotNone(layer.GetAttributeAtPath(f"/Follower{{mimic=b}}.{OLD}"))
+        variants.SetVariantSelection("b")
+        self.assertTrue(rename_attribute(self.prim.GetAttribute(OLD), NEW, self.stage.GetEditTarget()))
+        self.assertTrue(self.new.Get())
+        variants.SetVariantSelection("a")
+        self.assertFalse(self.new.Get())
+
+    def test_overrides_a_variant_in_a_weaker_layer(self):
+        weak = Sdf.Layer.CreateAnonymous(".usda")
+        root = Sdf.Layer.CreateAnonymous(".usda")
+        root.subLayerPaths.append(weak.identifier)
+        stage = Usd.Stage.Open(root)
+        with Usd.EditContext(stage, Usd.EditTarget(weak)):
+            prim = define_follower(stage)
+            variants = prim.GetVariantSets().AddVariantSet("mimic")
+            for name in ("a", "b"):
+                variants.AddVariant(name)
+                variants.SetVariantSelection(name)
+                with variants.GetVariantEditContext():
+                    author_old(prim).Set(name == "b")
+            variants.SetVariantSelection("a")
+        self.assertTrue(rename_attribute(prim.GetAttribute(OLD), NEW, stage.GetEditTarget()))
+        self.assertFalse(root.GetAttributeAtPath(f"/Follower{{mimic=a}}.{NEW}").default)
+        self.assertIsInstance(root.GetAttributeAtPath(f"/Follower{{mimic=a}}.{OLD}").default, Sdf.ValueBlock)
+        self.assertIsNone(root.GetAttributeAtPath(f"/Follower.{NEW}"))
+        prim.GetVariantSet("mimic").SetVariantSelection("b")
+        self.assertTrue(prim.GetAttribute(OLD).Get())
+
+    def test_refuses_an_opinion_from_another_asset(self):
+        asset = Sdf.Layer.CreateAnonymous(".usda")
+        asset_stage = Usd.Stage.Open(asset)
+        author_old(define_follower(asset_stage)).Set(False)
+        instance = self.stage.DefinePrim("/Instance")
+        instance.GetReferences().AddReference(asset.identifier, "/Follower")
+        before = self.stage.GetRootLayer().ExportToString()
+        self.assertFalse(rename_attribute(instance.GetAttribute(OLD), NEW, self.stage.GetEditTarget()))
+        self.assertEqual(self.stage.GetRootLayer().ExportToString(), before)
+
+    def test_refuses_a_layer_stronger_than_the_edit_target(self):
+        weak = Sdf.Layer.CreateAnonymous(".usda")
+        root = Sdf.Layer.CreateAnonymous(".usda")
+        root.subLayerPaths.append(weak.identifier)
+        stage = Usd.Stage.Open(root)
+        author_old(define_follower(stage)).Set(False)
+        prim = stage.GetPrimAtPath("/Follower")
+        self.assertFalse(rename_attribute(prim.GetAttribute(OLD), NEW, Usd.EditTarget(weak)))
+        self.assertIsNone(weak.GetPrimAtPath("/Follower"))
+
+    def test_moves_a_stronger_default_equal_to_the_fallback(self):
+        weak = Sdf.Layer.CreateAnonymous(".usda")
+        root = Sdf.Layer.CreateAnonymous(".usda")
+        root.subLayerPaths.append(weak.identifier)
+        stage = Usd.Stage.Open(root)
+        with Usd.EditContext(stage, Usd.EditTarget(weak)):
+            author_old(define_follower(stage)).Set(False)
+        prim = stage.GetPrimAtPath("/Follower")
+        # True is the fallback of the new name, but it overrides the weaker False
+        prim.GetAttribute(OLD).Set(True)
+        self.assertTrue(rename_attribute(prim.GetAttribute(OLD), NEW, stage.GetEditTarget()))
+        self.assertTrue(prim.GetAttribute(NEW).Get())
+        self.assertTrue(prim.GetAttribute(NEW).HasAuthoredValue())
 
     def test_keeps_authored_new_name(self):
         self.old.Set(False)

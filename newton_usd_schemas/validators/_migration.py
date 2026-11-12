@@ -54,48 +54,87 @@ def check_renamed_attributes(prim: Usd.Prim, time_range: TimeRange) -> list[Find
     return findings
 
 
-def _can_set(values: list[tuple[Usd.TimeCode, object]], type_name: Sdf.ValueTypeName) -> bool:
-    """Whether every value can be set on an attribute of the type, converting it as `Usd.Attribute.Set` does."""
+def _can_override(stage: Usd.Stage, edit_layer: Sdf.Layer, layer: Sdf.Layer) -> bool:
+    """Whether authoring in the edit layer, at the paths of the layer's opinions, overrides them."""
+    if layer == edit_layer:
+        return True
+    layers = stage.GetLayerStack()
+    return edit_layer in layers and layer in layers and layers.index(edit_layer) < layers.index(layer)
+
+
+def _convert(values: list, type_name: Sdf.ValueTypeName) -> list | None:
+    """Convert the values to the type, as `Usd.Attribute.Set` does, or return None if one cannot be converted."""
     stage = Usd.Stage.CreateInMemory()
     scratch = stage.DefinePrim("/Scratch").CreateAttribute("value", type_name)
+    converted = []
     try:
-        return all(scratch.Set(value, time) for time, value in values)
+        for value in values:
+            if isinstance(value, Sdf.ValueBlock):
+                converted.append(value)
+            elif scratch.Set(value):
+                converted.append(scratch.Get())
+            else:
+                return None
     except Tf.ErrorException:
-        return False
+        return None
+    return converted
 
 
 def rename_attribute(attr: Usd.Attribute, new_name: str, edit_target: Usd.EditTarget) -> bool:
-    """Move the authored values of a renamed attribute to its new name, authoring in the edit target.
+    """Move the authored values of a renamed attribute to its new name, where they are authored.
 
-    Values already authored on the new name are kept. The old attribute is removed from the edit target, or blocked if
-    other opinions also author it. Values are converted to the new attribute's type, as `Usd.Attribute.Set` does. Returns
-    False, without authoring anything, if a value cannot be converted.
+    Each opinion on the old name is migrated where it is authored, which may be inside a variant or a referenced prim.
+    In the edit target's layer, it is renamed, and in a weaker layer of the stage's layer stack, it is overridden at the
+    same path in the edit target's layer. Values already authored on the new name are kept, and values are converted
+    to the new attribute's type, as `Usd.Attribute.Set` does. Returns False, without authoring anything, if an opinion
+    is authored where the edit target cannot override it, such as another asset, or if a value cannot be converted.
     """
     prim = attr.GetPrim()
+    layer = edit_target.GetLayer()
     new_attr = prim.GetAttribute(new_name)
-    # Gather every value before authoring any, so a migration cannot stop part way and look complete when retried
-    values = []
-    if not new_attr.HasAuthoredValue():
-        # Only an authored default needs to move, and only if the new attribute's fallback would not resolve to it
-        if attr.GetResolveInfo(Usd.TimeCode.Default()).GetSource() == Usd.ResolveInfoSourceDefault:
-            default = attr.Get(Usd.TimeCode.Default())
-            if default != prim.GetPrimDefinition().GetAttributeFallbackValue(new_name):
-                values.append((Usd.TimeCode.Default(), default))
-        for time in attr.GetTimeSamples():
-            value = attr.Get(time)
-            values.append((Usd.TimeCode(time), Sdf.ValueBlock() if value is None else value))
-    if not _can_set(values, new_attr.GetTypeName()):
+    type_name = new_attr.GetTypeName()
+    specs = attr.GetPropertyStack()
+    if not all(_can_override(prim.GetStage(), layer, spec.layer) for spec in specs):
         return False
-    # Removing the old attribute only suppresses opinions authored on this prim in the edit target, not ones that
-    # arrive through references, even from the same layer
-    path = edit_target.MapToSpecPath(attr.GetPath())
-    local = all(spec.layer == edit_target.GetLayer() and spec.path == path for spec in attr.GetPropertyStack())
-    with Usd.EditContext(prim.GetStage(), edit_target):
-        for time, value in values:
-            new_attr.Set(value, time)
-        if local:
-            return prim.RemoveProperty(attr.GetName())
-        attr.Block()
+    # Gather and convert every value before authoring any, so a migration cannot stop part way and look complete when
+    # retried. Values already authored on the new name win, so nothing moves.
+    entries = []
+    if not new_attr.HasAuthoredValue():
+        defaults = [index for index, spec in enumerate(specs) if spec.HasDefaultValue()]
+        fallback = prim.GetPrimDefinition().GetAttributeFallbackValue(new_name)
+        for index, spec in enumerate(specs):
+            if spec.HasDefaultValue():
+                entries.append((index, None, spec.default))
+            for time, value in (spec.GetInfo("timeSamples") if spec.HasInfo("timeSamples") else {}).items():
+                entries.append((index, time, value))
+        converted = _convert([value for _, _, value in entries], type_name)
+        if converted is None:
+            return False
+        # The weakest default does not need to move if the new attribute's fallback already resolves to it
+        entries = [
+            (index, time, value)
+            for (index, time, _), value in zip(entries, converted)
+            if not (time is None and index == defaults[-1] and value == fallback)
+        ]
+    with Sdf.ChangeBlock():
+        for index, spec in enumerate(specs):
+            owner = layer.GetPrimAtPath(spec.owner.path) or Sdf.CreatePrimInLayer(layer, spec.owner.path)
+            moves = [(time, value) for entry_index, time, value in entries if entry_index == index]
+            existing = owner.attributes.get(new_name)
+            # A new value authored at the same path by a stronger opinion already shadows this one
+            if moves and not (existing and (existing.HasDefaultValue() or existing.HasInfo("timeSamples"))):
+                new_spec = existing or Sdf.AttributeSpec(owner, new_name, type_name)
+                for time, value in moves:
+                    if time is None:
+                        new_spec.default = value
+                    else:
+                        layer.SetTimeSample(new_spec.path, time, value)
+            if spec.layer == layer:
+                owner.RemoveProperty(spec)
+            else:
+                block = owner.attributes.get(attr.GetName()) or Sdf.AttributeSpec(owner, attr.GetName(), spec.typeName)
+                block.ClearInfo("timeSamples")
+                block.default = Sdf.ValueBlock()
     return True
 
 
