@@ -101,7 +101,31 @@ class TestRenameAPISchema(unittest.TestCase):
         instance.GetReferences().AddInternalReference("/Source")
         self.assertTrue(rename_api_schema(instance, OLD, NEW, self.stage.GetEditTarget()))
         self.assertTrue(instance.HasAPI(NEW))
-        self.assertEqual(authored_api_schemas(source), [OLD])
+        # The old schema is replaced where it is applied, which migrates the referenced prim too
+        self.assertEqual(authored_api_schemas(source), [NEW])
+
+    def test_migrates_the_selected_variant(self):
+        variants = self.prim.GetVariantSets().AddVariantSet("mimic")
+        variants.AddVariant("off")
+        variants.AddVariant("on")
+        variants.SetVariantSelection("on")
+        with variants.GetVariantEditContext():
+            apply_schemas(self.prim, OLD)
+        self.assertTrue(rename_api_schema(self.prim, OLD, NEW, self.stage.GetEditTarget()))
+        self.assertTrue(self.prim.HasAPI(NEW))
+        self.assertFalse(self.prim.GetPrimStack()[0].HasInfo("apiSchemas"))
+        variants.SetVariantSelection("off")
+        self.assertFalse(self.prim.HasAPI(NEW))
+
+    def test_refuses_another_asset(self):
+        asset = Sdf.Layer.CreateAnonymous(".usda")
+        asset_stage = Usd.Stage.Open(asset)
+        apply_schemas(UsdPhysics.RevoluteJoint.Define(asset_stage, "/Joint").GetPrim(), OLD)
+        instance = self.stage.DefinePrim("/Instance")
+        instance.GetReferences().AddReference(asset.identifier, "/Joint")
+        before = self.stage.GetRootLayer().ExportToString()
+        self.assertFalse(rename_api_schema(instance, OLD, NEW, self.stage.GetEditTarget()))
+        self.assertEqual(self.stage.GetRootLayer().ExportToString(), before)
 
     def test_new_schema_already_applied(self):
         apply_schemas(self.prim, OLD, NEW)

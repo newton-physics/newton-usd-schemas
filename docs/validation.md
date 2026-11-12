@@ -45,3 +45,5 @@ for error in errors:
         if fixer.CanApplyFix(error, edit_target):
             fixer.ApplyFix(error, edit_target)
 ```
+
+A validation context validates the stage with its current variant selections, so content in other variants is only found, and fixed, when those variants are selected. A fixer that migrates renamed attributes or schemas does so where each old opinion is authored, including inside variants. It is not applied when an opinion comes from a layer that the edit target cannot override, such as another asset that the stage references, which needs to be validated and fixed itself.

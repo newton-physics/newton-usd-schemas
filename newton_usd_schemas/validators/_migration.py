@@ -204,26 +204,33 @@ def _replace_in_list_op(list_op: Sdf.TokenListOp, old: str, new: str) -> bool:
 
 
 def rename_api_schema(prim: Usd.Prim, old: str, new: str, edit_target: Usd.EditTarget) -> bool:
-    """Replace a renamed API schema with its new name, authoring in the edit target.
+    """Replace a renamed API schema with its new name, where it is applied.
 
-    Where the edit target applies the old schema, the new one takes its place in the list. If other layers also apply
-    it, the edit target deletes the old schema and prepends the new one.
+    Each opinion that applies the old schema is migrated where it is authored, which may be inside a variant or a
+    referenced prim. In the edit target's layer, the new schema takes the old one's place in the list, and in a weaker
+    layer of the stage's layer stack, the edit target's layer deletes the old schema at the same path and prepends the
+    new one. Returns False, without authoring anything, if the old schema is applied where the edit target cannot
+    override it, such as another asset.
     """
     layer = edit_target.GetLayer()
-    path = edit_target.MapToSpecPath(prim.GetPath())
-    spec = layer.GetPrimAtPath(path)
-    if spec and spec.HasInfo("apiSchemas"):
-        list_op = spec.GetInfo("apiSchemas")
-        if _replace_in_list_op(list_op, old, new):
-            spec.SetInfo("apiSchemas", list_op)
-    schemas = authored_api_schemas(prim)
-    if old in schemas:
-        spec = spec or Sdf.CreatePrimInLayer(layer, path)
-        list_op = spec.GetInfo("apiSchemas") if spec.HasInfo("apiSchemas") else Sdf.TokenListOp()
-        list_op.deletedItems = [*list_op.deletedItems, old]
-        if new not in schemas:
-            list_op.prependedItems = [new, *list_op.prependedItems]
-        spec.SetInfo("apiSchemas", list_op)
+    specs = [spec for spec in prim.GetPrimStack() if spec.HasInfo("apiSchemas") and old in spec.GetInfo("apiSchemas").ApplyOperations([])]
+    if not all(_can_override(prim.GetStage(), layer, spec.layer) for spec in specs):
+        return False
+    applied = authored_api_schemas(prim)
+    with Sdf.ChangeBlock():
+        for spec in specs:
+            if spec.layer == layer:
+                list_op = spec.GetInfo("apiSchemas")
+                _replace_in_list_op(list_op, old, new)
+                spec.SetInfo("apiSchemas", list_op)
+                continue
+            owner = layer.GetPrimAtPath(spec.path) or Sdf.CreatePrimInLayer(layer, spec.path)
+            list_op = owner.GetInfo("apiSchemas") if owner.HasInfo("apiSchemas") else Sdf.TokenListOp()
+            if old not in list_op.deletedItems:
+                list_op.deletedItems = [*list_op.deletedItems, old]
+            if new not in applied and new not in list_op.prependedItems:
+                list_op.prependedItems = [new, *list_op.prependedItems]
+            owner.SetInfo("apiSchemas", list_op)
     return old not in authored_api_schemas(prim)
 
 
