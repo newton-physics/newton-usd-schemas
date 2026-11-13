@@ -25,7 +25,7 @@ for error in errors:
     print(error.GetErrorAsString())
 ```
 
-`NewtonValidators` selects all of the validators. To run a subset, use the keyword for a topic, such as `NewtonJoints`, or the name of the schema a validator checks, such as `NewtonMimicAPI`. Schemas that build on some of the Newton schemas can use the schema names to select only the validators for the schemas they use.
+The validators report incompatible content as errors, and deprecated content that still works as warnings. `NewtonValidators` selects all of the validators. To run a subset, use the keyword for a topic, such as `NewtonJoints`, or the name of the schema a validator checks, such as `NewtonMimicAPI`. Schemas that build on some of the Newton schemas can use the schema names to select only the validators for the schemas they use.
 
 For Kamino scenes, `KaminoSccSolverValidator` warns when `NewtonKaminoSccSceneAPI` is applied but an unauthored `newton:kamino:dynamicsSolver` does not resolve to `"scc"`. List the SCC API first, omit the redundant base Kamino API, or explicitly author the solver choice. The `SelectKaminoSccSolver` fixer authors `"scc"` in the chosen edit layer. Explicitly authored solver choices are respected. Select this validator with the `NewtonKamino` or `NewtonKaminoSccSceneAPI` keyword.
 
@@ -47,3 +47,5 @@ for error in errors:
         if fixer.CanApplyFix(error, edit_target):
             fixer.ApplyFix(error, edit_target)
 ```
+
+A validation context validates the stage with its current variant selections, so content in other variants is only found, and fixed, when those variants are selected. A fixer that migrates renamed attributes or schemas does so where each old opinion is authored, including inside variants. It is not applied when an opinion comes from a layer that the edit target cannot override, such as another asset that the stage references, which needs to be validated and fixed itself.

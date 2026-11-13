@@ -25,6 +25,15 @@
                         "doc": "newton:mimicJoint must target exactly one other joint, of the same joint type as the follower.",
                         "keywords": ["NewtonJoints", "NewtonMimicAPI"],
                         "schemaTypes": ["NewtonPhysicsMimicAPI"]
+                    },
+                    "RenamedAttributesValidator": {
+                        "doc": "Renamed attributes should be authored with their new names. The fixer moves values from the old names to the new ones.",
+                        "keywords": ["NewtonMigration", "NewtonPointsDeformableSimAPI"],
+                        "schemaTypes": ["NewtonPhysicsPointsDeformableSimAPI"]
+                    },
+                    "RenamedAPISchemasValidator": {
+                        "doc": "Renamed API schemas should be applied with their new names. The fixer replaces the old names with the new ones.",
+                        "keywords": ["NewtonMigration"]
                     }
                 }
             }

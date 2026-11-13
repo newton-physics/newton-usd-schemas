@@ -23,6 +23,7 @@ def check_kamino_scc_solver(prim: Usd.Prim, time_range: TimeRange) -> list[Findi
             f"newton:kamino:dynamicsSolver on <{prim.GetPath()}> is unauthored and resolves to {value!r} "
             "despite NewtonKaminoSccSceneAPI being applied. List NewtonKaminoSccSceneAPI first, "
             'or author newton:kamino:dynamicsSolver = "scc" explicitly to select SCC.',
+            severity=UsdValidation.ValidationErrorType.Warn if UsdValidation else None,
         )
     ]
 
@@ -53,4 +54,4 @@ def _fixers() -> list | None:
     ]
 
 
-register_prim_validator("KaminoSccSolverValidator", native_prim_task(check_kamino_scc_solver, is_warning=True), _fixers())
+register_prim_validator("KaminoSccSolverValidator", native_prim_task(check_kamino_scc_solver), _fixers())
