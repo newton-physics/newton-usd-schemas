@@ -9,7 +9,7 @@ from validator_test_case import SUPPORTS_PYTHON_VALIDATORS, ValidatorTestCase, r
 
 import newton_usd_schemas
 from newton_usd_schemas import validators
-from newton_usd_schemas.validators._registration import register_prim_validator
+from newton_usd_schemas.validators._registration import Finding, native_prim_task, register_prim_validator
 
 if SUPPORTS_PYTHON_VALIDATORS:
     from pxr import UsdValidation
@@ -50,6 +50,19 @@ class TestValidatorsImport(unittest.TestCase):
             assert metadata.plugin, "expected metadata from plugInfo.json"
             """)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_VALIDATORS, "Python validators require OpenUSD 26.05 or newer")
+    def test_finding_severity(self):
+        stage = Usd.Stage.CreateInMemory()
+        prim = stage.DefinePrim("/Prim")
+        task = native_prim_task(
+            lambda prim, time_range: [Finding("Bad", prim, "bad"), Finding("Old", prim, "old", UsdValidation.ValidationErrorType.Warn)]
+        )
+        errors = task(prim, UsdValidation.ValidationTimeRange())
+        self.assertEqual(
+            [(error.GetName(), error.GetType()) for error in errors],
+            [("Bad", UsdValidation.ValidationErrorType.Error), ("Old", UsdValidation.ValidationErrorType.Warn)],
+        )
 
     @unittest.skipUnless(SUPPORTS_PYTHON_VALIDATORS, "Python validators require OpenUSD 26.05 or newer")
     def test_register_existing_validator(self):
@@ -106,13 +119,37 @@ class TestValidatorMetadata(ValidatorTestCase):
         self.assertEqual(list(metadata.GetSchemaTypes()), [])
         self.assertTrue(metadata.isTimeDependent)
 
+    def test_renamed_attributes(self):
+        metadata = self.metadata(validators.RENAMED_ATTRIBUTES_VALIDATOR)
+        self.assertEqual(metadata.name, "newton_usd_schemas.validators:RenamedAttributesValidator")
+        self.assertTrue(metadata.doc)
+        # The schema keywords and types follow the renames, whose discovery test_validator_renamed_attributes.py checks
+        self.assertLessEqual({"NewtonMigration", "NewtonValidators"}, set(metadata.GetKeywords()))
+        self.assertFalse(metadata.isTimeDependent)
+
+    def test_renamed_api_schemas(self):
+        metadata = self.metadata(validators.RENAMED_API_SCHEMAS_VALIDATOR)
+        self.assertEqual(metadata.name, "newton_usd_schemas.validators:RenamedAPISchemasValidator")
+        self.assertTrue(metadata.doc)
+        self.assertEqual(sorted(metadata.GetKeywords()), ["NewtonMigration", "NewtonValidators"])
+        self.assertEqual(list(metadata.GetSchemaTypes()), [])
+        self.assertFalse(metadata.isTimeDependent)
+
 
 class TestValidatorKeywords(ValidatorTestCase):
     def names(self, keyword: str) -> list[str]:
         return sorted(metadata.name for metadata in UsdValidation.ValidationRegistry().GetValidatorMetadataForKeyword(keyword))
 
     def test_newton_validators(self):
-        expected = sorted([validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR, validators.MIMIC_JOINT_VALIDATOR, validators.SDF_MAX_RESOLUTION_VALIDATOR])
+        expected = sorted(
+            [
+                validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR,
+                validators.MIMIC_JOINT_VALIDATOR,
+                validators.RENAMED_API_SCHEMAS_VALIDATOR,
+                validators.RENAMED_ATTRIBUTES_VALIDATOR,
+                validators.SDF_MAX_RESOLUTION_VALIDATOR,
+            ]
+        )
         self.assertEqual(self.names("NewtonValidators"), expected)
 
     def test_newton_collision(self):
@@ -129,6 +166,9 @@ class TestValidatorKeywords(ValidatorTestCase):
 
     def test_newton_mimic_api(self):
         self.assertEqual(self.names("NewtonMimicAPI"), [validators.MIMIC_JOINT_VALIDATOR])
+
+    def test_newton_migration(self):
+        self.assertEqual(self.names("NewtonMigration"), sorted([validators.RENAMED_API_SCHEMAS_VALIDATOR, validators.RENAMED_ATTRIBUTES_VALIDATOR]))
 
 
 if __name__ == "__main__":

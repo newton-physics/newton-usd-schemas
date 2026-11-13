@@ -147,7 +147,7 @@ The validators in `newton_usd_schemas/validators` check content against requirem
 
 ### Adding a Validator
 
-1. Write a check function in the module for its topic, such as `_collision.py` or `_joints.py`, or in a new module for a new topic. It takes a `Usd.Prim` and a `TimeRange`, and returns a list of `Finding`s: one per problem, each with a stable error name, the property at fault as its site, and a message that names the property, the prim and the problem. It returns no findings for prims the requirement does not apply to. A blocked attribute resolves to `None`, so handle that as Newton does, usually by treating the value as unauthored. If the requirement applies to time-sampled values, check the default value when `time_range.include_default` is true, and every time sample in `time_range.interval`.
+1. Write a check function in the module for its topic, such as `_collision.py` or `_joints.py`, or in a new module for a new topic. It takes a `Usd.Prim` and a `TimeRange`, and returns a list of `Finding`s: one per problem, each with a stable error name, the property at fault as its site, and a message that names the property, the prim and the problem. It returns no findings for prims the requirement does not apply to. A finding is an error unless its severity is `UsdValidation.ValidationErrorType.Warn`, which is for deprecated content that still works. A blocked attribute resolves to `None`, so handle that as Newton does, usually by treating the value as unauthored. If the requirement applies to time-sampled values, check the default value when `time_range.include_default` is true, and every time sample in `time_range.interval`.
 2. At the end of the module, register it with `register_prim_validator("<Name>Validator", native_prim_task(check_<name>))`, and define its full name as `<NAME>_VALIDATOR = validator_name("<Name>Validator")`. Import a new module, and export the name, from `validators/__init__.py`, since importing that package is what registers the validators.
 3. Declare the validator in `validators/plugInfo.json`, under the same `<Name>Validator` key:
    - `doc`: the requirement, in one or two sentences.
@@ -156,6 +156,16 @@ The validators in `newton_usd_schemas/validators` check content against requirem
    - `isTimeDependent`: `true` if the check validates values at the times in its `time_range`, such as time-sampled attribute values. When `UsdValidation` validates a list of time codes, it runs time dependent validators once for each, and other validators once with the whole time range. A check that is not time dependent can still read time samples to decide whether a requirement applies, as the mimic validator does with `newton:mimicEnabled`.
 4. To add a fixer, pass a list of `UsdValidation.ValidationFixer`s as the third argument of `register_prim_validator`, built only when `SUPPORTS_PYTHON_FIXERS` is true, since Python fixers require OpenUSD 26.11 or newer. Its `errorName` must match the findings it fixes, and it must author in the edit target it is given. See `_collision.py` for an example.
 5. Add a changelog entry under `## Features` that states the requirement.
+
+### Renames and Deprecations
+
+Rename a property or schema by deprecating the old name first, keeping it defined until a later release removes it, and add a validator so existing content can be migrated. While the old name is still defined, the validator reports content that uses it as a warning. Once the old name is removed, the validator reports it as an error, since the content's values are then ignored.
+
+To rename an attribute, add the rename to `RENAMED_ATTRIBUTES` in `validators/_migration.py`. If the schema is new to it, also add the schema's TfType name to the `schemaTypes`, and its name to the `keywords`, of `RenamedAttributesValidator` in `validators/plugInfo.json`. The validator then reports content that still uses the old name, and its fixer renames it. The tests check every rename in `RENAMED_ATTRIBUTES`, and that `plugInfo.json` lists the same schemas, so a rename needs no new tests. Note in the breaking change's changelog entry that the validators report and fix the old name.
+
+To rename an API schema, add the rename to `RENAMED_API_SCHEMAS` in `validators/_migration.py`. If the schema also renames attributes, add them to `RENAMED_ATTRIBUTES` under the new schema name: once the schema is migrated, the attribute validator migrates them. The tests check every rename in `RENAMED_API_SCHEMAS` too, so this needs no new tests either.
+
+Breaking changes that are not plain renames, such as moving settings to another prim, get their own validator with the `NewtonMigration` keyword. Build it on a plain migration function that its fixer calls, as `rename_attribute` and `rename_api_schema` are, so that the migration does not depend on how it is run.
 
 ### Validator Tests
 
