@@ -532,10 +532,20 @@ class "NewtonKaminoSccSceneAPI" (
     are ignored. Contact and joint-limit compliance remain independently configurable.
 
     `newton:maxSolverIterations` sets the outer alternating iteration budget;
-    its default `-1` selects the engine default of 24 iterations."""
+    its default `-1` selects the engine default."""
 )
 {
     uniform token newton:kamino:dynamicsSolver = "scc"
+
+    uniform token newton:kamino:scc:warmstarting = "containers" (
+        allowedTokens = ["none", "internal", "containers"]
+        doc = """Source of the initial constraint impulses for each SCC solve.
+
+        Options:
+        - "none": Start with zero constraint impulses.
+        - "internal": Reuse the solver's solution from the previous time step.
+        - "containers": Use cached joint, joint-limit, and contact impulses."""
+    )
 
     uniform token newton:kamino:scc:bilateral:numericalSolver = "lltb" (
         allowedTokens = ["lltb", "lltbrcm"]

@@ -49,15 +49,15 @@ def validator_name(key: str) -> str:
     return f"{PLUGIN_NAME}:{key}"
 
 
-def native_prim_task(check: PrimCheck):
-    """Wrap a check as a `UsdValidation` prim task."""
+def native_prim_task(check: PrimCheck, *, is_warning: bool = False):
+    """Wrap a check as a `UsdValidation` prim task reporting errors or warnings."""
 
     def task(prim: Usd.Prim, time_range: "UsdValidation.ValidationTimeRange") -> list["UsdValidation.ValidationError"]:
         findings = check(prim, TimeRange(time_range.IncludesTimeCodeDefault(), time_range.GetInterval()))
         return [
             UsdValidation.ValidationError(
                 finding.name,
-                UsdValidation.ValidationErrorType.Error,
+                UsdValidation.ValidationErrorType.Warn if is_warning else UsdValidation.ValidationErrorType.Error,
                 [UsdValidation.ValidationErrorSite(finding.site.GetStage(), finding.site.GetPath())],
                 finding.message,
             )

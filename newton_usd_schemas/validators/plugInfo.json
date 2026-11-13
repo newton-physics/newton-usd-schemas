@@ -16,6 +16,11 @@
                         "keywords": ["AttributeLimits"],
                         "isTimeDependent": true
                     },
+                    "KaminoSccSolverValidator": {
+                        "doc": "Warn when NewtonKaminoSccSceneAPI is applied but the unauthored newton:kamino:dynamicsSolver does not resolve to scc. List the SCC API first or author the solver choice explicitly.",
+                        "keywords": ["NewtonKamino", "NewtonKaminoSccSceneAPI"],
+                        "schemaTypes": ["NewtonPhysicsKaminoSccSceneAPI"]
+                    },
                     "MimicJointValidator": {
                         "doc": "newton:mimicJoint must target exactly one other joint, of the same joint type as the follower.",
                         "keywords": ["NewtonJoints", "NewtonMimicAPI"],

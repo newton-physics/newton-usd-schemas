@@ -139,6 +139,31 @@ class TestNewtonKaminoSccSceneAPI(unittest.TestCase):
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), True)
 
+    def test_warmstarting(self):
+        """Select the source of cached constraint impulses with the runtime default."""
+        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:warmstarting"))
+
+        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
+        attr = self.scene.GetAttribute("newton:kamino:scc:warmstarting")
+        self.assertIsNotNone(attr)
+        self.assertEqual(attr.GetTypeName(), Sdf.ValueTypeNames.Token)
+        self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "containers")
+        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"none", "internal", "containers"})
+
+        self.assertTrue(attr.Set("none"))
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "none")
+        self.assertTrue(attr.Set("internal"))
+        self.assertEqual(attr.Get(), "internal")
+        self.assertTrue(attr.Set("containers"))
+        self.assertEqual(attr.Get(), "containers")
+
+        attr.Clear()
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "containers")
+
     def test_bilateral_numerical_solver(self):
         """Select the concrete bilateral solver while preserving blocked LLT by default."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:bilateral:numericalSolver"))
