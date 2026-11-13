@@ -101,6 +101,21 @@ class TestKaminoSccSolverValidator(ValidatorTestCase):
             self.prim.GetAttribute("newton:kamino:dynamicsSolver").Set("padmm")
         self.assertEqual(self.validate(self.prim), [])
 
+    def test_time_sample_does_not_mask_default_conflict(self):
+        """Report the wrong uniform default even when a solver time sample is authored."""
+        attr = self.apply_base_first()
+        attr.Set("scc", 1.0)
+        self.assertTrue(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "padmm")
+        self.assertEqual(self.validate(self.prim), [(ERROR, attr.GetPath())])
+
+    def test_authored_default_with_time_sample(self):
+        """Respect an explicit default solver choice when time samples also exist."""
+        attr = self.apply_base_first()
+        attr.Set("padmm")
+        attr.Set("scc", 1.0)
+        self.assertEqual(self.validate(self.prim), [])
+
     def test_blocked_choice(self):
         """Report a blocked solver value that cannot select SCC."""
         self.prim.ApplyAPI("NewtonKaminoSccSceneAPI")
@@ -162,12 +177,185 @@ class TestKaminoSccSolverValidator(ValidatorTestCase):
     @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
     def test_fixer_preserves_later_authored_choice(self):
         """Decline a stale warning after the user authors a solver choice."""
-        attr = self.apply_base_first()
+        with tempfile.TemporaryDirectory() as directory:
+            stage = Usd.Stage.CreateNew((pathlib.Path(directory) / "scene.usda").as_posix())
+            prim = UsdPhysics.Scene.Define(stage, "/Scene").GetPrim()
+            attr = self.apply_base_first(prim)
+            (finding,) = self.validator.Validate(prim)
+            (fixer,) = finding.GetFixersByErrorName()
+            attr.Set("padmm")
+            self.assertFalse(fixer.CanApplyFix(finding, stage.GetEditTarget()))
+            self.assertFalse(fixer.ApplyFix(finding, stage.GetEditTarget()))
+            self.assertEqual(attr.Get(), "padmm")
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
+    def test_fixer_declines_read_only_target(self):
+        """Decline a target layer that cannot be edited."""
+        with tempfile.TemporaryDirectory() as directory:
+            stage = Usd.Stage.CreateNew((pathlib.Path(directory) / "scene.usda").as_posix())
+            prim = UsdPhysics.Scene.Define(stage, "/Scene").GetPrim()
+            attr = self.apply_base_first(prim)
+            (finding,) = self.validator.Validate(prim)
+            (fixer,) = finding.GetFixersByErrorName()
+            stage.GetRootLayer().SetPermissionToEdit(False)
+            self.assertFalse(fixer.CanApplyFix(finding, stage.GetEditTarget()))
+            self.assertEqual(attr.Get(), "padmm")
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
+    def test_fixer_declines_unsaveable_target(self):
+        """Decline a layer that the native fixer cannot save."""
+        self.apply_base_first()
         (finding,) = self.validator.Validate(self.prim)
         (fixer,) = finding.GetFixersByErrorName()
-        attr.Set("padmm")
         self.assertFalse(fixer.CanApplyFix(finding, self.stage.GetEditTarget()))
-        self.assertEqual(attr.Get(), "padmm")
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
+    def test_fixer_declines_weaker_target_below_block(self):
+        """Avoid reporting success for a layer shadowed by a stronger value block."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            stage = Usd.Stage.CreateNew((root / "scene.usda").as_posix())
+            prim = UsdPhysics.Scene.Define(stage, "/Scene").GetPrim()
+            attr = self.apply_base_first(prim)
+            target = Sdf.Layer.CreateNew((root / "settings.usda").as_posix())
+            stage.GetRootLayer().subLayerPaths.append(target.identifier)
+            attr.Block()
+            stage.GetRootLayer().Save()
+            (finding,) = self.validator.Validate(prim)
+            (fixer,) = finding.GetFixersByErrorName()
+            self.assertFalse(fixer.CanApplyFix(finding, Usd.EditTarget(target)))
+            self.assertFalse(fixer.ApplyFix(finding, Usd.EditTarget(target)))
+            self.assertIsNone(target.GetPrimAtPath(prim.GetPath()))
+            self.assertIsNone(attr.Get())
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
+    def test_fixer_replaces_block_in_target(self):
+        """Replace a solver value block when the edit target owns it."""
+        with tempfile.TemporaryDirectory() as directory:
+            stage = Usd.Stage.CreateNew((pathlib.Path(directory) / "scene.usda").as_posix())
+            prim = UsdPhysics.Scene.Define(stage, "/Scene").GetPrim()
+            attr = self.apply_base_first(prim)
+            attr.Block()
+            (finding,) = self.validator.Validate(prim)
+            (fixer,) = finding.GetFixersByErrorName()
+            self.assertTrue(fixer.CanApplyFix(finding, stage.GetEditTarget()))
+            self.assertTrue(fixer.ApplyFix(finding, stage.GetEditTarget()))
+            self.assertEqual(attr.Get(), "scc")
+            self.assertEqual(self.validator.Validate(prim), [])
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
+    def test_fixer_overrides_weaker_block(self):
+        """Override a block in a weaker layer without modifying that layer."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            stage = Usd.Stage.CreateNew((root / "scene.usda").as_posix())
+            prim = UsdPhysics.Scene.Define(stage, "/Scene").GetPrim()
+            attr = self.apply_base_first(prim)
+            weak = Sdf.Layer.CreateNew((root / "settings.usda").as_posix())
+            stage.GetRootLayer().subLayerPaths.append(weak.identifier)
+            with Usd.EditContext(stage, weak):
+                attr.Block()
+            weak.Save()
+            (finding,) = self.validator.Validate(prim)
+            (fixer,) = finding.GetFixersByErrorName()
+            self.assertTrue(fixer.CanApplyFix(finding, stage.GetEditTarget()))
+            self.assertTrue(fixer.ApplyFix(finding, stage.GetEditTarget()))
+            self.assertEqual(attr.Get(), "scc")
+            self.assertIsInstance(weak.GetAttributeAtPath(attr.GetPath()).default, Sdf.ValueBlock)
+            self.assertFalse(weak.dirty)
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
+    def test_fixer_declines_layer_outside_stage(self):
+        """Decline an edit layer that is not part of the stage."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            stage = Usd.Stage.CreateNew((root / "scene.usda").as_posix())
+            prim = UsdPhysics.Scene.Define(stage, "/Scene").GetPrim()
+            self.apply_base_first(prim)
+            unrelated = Sdf.Layer.CreateNew((root / "unrelated.usda").as_posix())
+            (finding,) = self.validator.Validate(prim)
+            (fixer,) = finding.GetFixersByErrorName()
+            self.assertFalse(fixer.CanApplyFix(finding, Usd.EditTarget(unrelated)))
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
+    def test_fixer_authors_through_reference_mapping(self):
+        """Honor the supplied edit target's mapping into a referenced asset."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            asset = Usd.Stage.CreateNew((root / "asset.usda").as_posix())
+            asset_prim = UsdPhysics.Scene.Define(asset, "/Asset").GetPrim()
+            self.apply_base_first(asset_prim)
+            asset.GetRootLayer().Save()
+            stage = Usd.Stage.CreateNew((root / "scene.usda").as_posix())
+            prim = stage.DefinePrim("/Scene")
+            prim.GetReferences().AddReference(asset.GetRootLayer().identifier, "/Asset")
+            node = prim.GetPrimIndex().rootNode.children[0]
+            target = Usd.EditTarget(asset.GetRootLayer(), node)
+            (finding,) = self.validator.Validate(prim)
+            (fixer,) = finding.GetFixersByErrorName()
+            self.assertTrue(fixer.CanApplyFix(finding, target))
+            self.assertTrue(fixer.ApplyFix(finding, target))
+            self.assertEqual(asset_prim.GetAttribute("newton:kamino:dynamicsSolver").Get(), "scc")
+            self.assertEqual(self.validator.Validate(prim), [])
+            self.assertFalse(asset.GetRootLayer().dirty)
+            self.assertIsNone(stage.GetRootLayer().GetAttributeAtPath("/Scene.newton:kamino:dynamicsSolver"))
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
+    def test_fixer_declines_instance_proxy(self):
+        """Decline a scene inside an instance where properties cannot be authored."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            asset = Usd.Stage.CreateNew((root / "asset.usda").as_posix())
+            asset.DefinePrim("/Asset", "Xform")
+            self.apply_base_first(UsdPhysics.Scene.Define(asset, "/Asset/Scene").GetPrim())
+            asset.GetRootLayer().Save()
+            stage = Usd.Stage.CreateNew((root / "scene.usda").as_posix())
+            instance = stage.DefinePrim("/Instance", "Xform")
+            instance.GetReferences().AddReference(asset.GetRootLayer().identifier, "/Asset")
+            instance.SetInstanceable(True)
+            prim = stage.GetPrimAtPath("/Instance/Scene")
+            self.assertTrue(prim.IsInstanceProxy())
+            (finding,) = self.validator.Validate(prim)
+            (fixer,) = finding.GetFixersByErrorName()
+            self.assertFalse(fixer.CanApplyFix(finding, stage.GetEditTarget()))
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
+    def test_fixer_declines_inactive_variant(self):
+        """Decline a variant edit target that cannot change the validated scene."""
+        with tempfile.TemporaryDirectory() as directory:
+            stage = Usd.Stage.CreateNew((pathlib.Path(directory) / "scene.usda").as_posix())
+            prim = UsdPhysics.Scene.Define(stage, "/Scene").GetPrim()
+            attr = self.apply_base_first(prim)
+            variants = prim.GetVariantSets().AddVariantSet("mode")
+            variants.AddVariant("selected")
+            variants.AddVariant("other")
+            variants.SetVariantSelection("selected")
+            target = Usd.EditTarget.ForLocalDirectVariant(stage.GetRootLayer(), Sdf.Path("/Scene{mode=other}"))
+            (finding,) = self.validator.Validate(prim)
+            (fixer,) = finding.GetFixersByErrorName()
+            self.assertFalse(fixer.CanApplyFix(finding, target))
+            self.assertFalse(fixer.ApplyFix(finding, target))
+            self.assertEqual(attr.Get(), "padmm")
+            self.assertIsNone(stage.GetRootLayer().GetAttributeAtPath(target.MapToSpecPath(attr.GetPath())))
+
+    @unittest.skipUnless(SUPPORTS_PYTHON_FIXERS, "Python fixers require OpenUSD 26.11 or newer")
+    def test_fixer_authors_selected_variant(self):
+        """Author into an active variant using the supplied edit target."""
+        with tempfile.TemporaryDirectory() as directory:
+            stage = Usd.Stage.CreateNew((pathlib.Path(directory) / "scene.usda").as_posix())
+            prim = UsdPhysics.Scene.Define(stage, "/Scene").GetPrim()
+            attr = self.apply_base_first(prim)
+            variants = prim.GetVariantSets().AddVariantSet("mode")
+            variants.AddVariant("selected")
+            variants.SetVariantSelection("selected")
+            target = variants.GetVariantEditTarget()
+            (finding,) = self.validator.Validate(prim)
+            (fixer,) = finding.GetFixersByErrorName()
+            self.assertTrue(fixer.CanApplyFix(finding, target))
+            self.assertTrue(fixer.ApplyFix(finding, target))
+            self.assertEqual(attr.Get(), "scc")
+            self.assertEqual(stage.GetRootLayer().GetAttributeAtPath(target.MapToSpecPath(attr.GetPath())).default, "scc")
+            self.assertFalse(stage.GetRootLayer().dirty)
 
 
 if __name__ == "__main__":

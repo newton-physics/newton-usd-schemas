@@ -17,7 +17,7 @@
                         "isTimeDependent": true
                     },
                     "KaminoSccSolverValidator": {
-                        "doc": "Warn when NewtonKaminoSccSceneAPI is applied but the unauthored newton:kamino:dynamicsSolver does not resolve to scc. List the SCC API first or author the solver choice explicitly.",
+                        "doc": "Warn when NewtonKaminoSccSceneAPI is applied but newton:kamino:dynamicsSolver has no authored default and does not resolve to scc. List the SCC API first or author the default solver choice explicitly.",
                         "keywords": ["NewtonKamino", "NewtonKaminoSccSceneAPI"],
                         "schemaTypes": ["NewtonPhysicsKaminoSccSceneAPI"]
                     },

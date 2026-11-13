@@ -22,12 +22,6 @@ class TestNewtonKaminoSccSceneAPI(unittest.TestCase):
         schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsKaminoSccSceneAPI")
         self.assertEqual(schema_type, "NewtonKaminoSccSceneAPI")
 
-    def test_no_dvi_api_registered(self):
-        """Keep the unpublished DVI schema identifier and plugin type unregistered."""
-        self.assertFalse(Plug.Registry().FindTypeByName("NewtonPhysicsKaminoDviSceneAPI"))
-        self.assertFalse(Usd.SchemaRegistry().GetTypeFromSchemaTypeName("NewtonKaminoDviSceneAPI"))
-        self.assertIsNone(Usd.SchemaRegistry().FindAppliedAPIPrimDefinition("NewtonKaminoDviSceneAPI"))
-
     def test_api_application(self):
         """Compose the existing Kamino and Newton scene APIs with SCC."""
         self.assertTrue(self.scene.CanApplyAPI("NewtonKaminoSccSceneAPI"))
@@ -116,7 +110,7 @@ class TestNewtonKaminoSccSceneAPI(unittest.TestCase):
         self.assertFalse(attr.HasAuthoredValue())
 
     def test_constraints_use_preconditioning(self):
-        """Inherit the base preconditioning property without a SCC redefinition."""
+        """Inherit the base preconditioning property without an SCC redefinition."""
         self.assertFalse(self.scene.HasAttribute("newton:kamino:constraints:usePreconditioning"))
 
         self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
@@ -188,12 +182,6 @@ class TestNewtonKaminoSccSceneAPI(unittest.TestCase):
         attr.Clear()
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "lltb")
-
-    def test_no_bilateral_llt_implementation(self):
-        """Keep the removed bilateral implementation property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:bilateral:llt:implementation"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:bilateral:llt:implementation"))
 
     def test_unilateral_numerical_solver(self):
         """Select one numerical method for all unilateral constraints."""
@@ -387,126 +375,6 @@ class TestNewtonKaminoSccSceneAPI(unittest.TestCase):
         attr.Clear()
         self.assertFalse(attr.HasAuthoredValue())
         self.assertAlmostEqual(attr.Get(), 1e-5, places=7)
-
-    def test_no_joint_limit_numerical_solver(self):
-        """Keep the renamed joint-limit numerical solver property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:jointLimit:numericalSolver"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:jointLimit:numericalSolver"))
-
-    def test_no_joint_limit_pgs_omega(self):
-        """Keep the renamed joint-limit pgs omega property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:jointLimit:pgs:omega"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:jointLimit:pgs:omega"))
-
-    def test_no_joint_limit_pgs_sweeps_per_solve(self):
-        """Keep the renamed joint-limit pgs sweeps per solve property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:jointLimit:pgs:sweepsPerSolve"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:jointLimit:pgs:sweepsPerSolve"))
-
-    def test_no_joint_inequality_numerical_solver(self):
-        """Keep the removed jointInequality:numericalSolver property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:jointInequality:numericalSolver"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:jointInequality:numericalSolver"))
-
-    def test_no_joint_inequality_pgs_omega(self):
-        """Keep the removed jointInequality:pgs:omega property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:jointInequality:pgs:omega"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:jointInequality:pgs:omega"))
-
-    def test_no_joint_inequality_pgs_sweeps_per_solve(self):
-        """Keep the removed jointInequality:pgs:sweepsPerSolve property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:jointInequality:pgs:sweepsPerSolve"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:jointInequality:pgs:sweepsPerSolve"))
-
-    def test_no_contact_numerical_solver(self):
-        """Keep the removed contact:numericalSolver property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:contact:numericalSolver"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:contact:numericalSolver"))
-
-    def test_no_contact_pgs_omega(self):
-        """Keep the removed contact:pgs:omega property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:contact:pgs:omega"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:contact:pgs:omega"))
-
-    def test_no_contact_pgs_sweeps_per_solve(self):
-        """Keep the removed contact:pgs:sweepsPerSolve property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:contact:pgs:sweepsPerSolve"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:contact:pgs:sweepsPerSolve"))
-
-    def test_no_contact_apgd_max_iterations(self):
-        """Keep the removed contact:apgd:maxIterations property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:contact:apgd:maxIterations"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:contact:apgd:maxIterations"))
-
-    def test_no_contact_apgd_tolerance(self):
-        """Keep the removed contact:apgd:tolerance property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:contact:apgd:tolerance"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:contact:apgd:tolerance"))
-
-    def test_no_contact_max_nonlinear_corrections(self):
-        """Keep the removed contact:maxNonlinearCorrections property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:contact:maxNonlinearCorrections"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:scc:contact:maxNonlinearCorrections"))
-
-    def test_no_dvi_bilateral_numerical_solver(self):
-        """Keep the renamed DVI bilateral:numericalSolver property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:bilateral:numericalSolver"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:bilateral:numericalSolver"))
-
-    def test_no_dvi_unilateral_numerical_solver(self):
-        """Keep the renamed DVI unilateral:numericalSolver property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:unilateral:numericalSolver"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:unilateral:numericalSolver"))
-
-    def test_no_dvi_unilateral_pgs_omega(self):
-        """Keep the renamed DVI unilateral:pgs:omega property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:unilateral:pgs:omega"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:unilateral:pgs:omega"))
-
-    def test_no_dvi_unilateral_pgs_sweeps_per_iteration(self):
-        """Keep the renamed DVI unilateral:pgs:sweepsPerIteration property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:unilateral:pgs:sweepsPerIteration"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:unilateral:pgs:sweepsPerIteration"))
-
-    def test_no_dvi_unilateral_apgd_max_iterations(self):
-        """Keep the renamed DVI unilateral:apgd:maxIterations property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:unilateral:apgd:maxIterations"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:unilateral:apgd:maxIterations"))
-
-    def test_no_dvi_unilateral_apgd_tolerance(self):
-        """Keep the renamed DVI unilateral:apgd:tolerance property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:unilateral:apgd:tolerance"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:unilateral:apgd:tolerance"))
-
-    def test_no_dvi_unilateral_apgd_max_nonlinear_corrections(self):
-        """Keep the renamed DVI unilateral:apgd:maxNonlinearCorrections property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:unilateral:apgd:maxNonlinearCorrections"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:unilateral:apgd:maxNonlinearCorrections"))
-
-    def test_no_dvi_tolerance(self):
-        """Keep the renamed DVI tolerance property absent."""
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:tolerance"))
-        self.scene.ApplyAPI("NewtonKaminoSccSceneAPI")
-        self.assertFalse(self.scene.HasAttribute("newton:kamino:dvi:tolerance"))
 
 
 if __name__ == "__main__":

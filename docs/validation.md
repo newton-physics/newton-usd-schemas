@@ -27,7 +27,9 @@ for error in errors:
 
 The validators report incompatible content as errors, and deprecated content that still works as warnings. `NewtonValidators` selects all of the validators. To run a subset, use the keyword for a topic, such as `NewtonJoints`, or the name of the schema a validator checks, such as `NewtonMimicAPI`. Schemas that build on some of the Newton schemas can use the schema names to select only the validators for the schemas they use.
 
-For Kamino scenes, `KaminoSccSolverValidator` warns when `NewtonKaminoSccSceneAPI` is applied but an unauthored `newton:kamino:dynamicsSolver` does not resolve to `"scc"`. List the SCC API first, omit the redundant base Kamino API, or explicitly author the solver choice. The `SelectKaminoSccSolver` fixer authors `"scc"` in the chosen edit layer. Explicitly authored solver choices are respected. Select this validator with the `NewtonKamino` or `NewtonKaminoSccSceneAPI` keyword.
+For Kamino scenes, `KaminoSccSolverValidator` warns when `NewtonKaminoSccSceneAPI` is applied but `newton:kamino:dynamicsSolver` has no authored default and does not resolve to `"scc"`. List the SCC API first, omit the redundant base Kamino API, or explicitly author the solver choice. Explicitly authored default choices are respected. Solver selection is uniform; time samples do not supply a default choice. Select this validator with the `NewtonKamino` or `NewtonKaminoSccSceneAPI` keyword.
+
+The `SelectKaminoSccSolver` fixer authors `"scc"` in the chosen edit layer. It is offered only when that layer can be edited, saved, and override the current value. A layer below a stronger value block cannot fix the selection.
 
 To run a single validator, load it by name:
 
