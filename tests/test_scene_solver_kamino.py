@@ -259,10 +259,10 @@ class TestNewtonKaminoSceneAPI(unittest.TestCase):
         self.assertFalse(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), "padmm")
 
-        self.assertTrue(attr.Set("dvi"))
+        self.assertTrue(attr.Set("scc"))
         self.assertTrue(attr.HasAuthoredValue())
-        self.assertEqual(attr.Get(), "dvi")
-        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"padmm", "dvi"})
+        self.assertEqual(attr.Get(), "scc")
+        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"padmm", "scc"})
 
         self.assertTrue(attr.Set("padmm"))
         self.assertTrue(attr.HasAuthoredValue())

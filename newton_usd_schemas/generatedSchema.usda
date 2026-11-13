@@ -193,12 +193,12 @@ class "NewtonKaminoSceneAPI" (
 )
 {
     uniform token newton:kamino:dynamicsSolver = "padmm" (
-        allowedTokens = ["padmm", "dvi"]
+        allowedTokens = ["padmm", "scc"]
         doc = """Forward dynamics solver used by Kamino.
 
         Options:
         - "padmm": Proximal ADMM constraint solver.
-        - "dvi": Discrete variational inequality solver."""
+        - "scc": Split Constraint Coupling solver."""
     )
 
     uniform float newton:kamino:padmm:primalTolerance = 1e-6 (
@@ -279,7 +279,7 @@ class "NewtonKaminoSceneAPI" (
         can lead to solver robustness for very ill-conditioned systems. It may however slow down
         convergence for well-conditioned systems.
 
-        The DVI solver always disables preconditioning and ignores this attribute.
+        The SCC solver always disables preconditioning and ignores this attribute.
         """
     )
 
@@ -513,18 +513,18 @@ class "NewtonKaminoSceneAPI" (
     )
 }
 
-class "NewtonKaminoDviSceneAPI" (
+class "NewtonKaminoSccSceneAPI" (
     apiSchemas = ["NewtonKaminoSceneAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["newton:kamino:dynamicsSolver"]
     }
-    doc = """Provides Newton's Kamino DVI solver configuration.
+    doc = """Provides Newton's Kamino Split Constraint Coupling (SCC) solver configuration.
 
     Applying this schema also applies `NewtonKaminoSceneAPI` and `NewtonSceneAPI`.
-    Applying this schema makes DVI the default dynamics solver. An explicitly
+    Applying this schema makes SCC the default dynamics solver. An explicitly
     authored `newton:kamino:dynamicsSolver` value takes precedence over this default.
     There is no need to list `NewtonKaminoSceneAPI` separately. If both APIs are
-    listed explicitly, list `NewtonKaminoDviSceneAPI` first for its default to apply.
+    listed explicitly, list `NewtonKaminoSccSceneAPI` first for its default to apply.
 
     Joint limits, joint friction, bounded drive efforts, and contacts share one
     unilateral numerical solver and its parameters. Bilateral joint constraints use
@@ -535,9 +535,9 @@ class "NewtonKaminoDviSceneAPI" (
     its default `-1` selects the engine default of 24 iterations."""
 )
 {
-    uniform token newton:kamino:dynamicsSolver = "dvi"
+    uniform token newton:kamino:dynamicsSolver = "scc"
 
-    uniform token newton:kamino:dvi:bilateral:numericalSolver = "lltb" (
+    uniform token newton:kamino:scc:bilateral:numericalSolver = "lltb" (
         allowedTokens = ["lltb", "lltbrcm"]
         doc = """Numerical solver used for bilateral joint constraints.
 
@@ -549,7 +549,7 @@ class "NewtonKaminoDviSceneAPI" (
         can accelerate large sparse articulated systems."""
     )
 
-    uniform token newton:kamino:dvi:unilateral:numericalSolver = "pgs" (
+    uniform token newton:kamino:scc:unilateral:numericalSolver = "pgs" (
         allowedTokens = ["pgs", "apgd"]
         doc = """Numerical method shared by all unilateral constraints.
 
@@ -561,10 +561,10 @@ class "NewtonKaminoDviSceneAPI" (
         - "apgd": Accelerated projected gradient descent."""
     )
 
-    uniform float newton:kamino:dvi:unilateral:pgs:omega = 1.0 (
+    uniform float newton:kamino:scc:unilateral:pgs:omega = 1.0 (
         doc = """Relaxation factor applied to all projected Gauss-Seidel unilateral updates.
 
-        Used when `newton:kamino:dvi:unilateral:numericalSolver` is "pgs".
+        Used when `newton:kamino:scc:unilateral:numericalSolver` is "pgs".
 
         Range: (0, 2]
         Units: dimensionless"""
@@ -576,12 +576,12 @@ class "NewtonKaminoDviSceneAPI" (
         }
     )
 
-    uniform int newton:kamino:dvi:unilateral:pgs:sweepsPerIteration = 2 (
+    uniform int newton:kamino:scc:unilateral:pgs:sweepsPerIteration = 2 (
         doc = """Number of projected Gauss-Seidel sweeps for all unilateral constraints
-        during each alternating DVI iteration.
+        during each alternating SCC iteration.
 
         Contacts use graph-colored sweeps on CUDA. Used when
-        `newton:kamino:dvi:unilateral:numericalSolver` is "pgs".
+        `newton:kamino:scc:unilateral:numericalSolver` is "pgs".
 
         Range: [1, inf)
         Units: dimensionless"""
@@ -592,14 +592,14 @@ class "NewtonKaminoDviSceneAPI" (
         }
     )
 
-    uniform int newton:kamino:dvi:unilateral:apgd:maxIterations = 64 (
+    uniform int newton:kamino:scc:unilateral:apgd:maxIterations = 64 (
         doc = """Maximum accepted APGD steps per frozen-correction quadratic solve.
 
-        Used when `newton:kamino:dvi:unilateral:numericalSolver` is "apgd".
+        Used when `newton:kamino:scc:unilateral:numericalSolver` is "apgd".
         The inner solve stops early when its residual satisfies
-        `newton:kamino:dvi:unilateral:apgd:tolerance`. This budget is separate from the
+        `newton:kamino:scc:unilateral:apgd:tolerance`. This budget is separate from the
         nonlinear correction budget in
-        `newton:kamino:dvi:unilateral:apgd:maxNonlinearCorrections`.
+        `newton:kamino:scc:unilateral:apgd:maxNonlinearCorrections`.
 
         Range: [1, inf)
         Units: dimensionless"""
@@ -610,14 +610,14 @@ class "NewtonKaminoDviSceneAPI" (
         }
     )
 
-    uniform float newton:kamino:dvi:unilateral:apgd:tolerance = 1e-5 (
+    uniform float newton:kamino:scc:unilateral:apgd:tolerance = 1e-5 (
         doc = """Absolute infinity-norm tolerance on inner and nonlinear natural-map residuals.
 
-        Used when `newton:kamino:dvi:unilateral:numericalSolver` is "apgd".
+        Used when `newton:kamino:scc:unilateral:numericalSolver` is "apgd".
         The inner residual uses a frozen friction correction. The nonlinear residual
         recomputes the correction at the accepted impulse after relaxation. Both use
         a unit projection step, independent of the APGD step size and contact count.
-        Full-system convergence checks use `newton:kamino:dvi:tolerance`.
+        Full-system convergence checks use `newton:kamino:scc:tolerance`.
 
         Range: [0, inf)"""
         limits = {
@@ -627,14 +627,14 @@ class "NewtonKaminoDviSceneAPI" (
         }
     )
 
-    uniform int newton:kamino:dvi:unilateral:apgd:maxNonlinearCorrections = 1 (
+    uniform int newton:kamino:scc:unilateral:apgd:maxNonlinearCorrections = 1 (
         doc = """Maximum De Saxce fixed-point corrections per unilateral APGD phase.
 
-        Used when `newton:kamino:dvi:unilateral:numericalSolver` is "apgd".
+        Used when `newton:kamino:scc:unilateral:numericalSolver` is "apgd".
         Each correction freezes the nonlinear friction term for one APGD solve.
-        Increasing `newton:kamino:dvi:unilateral:apgd:maxIterations` alone cannot resolve
+        Increasing `newton:kamino:scc:unilateral:apgd:maxIterations` alone cannot resolve
         a stale correction. The correction loop stops early when its fresh residual
-        satisfies `newton:kamino:dvi:unilateral:apgd:tolerance`. Budget exhaustion returns
+        satisfies `newton:kamino:scc:unilateral:apgd:tolerance`. Budget exhaustion returns
         the last accepted impulses, which may remain unconverged.
 
         Range: [1, inf)
@@ -646,12 +646,12 @@ class "NewtonKaminoDviSceneAPI" (
         }
     )
 
-    uniform float newton:kamino:dvi:tolerance = 1e-5 (
+    uniform float newton:kamino:scc:tolerance = 1e-5 (
         doc = """Convergence tolerance on the projected update size.
 
         This tolerance also controls full-system feasibility, bilateral velocity,
         and complementarity checks. The APGD natural-map tolerance is configured
-        separately through `newton:kamino:dvi:unilateral:apgd:tolerance`.
+        separately through `newton:kamino:scc:unilateral:apgd:tolerance`.
 
         Range: [0, inf)"""
         limits = {
