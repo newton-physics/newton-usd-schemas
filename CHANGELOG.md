@@ -6,8 +6,22 @@
   - Applying `NewtonKaminoSccSceneAPI` implicitly applies `NewtonKaminoSceneAPI` and `NewtonSceneAPI` as well
   - Defaults `newton:kamino:dynamicsSolver` to `"scc"`; authored values and earlier explicitly applied APIs take precedence
 - Added dynamics backend selection, recovery times and speed caps, and contact and joint-limit compliance controls to `NewtonKaminoSceneAPI`
+
+# 0.7.0
+
+## Features
+
+- Added automated validation for a subset of the Newton schemas
+  - `NewtonSDFCollisionAPI`: `newton:sdfMaxResolution` must be divisible by 8. A fix rounds it to the nearest multiple of 8.
+  - `NewtonMimicAPI`: `newton:mimicJoint` must target exactly one other joint, of the same joint type as the follower, unless the mimic is disabled
+  - Any schema: authored values must lie within their attribute's hard limits. A value equal to the schema fallback is accepted even outside the hard limits, so sentinels such as `-inf` for `newton:contactGap` remain valid. Soft limits are not validated.
+  - The validators are available through `UsdValidation` after importing `newton_usd_schemas.validators`, which requires OpenUSD 26.05 or newer, and 26.11 or newer for the fix. Importing `newton_usd_schemas` alone still only registers the schemas.
+  - See [Validation](https://github.com/newton-physics/newton-usd-schemas/blob/main/docs/validation.md) for details
 - Added the `usd` and `usdex` extras, which install `usd-core` or `usd-exchange` respectively as the OpenUSD runtime
   - The extras are optional, and should not be combined. Any other OpenUSD runtime can still be installed separately.
+- Added support for Python 3.14, and removed the upper bound on the Python version
+  - On Python 3.14, the `usd` extra installs `usd-core` 26.11 or newer, the first release with Python 3.14 wheels on all platforms.
+  - The `usdex` extra fails to install on Python 3.14 and newer, and the `usd` extra on Python 3.15 and newer, until `usd-exchange` and `usd-core` support them. Any other OpenUSD runtime that supports them can still be installed separately.
 
 # 0.6.0
 
