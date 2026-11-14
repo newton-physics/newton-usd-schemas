@@ -16,6 +16,11 @@
                         "keywords": ["AttributeLimits"],
                         "isTimeDependent": true
                     },
+                    "KaminoSccSolverValidator": {
+                        "doc": "With NewtonKaminoSccSceneAPI, newton:kamino:dynamicsSolver must resolve to scc unless a default solver choice is explicitly authored. List the SCC API first or author the default solver choice explicitly.",
+                        "keywords": ["NewtonKamino", "NewtonKaminoSccSceneAPI"],
+                        "schemaTypes": ["NewtonPhysicsKaminoSccSceneAPI"]
+                    },
                     "MimicJointValidator": {
                         "doc": "newton:mimicJoint must target exactly one other joint, of the same joint type as the follower.",
                         "keywords": ["NewtonJoints", "NewtonMimicAPI"],
