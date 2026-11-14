@@ -521,10 +521,12 @@ class "NewtonKaminoSccSceneAPI" (
     doc = """Provides Newton's Kamino Split Constraint Coupling (SCC) solver configuration.
 
     Applying this schema also applies `NewtonKaminoSceneAPI` and `NewtonSceneAPI`.
-    Applying this schema makes SCC the default dynamics solver. An explicitly
-    authored `newton:kamino:dynamicsSolver` value takes precedence over this default.
+    This schema supplies "scc" as the default for `newton:kamino:dynamicsSolver`;
+    it does not author that attribute. An explicitly authored value takes precedence.
     There is no need to list `NewtonKaminoSceneAPI` separately. If both APIs are
     listed explicitly, list `NewtonKaminoSccSceneAPI` first for its default to apply.
+    To select SCC independently of API ordering, explicitly author
+    `newton:kamino:dynamicsSolver = "scc"`.
 
     Joint limits, joint friction, bounded drive efforts, and contacts share one
     unilateral numerical solver and its parameters. Bilateral joint constraints use

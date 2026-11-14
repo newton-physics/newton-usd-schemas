@@ -112,7 +112,7 @@ class TestValidatorMetadata(ValidatorTestCase):
         self.assertFalse(metadata.isTimeDependent)
 
     def test_kamino_scc_solver(self):
-        """Register metadata for the SCC solver selection warning."""
+        """Register metadata for the SCC solver selection requirement."""
         metadata = self.metadata(validators.KAMINO_SCC_SOLVER_VALIDATOR)
         self.assertEqual(metadata.name, "newton_usd_schemas.validators:KaminoSccSolverValidator")
         self.assertTrue(metadata.doc)

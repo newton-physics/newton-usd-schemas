@@ -6,8 +6,7 @@
   - Applying `NewtonKaminoSccSceneAPI` implicitly applies `NewtonKaminoSceneAPI` and `NewtonSceneAPI` as well
   - Defaults `newton:kamino:dynamicsSolver` to `"scc"`; authored values and earlier explicitly applied APIs take precedence
 - Added dynamics solver selection, recovery times and speed caps, and contact and joint-limit compliance controls to `NewtonKaminoSceneAPI`
-- Added a validator that warns when API ordering prevents `NewtonKaminoSccSceneAPI` from selecting SCC
-  - A fix authors `newton:kamino:dynamicsSolver = "scc"` in the selected edit layer
+- Added a validator that reports an error when API ordering prevents `NewtonKaminoSccSceneAPI` from selecting SCC
 
 # 0.7.0
 
