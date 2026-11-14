@@ -1854,3 +1854,294 @@ class NewtonPositionBasedClampingAPI "NewtonPositionBasedClampingAPI" (
         Units: force or torque"""
     )
 }
+
+class NewtonTendon "NewtonTendon" (
+    doc = """A massless tendon with an open, ordered route.
+
+    The guides relationship defines the route. Each guide carries its own
+    parameters and references a frame for placement.
+    See docs/tendons.md for authoring examples and units.
+    """
+)
+{
+    rel newton:tendon:guides (
+        doc = """Ordered relationship to at least two distinct NewtonTendonGuide prims.
+
+        Each target must have this tendon as its nearest NewtonTendon ancestor
+        and appear once in the list. Intermediate grouping prims are allowed.
+        Multiple guides may reference the same frame, allowing the route to
+        visit a physical guide more than once.
+        """
+    )
+
+    rel physics:simulationOwner (
+        doc = """PhysicsScene containing this tendon.
+
+        When specified, the single target must match the scene of every attached
+        body. Otherwise, the tendon belongs to their common scene. A tendon with
+        only world-attached guides uses the sole scene in the stage; if several
+        scenes exist, an explicit target is required.
+        """
+    )
+}
+
+class NewtonTendonGuide "NewtonTendonGuide" (
+    doc = """A guide along a tendon route.
+
+    Apply exactly one of NewtonTendonAnchorAPI, NewtonTendonPinholeAPI, or
+    NewtonTendonRollerAPI to select guide behavior.
+    Rollers also require a profile API, such as NewtonRollerCircleAPI.
+    Every guide except the first requires NewtonTendonSpanAPI for its incoming
+    span. The frame relationship supplies placement and body attachment.
+    """
+)
+{
+    rel newton:tendon:frame (
+        doc = """Required relationship to exactly one UsdGeomXformable prim.
+
+        The target can be an Xform or a site. Its origin is the guide point or
+        roller center. Its local XY plane contains the roller profile, with +Z
+        as the normal.
+
+        The composed world transform places the origin. For rollers, normalize
+        its axes to obtain the orientation; they must be finite,
+        nonzero, mutually perpendicular, and right-handed. Frame scale does not
+        multiply profile dimensions, which are authored in stage distance units.
+
+        The guide is attached to the nearest PhysicsRigidBodyAPI prim on the
+        target's ancestor chain, including the target itself. With no such prim,
+        the guide is world-attached.
+        """
+    )
+}
+
+class NewtonTendonAnchorAPI "NewtonTendonAnchorAPI" (
+    doc = """Fix the cable at the referenced frame's origin.
+
+    The tendon cannot slide through an anchor. An anchor between two spans
+    fixes the end of each span at the same point.
+    """
+)
+{
+}
+
+class NewtonTendonPinholeAPI "NewtonTendonPinholeAPI" (
+    doc = """Route a tendon through the referenced frame's origin.
+
+    The tendon can slide through this point. Friction depends on the bend angle
+    between the adjacent spans.
+    """
+)
+{
+    uniform float newton:tendon:friction = 0 (
+        doc = """Capstan friction coefficient at the pinhole.
+
+        The capstan condition is T_high <= exp(friction * bendAngle) * T_low,
+        where T_high and T_low are the larger and smaller adjacent tensions,
+        and bendAngle is in radians. Zero allows frictionless sliding.
+
+        Range: [0, inf), finite
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
+class NewtonTendonRollerAPI "NewtonTendonRollerAPI" (
+    doc = """Route a tendon tangentially around a 2D roller profile.
+
+    Apply one profile API to define its shape, such as NewtonRollerCircleAPI
+    for a circle.
+    """
+)
+{
+    uniform float newton:tendon:friction = 0 (
+        doc = """Capstan friction coefficient at the roller.
+
+        The capstan condition is T_high <= exp(friction * wrapAngle) * T_low,
+        where T_high and T_low are the larger and smaller adjacent tensions,
+        and wrapAngle is in radians. Zero allows frictionless sliding.
+
+        Range: [0, inf), finite
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform int newton:tendon:winding = 1 (
+        doc = """Direction in which the route wraps around the roller.
+
+        Following the guide order and looking from the frame's +Z side toward
+        the origin, +1 means counterclockwise and -1 means clockwise.
+        These are the only valid values.
+
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = -1
+                int maximum = 1
+            }
+        }
+    )
+
+    uniform bool newton:tendon:dynamic = false (
+        doc = """Allow the tendon to detach from this roller and reattach later.
+
+        While detached, the tendon passes directly between the neighboring
+        active guides.
+        """
+    )
+}
+
+class NewtonRollerCircleAPI "NewtonRollerCircleAPI" (
+    doc = """A circular roller profile centered at the frame's origin in its XY plane.
+
+    Apply together with NewtonTendonRollerAPI.
+    """
+)
+{
+    uniform float newton:roller:radius (
+        doc = """Roller radius. An explicit value is required.
+
+        Range: (0, inf), finite
+        Units: distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
+class NewtonTendonSpanAPI "NewtonTendonSpanAPI" (
+    doc = """Material properties of a guide's incoming straight span.
+
+    The span runs from the preceding guide to this guide in route order.
+    Apply to every guide except the first.
+    """
+)
+{
+    uniform float newton:tendon:span:restLength = -1 (
+        doc = """Initial rest length of the incoming straight span.
+
+        A negative value denotes the length measured from the initial geometry.
+        A nonnegative value specifies the unstretched length. A value shorter
+        than the initial span length preloads the tendon. Wrapped arcs are
+        excluded from this length.
+
+        Units: distance (except the negative automatic sentinel)"""
+        limits = {
+            dictionary soft = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:tendon:span:compliance = 0 (
+        doc = """Incoming span compliance, the reciprocal of axial spring stiffness.
+
+        Zero denotes an inextensible span.
+
+        Range: [0, inf), finite
+        Units: second * second / mass"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:tendon:span:damping = 0 (
+        doc = """Incoming span axial damping coefficient.
+
+        Range: [0, inf), finite
+        Units: mass / second"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
+class NewtonTendonSceneAPI "NewtonTendonSceneAPI" (
+    apiSchemas = ["NewtonSceneAPI"]
+    doc = """Material-solve and reattachment settings for NewtonTendon prims in a PhysicsScene.
+
+    Apply alongside NewtonXpbdSceneAPI or NewtonVbdSceneAPI.
+    """
+)
+{
+    uniform token newton:tendon:materialSolver = "sweeps" (
+        allowedTokens = ["sweeps"]
+        doc = """Material-transfer method. The sweeps method updates adjacent spans
+        in sequence to satisfy friction at each guide."""
+    )
+
+    uniform int newton:tendon:maxSweeps = 256 (
+        doc = """Maximum number of material sweeps per solver iteration.
+
+        Range: [1, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                int minimum = 1
+            }
+        }
+    )
+
+    uniform float newton:tendon:settleTolerance = 0.001 (
+        doc = """Permitted friction-balance error relative to the larger adjacent tension.
+
+        After each sweep, every active pinhole or roller is checked against
+        settleAbsoluteTolerance + settleTolerance * max(T_left, T_right).
+        T_left and T_right are its adjacent span tensions. Zero disables
+        early stopping, including the absolute tolerance.
+
+        Range: [0, inf), finite
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:tendon:settleAbsoluteTolerance = 0.000001 (
+        doc = """Absolute part of the friction-balance tolerance.
+
+        Ignored when settleTolerance is zero. See settleTolerance for the
+        combined relative and absolute convergence criterion.
+
+        Range: [0, inf), finite
+        Units: mass * distance / (second * second)"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    uniform float newton:tendon:activationTolerance = 0.002 (
+        doc = """Required penetration before a detached roller reattaches, divided by
+        its radius.
+
+        Zero permits reattachment at contact. Larger values require the tendon
+        to penetrate farther into the circular profile before reattaching.
+
+        Range: [0, 1)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+                float maximum = 1
+            }
+        }
+    )
+}

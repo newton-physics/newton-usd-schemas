@@ -44,6 +44,8 @@ stage.Export("/tmp/my_robot.usda")  # or .usdc or .usd
 
 Once a USD layer is authored to storage, it can be loaded into a Newton runtime using [Newton's USD Parsing](https://newton-physics.github.io/newton/concepts/usd_parsing.html) mechanism.
 
+See [Native routed tendons](docs/tendons.md) for tendon authoring.
+
 # Validation
 
 Some of the Newton schemas have automated validation, which can be run with OpenUSD's [UsdValidation](https://openusd.org/release/api/usd_validation_page_front.html) framework. More of the schemas will gain validation as they evolve.
