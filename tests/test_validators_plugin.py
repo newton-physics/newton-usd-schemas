@@ -111,6 +111,15 @@ class TestValidatorMetadata(ValidatorTestCase):
         self.assertEqual(list(metadata.GetSchemaTypes()), ["NewtonPhysicsMimicAPI"])
         self.assertFalse(metadata.isTimeDependent)
 
+    def test_kamino_scc_solver(self):
+        """Register metadata for the SCC solver selection requirement."""
+        metadata = self.metadata(validators.KAMINO_SCC_SOLVER_VALIDATOR)
+        self.assertEqual(metadata.name, "newton_usd_schemas.validators:KaminoSccSolverValidator")
+        self.assertTrue(metadata.doc)
+        self.assertEqual(sorted(metadata.GetKeywords()), ["NewtonKamino", "NewtonKaminoSccSceneAPI", "NewtonValidators"])
+        self.assertEqual(list(metadata.GetSchemaTypes()), ["NewtonPhysicsKaminoSccSceneAPI"])
+        self.assertFalse(metadata.isTimeDependent)
+
     def test_attribute_hard_limits(self):
         metadata = self.metadata(validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR)
         self.assertEqual(metadata.name, "newton_usd_schemas.validators:AttributeHardLimitsValidator")
@@ -144,6 +153,7 @@ class TestValidatorKeywords(ValidatorTestCase):
         expected = sorted(
             [
                 validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR,
+                validators.KAMINO_SCC_SOLVER_VALIDATOR,
                 validators.MIMIC_JOINT_VALIDATOR,
                 validators.RENAMED_API_SCHEMAS_VALIDATOR,
                 validators.RENAMED_ATTRIBUTES_VALIDATOR,
@@ -166,6 +176,14 @@ class TestValidatorKeywords(ValidatorTestCase):
 
     def test_newton_mimic_api(self):
         self.assertEqual(self.names("NewtonMimicAPI"), [validators.MIMIC_JOINT_VALIDATOR])
+
+    def test_newton_kamino(self):
+        """Select the SCC validator through the Kamino topic keyword."""
+        self.assertEqual(self.names("NewtonKamino"), [validators.KAMINO_SCC_SOLVER_VALIDATOR])
+
+    def test_newton_kamino_scc_scene_api(self):
+        """Select the SCC validator through its schema keyword."""
+        self.assertEqual(self.names("NewtonKaminoSccSceneAPI"), [validators.KAMINO_SCC_SOLVER_VALIDATOR])
 
     def test_newton_migration(self):
         self.assertEqual(self.names("NewtonMigration"), sorted([validators.RENAMED_API_SCHEMAS_VALIDATOR, validators.RENAMED_ATTRIBUTES_VALIDATOR]))
