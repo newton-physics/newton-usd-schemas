@@ -1,3 +1,9 @@
+# Unreleased
+
+## Features
+
+- Added `newton:deterministic` to `NewtonSceneAPI`, which requests a reproducibility guarantee (`inherit`, `notGuaranteed`, `runToRun` or `gpuToGpu`) for the solver kernels
+
 # 0.5.0
 
 ## Features

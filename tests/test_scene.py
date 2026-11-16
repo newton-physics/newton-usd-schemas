@@ -89,6 +89,20 @@ class TestNewtonSceneAPI(unittest.TestCase):
         self.assertTrue(attr.HasAuthoredValue())
         self.assertEqual(attr.Get(), False)
 
+    def test_deterministic(self):
+        self.assertFalse(self.scene.HasAttribute("newton:deterministic"))
+
+        self.scene.ApplyAPI("NewtonSceneAPI")
+        attr = self.scene.GetAttribute("newton:deterministic")
+        self.assertIsNotNone(attr)
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "inherit")
+
+        for token in ("notGuaranteed", "runToRun", "gpuToGpu"):
+            self.assertTrue(attr.Set(token))
+            self.assertTrue(attr.HasAuthoredValue())
+            self.assertEqual(attr.Get(), token)
+
 
 if __name__ == "__main__":
     unittest.main()
