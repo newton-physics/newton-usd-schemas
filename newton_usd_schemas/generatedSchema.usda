@@ -39,6 +39,17 @@ class NewtonSceneAPI "NewtonSceneAPI" (
         to allow temporary disabling of gravity without modifying & caching values.
         """
     )
+    uniform token newton:deterministic = "inherit" (
+        allowedTokens = ["inherit", "notGuaranteed", "runToRun", "gpuToGpu"]
+        doc = """Reproducibility guarantee requested for the solver kernels.
+
+        - `inherit`: use the simulator's global setting.
+        - `notGuaranteed`: results may differ between runs (fastest).
+        - `runToRun`: repeated runs on the same GPU produce identical results.
+        - `gpuToGpu`: results are identical across runs and across GPUs.
+
+        Stricter modes may reduce performance. Solvers that have no such setting ignore this attribute."""
+    )
 }
 
 class "NewtonXpbdSceneAPI" (
