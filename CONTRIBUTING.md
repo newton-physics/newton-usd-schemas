@@ -157,6 +157,8 @@ The validators in `newton_usd_schemas/validators` check content against requirem
 4. To add a fixer, pass a list of `UsdValidation.ValidationFixer`s as the third argument of `register_prim_validator`, built only when `SUPPORTS_PYTHON_FIXERS` is true, since Python fixers require OpenUSD 26.11 or newer. Its `errorName` must match the findings it fixes, and it must author in the edit target it is given. See `_collision.py` for an example.
 5. Add a changelog entry under `## Features` that states the requirement.
 
+`docs/validation.md` describes how to run the validators, not what each one checks, so a new validator does not usually change it: its `doc` in `plugInfo.json` and its changelog entry describe its requirement. Update `docs/validation.md` only when a change affects how all of the validators are run or selected, such as a new OpenUSD version requirement or a new kind of keyword.
+
 ### Renames and Deprecations
 
 Rename a property or schema by deprecating the old name first, keeping it defined until a later release removes it, and add a validator so existing content can be migrated. While the old name is still defined, the validator reports content that uses it as a warning. Once the old name is removed, the validator reports it as an error, since the content's values are then ignored.
