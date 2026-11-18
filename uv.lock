@@ -326,14 +326,17 @@ usd = [
 usdex = [
     { name = "usd-exchange" },
 ]
+validation = [
+    { name = "usd-validation-nvidia" },
+]
 
 [package.dev-dependencies]
 dev = [
     { name = "black" },
     { name = "coverage" },
-    { name = "newton-usd-schemas" },
     { name = "newton-usd-schemas", extra = ["usd"], marker = "python_full_version >= '3.14' or platform_machine != 'aarch64'" },
     { name = "newton-usd-schemas", extra = ["usdex"], marker = "python_full_version < '3.14' and platform_machine == 'aarch64'" },
+    { name = "newton-usd-schemas", extra = ["validation"] },
     { name = "poethepoet" },
     { name = "ruff" },
     { name = "unittest-xml-reporting" },
@@ -344,8 +347,9 @@ requires-dist = [
     { name = "usd-core", marker = "python_full_version >= '3.14' and extra == 'usd'", specifier = ">=26.11" },
     { name = "usd-core", marker = "python_full_version < '3.14' and extra == 'usd'", specifier = ">=25.5" },
     { name = "usd-exchange", marker = "extra == 'usdex'", specifier = ">=3.0.1" },
+    { name = "usd-validation-nvidia", marker = "extra == 'validation'", specifier = ">=1.22" },
 ]
-provides-extras = ["usd", "usdex"]
+provides-extras = ["usd", "usdex", "validation"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -353,6 +357,7 @@ dev = [
     { name = "coverage", specifier = ">=7.4" },
     { name = "newton-usd-schemas", extras = ["usd"], marker = "python_full_version >= '3.14' or platform_machine != 'aarch64'" },
     { name = "newton-usd-schemas", extras = ["usdex"], marker = "python_full_version < '3.14' and platform_machine == 'aarch64'" },
+    { name = "newton-usd-schemas", extras = ["validation"] },
     { name = "poethepoet", specifier = ">=0.34" },
     { name = "ruff", specifier = ">=0.11" },
     { name = "unittest-xml-reporting", specifier = ">=3.2.0" },
@@ -682,4 +687,12 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/17/3c/ccdb6812c15776b0902172b8cfd0f853647197501bfc1dd5c8c87f2083f6/usd_exchange-3.0.1-cp313-cp313-manylinux_2_34_aarch64.whl", hash = "sha256:330806db3fb147026bc278645718c9efc890a469eaf813ce235405d6fa1d2d9e", size = 25808381, upload-time = "2026-10-07T14:47:25.163Z" },
     { url = "https://files.pythonhosted.org/packages/df/d2/888352ccc69fa0e1177028534f3534668f5578fa7f14bb4478c0e46f15c6/usd_exchange-3.0.1-cp313-cp313-manylinux_2_34_x86_64.whl", hash = "sha256:3f4e5d5ba41b8487eeebd3b04140f1738ce88bbc2cfa7626bf5c2cac33148315", size = 26577031, upload-time = "2026-10-07T14:47:50.94Z" },
     { url = "https://files.pythonhosted.org/packages/ba/86/deb2eadd1a37306fb52cd40a63dd8a62428576603e6f7bff3c764b1fea87/usd_exchange-3.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:fc388ebba8e2fc9414fa1d0d06656df8cc29ff9dcacace92c24d3cdfe7098fbc", size = 16031823, upload-time = "2026-10-07T14:48:15.167Z" },
+]
+
+[[package]]
+name = "usd-validation-nvidia"
+version = "1.23.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/9e/371538c3f16b6c9913e9bad96b8614081dd568c21457d6ee06d1f02bbd5d/usd_validation_nvidia-1.23.0-py3-none-any.whl", hash = "sha256:42b10d1221e0bb07854bbb98f0dc4e79084bb274e36f550524abcda9c7a48970", size = 363379, upload-time = "2026-10-27T18:17:43.714Z" },
 ]

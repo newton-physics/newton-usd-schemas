@@ -10,6 +10,12 @@
 - Added validators that report and migrate content which uses renamed attributes or API schemas
   - Renamed attributes should be authored with their new names, such as `newton:masses` rather than `physics:masses` on `NewtonPointsDeformableSimAPI`. Deprecated names are reported as warnings, and removed names as errors. A fix moves their values to the new names.
   - Renamed API schemas should be applied with their new names. Deprecated names are reported as warnings, and removed names as errors. A fix replaces the old names with the new ones.
+- Added the `validation` extra, which makes the validators available as `usd-validation-nvidia` rules, including their fixes, with every OpenUSD version the schemas support
+  - See [Validation](https://github.com/newton-physics/newton-usd-schemas/blob/main/docs/validation.md) for details
+
+## Documentation
+
+- Clarified that the validators check content against the requirements of the Newton USD schemas, and not whether it simulates accurately
 
 ## Breaking Changes
 

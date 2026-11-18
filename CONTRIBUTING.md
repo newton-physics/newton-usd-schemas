@@ -86,7 +86,7 @@ uv run --group dev poe lint
 uv run --group dev poe test
 ```
 
-The `dev` group includes an OpenUSD runtime, through the extras defined in `pyproject.toml`.
+The `dev` group includes an OpenUSD runtime and `usd-validation-nvidia`, through the extras defined in `pyproject.toml`.
 
 ### Development Requirements
 
@@ -143,7 +143,9 @@ Reviewers must confirm that the tests in a PR meet this bar by comparing them ag
 
 ## Validators
 
-The validators in `newton_usd_schemas/validators` check content against requirements of the Newton schemas that OpenUSD cannot express in the schema itself, such as an attribute value that must be divisible by 8, or a relationship that must target a particular kind of prim. Add a validator when the schema documents a requirement, and Newton rejects or misinterprets content that breaks it. Requirements that are not specific to Newton, such as hard limits, should also be proposed to OpenUSD.
+The validators in `newton_usd_schemas/validators` check content against requirements of the Newton USD schemas that OpenUSD cannot express in the schema itself, such as an attribute value that must be divisible by 8, or a relationship that must target a particular kind of prim. Add a validator when the schema documents a requirement, and Newton rejects or misinterprets content that breaks it. Requirements that are not specific to Newton, such as hard limits, should also be proposed to OpenUSD.
+
+Passing the validators means content meets these requirements, not that it simulates accurately. A validator's `doc`, messages, and changelog entry state the requirement it checks, and do not describe content as physically valid, accurate, or simulation ready.
 
 ### Adding a Validator
 
@@ -155,7 +157,8 @@ The validators in `newton_usd_schemas/validators` check content against requirem
    - `schemaTypes`: for a validator of a single API schema, its TfType name, such as `NewtonPhysicsMimicAPI`, so that it only runs on prims with that schema. OpenUSD ignores schema identifiers, such as `NewtonMimicAPI`, here.
    - `isTimeDependent`: `true` if the check validates values at the times in its `time_range`, such as time-sampled attribute values. When `UsdValidation` validates a list of time codes, it runs time dependent validators once for each, and other validators once with the whole time range. A check that is not time dependent can still read time samples to decide whether a requirement applies, as the mimic validator does with `newton:mimicEnabled`.
 4. To add a fixer, pass a list of `UsdValidation.ValidationFixer`s as the third argument of `register_prim_validator`, built only when `SUPPORTS_PYTHON_FIXERS` is true, since Python fixers require OpenUSD 26.11 or newer. Its `errorName` must match the findings it fixes, and it must author in the edit target it is given. See `_collision.py` for an example.
-5. Add a changelog entry under `## Features` that states the requirement.
+5. Wrap the validator as a usd-validation-nvidia rule in `validators/_usd_validation_nvidia.py`: subclass `_NewtonRule`, set `check = staticmethod(check_<name>)`, return `<NAME>_VALIDATOR` from `validator_name`, and add the rule to `Plugin.rules` with its category. The category is the topic keyword, or `Basic` for a requirement that is not specific to Newton. usd-validation-nvidia does not convert `UsdValidation` fixers, so a rule for a validator with a fixer also defines a `fix` that applies the same fix, called with the stage and the site of the issue, and a `fix_message` that describes it, as `SdfMaxResolutionChecker` does. The fix authors in the stage's edit target, and raises an exception if it cannot fix the issue there.
+6. Add a changelog entry under `## Features` that states the requirement.
 
 `docs/validation.md` describes how to run the validators, not what each one checks, so a new validator does not usually change it: its `doc` in `plugInfo.json` and its changelog entry describe its requirement. Update `docs/validation.md` only when a change affects how all of the validators are run or selected, such as a new OpenUSD version requirement or a new kind of keyword.
 
@@ -179,4 +182,4 @@ Test each validator in its own `tests/test_validator_<name>.py`, using `Validato
 - Selection by each of its keywords.
 - The fixer, if any, on a file backed stage, since applying a fixer saves the edit target layer. Skip these tests when `SUPPORTS_PYTHON_FIXERS` is false.
 
-Also add the validator to the metadata and keyword tests in `tests/test_validators_plugin.py`.
+Also add the validator to the metadata and keyword tests in `tests/test_validators_plugin.py`, and its rule to `tests/test_usd_validation_nvidia_plugin.py` and to the rule tests in `tests/test_usd_validation_nvidia_rules.py`. The plugin tests check that every validator in `validators/plugInfo.json` has a rule. The rule tests run each rule both with the `UsdValidation` validator and with the Python fallback, and cover its issue, its category and its fix.
