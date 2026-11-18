@@ -1,6 +1,8 @@
 # Validation
 
-Only the Newton schemas can declare what Newton requires of the content that uses them, so they provide their own validators for OpenUSD's [UsdValidation](https://openusd.org/release/api/usd_validation_page_front.html) framework, starting with a subset of the schemas. Each validator's `doc` metadata describes what it checks.
+Only the Newton USD schemas can declare what Newton requires of the content that uses them, so they provide their own validators for OpenUSD's [UsdValidation](https://openusd.org/release/api/usd_validation_page_front.html) framework, starting with a subset of the schemas. Each validator's `doc` metadata describes what it checks.
+
+The validators check that content meets the requirements of the Newton USD schemas. They do not run a simulation, so they cannot tell whether a model simulates accurately, or matches the physical system it represents.
 
 ## OpenUSD versions
 
@@ -25,7 +27,7 @@ for error in errors:
     print(error.GetErrorAsString())
 ```
 
-The validators report incompatible content as errors, and deprecated content that still works as warnings. `NewtonValidators` selects all of the validators. To run a subset, use the keyword for a topic, such as `NewtonJoints`, or the name of the schema a validator checks, such as `NewtonMimicAPI`. Schemas that build on some of the Newton schemas can use the schema names to select only the validators for the schemas they use.
+The validators report incompatible content as errors, and deprecated content that still works as warnings. `NewtonValidators` selects all of the validators. To run a subset, use the keyword for a topic, such as `NewtonJoints`, or the name of the schema a validator checks, such as `NewtonMimicAPI`. For example, a project whose own schemas build on `NewtonMimicAPI` and `NewtonSDFCollisionAPI` can select those two keywords to run only the validators for the Newton USD schemas it uses.
 
 To run a single validator, load it by name:
 
