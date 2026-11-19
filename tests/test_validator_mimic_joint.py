@@ -96,6 +96,49 @@ class TestMimicJointValidator(ValidatorTestCase):
         self.rel.SetTargets([leader.GetPath()])
         self.assertEqual(self.validate(self.follower), [("MimicJointTypeMismatch", self.rel.GetPath())])
 
+    def mimic(self, joint_type, name: str) -> Usd.Prim:
+        """Define a leader and a mimicking follower of the joint type, and return the follower."""
+        leader = joint_type.Define(self.stage, f"/{name}Leader").GetPrim()
+        follower = joint_type.Define(self.stage, f"/{name}Follower").GetPrim()
+        follower.ApplyAPI("NewtonMimicAPI")
+        follower.GetRelationship("newton:mimicJoint").SetTargets([leader.GetPath()])
+        return follower
+
+    def test_spherical_follower(self):
+        """Warn about a spherical follower, which is not a single-DOF joint."""
+        follower = self.mimic(UsdPhysics.SphericalJoint, "Spherical")
+        self.assertEqual(self.validate(follower), [("MimicJointNotSingleDOF", follower.GetPath())])
+        self.assertEqual(self.validate_severities(follower), [("MimicJointNotSingleDOF", "Warn")])
+
+    def test_generic_follower(self):
+        follower = self.mimic(UsdPhysics.Joint, "Generic")
+        self.assertEqual(self.validate(follower), [("MimicJointNotSingleDOF", follower.GetPath())])
+
+    def test_generic_follower_locked_to_one_axis(self):
+        """Warn about a generic follower even when its limits leave a single free axis, as Newton does."""
+        follower = self.mimic(UsdPhysics.Joint, "Locked")
+        for axis in ("transX", "transY", "transZ", "rotX", "rotY"):
+            limit = UsdPhysics.LimitAPI.Apply(follower, axis)
+            limit.CreateLowAttr(1.0)
+            limit.CreateHighAttr(-1.0)
+        self.assertEqual(self.validate(follower), [("MimicJointNotSingleDOF", follower.GetPath())])
+
+    def test_fixed_follower(self):
+        follower = self.mimic(UsdPhysics.FixedJoint, "Fixed")
+        self.assertEqual(self.validate(follower), [("MimicJointNotSingleDOF", follower.GetPath())])
+
+    def test_multi_dof_follower_with_invalid_target(self):
+        """Report both a multi-DOF follower and its invalid target."""
+        follower = UsdPhysics.SphericalJoint.Define(self.stage, "/SphericalFollower").GetPrim()
+        follower.ApplyAPI("NewtonMimicAPI")
+        rel = follower.GetRelationship("newton:mimicJoint")
+        self.assertEqual(self.validate(follower), [("MimicJointNotSingleDOF", follower.GetPath()), ("MimicJointTargetCount", rel.GetPath())])
+
+    def test_disabled_multi_dof_follower_is_not_validated(self):
+        follower = self.mimic(UsdPhysics.SphericalJoint, "Spherical")
+        follower.GetAttribute("newton:mimicEnabled").Set(False)
+        self.assertEqual(self.validate(follower), [])
+
     def test_requires_api(self):
         joint = UsdPhysics.RevoluteJoint.Define(self.stage, "/NotMimic").GetPrim()
         joint.CreateRelationship("newton:mimicJoint", custom=False)
