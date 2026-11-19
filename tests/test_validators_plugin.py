@@ -120,6 +120,14 @@ class TestValidatorMetadata(ValidatorTestCase):
         self.assertEqual(list(metadata.GetSchemaTypes()), ["NewtonPhysicsKaminoSccSceneAPI"])
         self.assertFalse(metadata.isTimeDependent)
 
+    def test_api_schema_applicability(self):
+        metadata = self.metadata(validators.API_SCHEMA_APPLICABILITY_VALIDATOR)
+        self.assertEqual(metadata.name, "newton_usd_schemas.validators:APISchemaApplicabilityValidator")
+        self.assertTrue(metadata.doc)
+        self.assertEqual(sorted(metadata.GetKeywords()), ["APISchemaApplicability", "NewtonValidators", "SchemaMetadata"])
+        self.assertEqual(list(metadata.GetSchemaTypes()), [])
+        self.assertFalse(metadata.isTimeDependent)
+
     def test_attribute_allowed_tokens(self):
         metadata = self.metadata(validators.ATTRIBUTE_ALLOWED_TOKENS_VALIDATOR)
         self.assertEqual(metadata.name, "newton_usd_schemas.validators:AttributeAllowedTokensValidator")
@@ -160,6 +168,7 @@ class TestValidatorKeywords(ValidatorTestCase):
     def test_newton_validators(self):
         expected = sorted(
             [
+                validators.API_SCHEMA_APPLICABILITY_VALIDATOR,
                 validators.ATTRIBUTE_ALLOWED_TOKENS_VALIDATOR,
                 validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR,
                 validators.KAMINO_SCC_SOLVER_VALIDATOR,
@@ -177,6 +186,9 @@ class TestValidatorKeywords(ValidatorTestCase):
     def test_newton_joints(self):
         self.assertEqual(self.names("NewtonJoints"), [validators.MIMIC_JOINT_VALIDATOR])
 
+    def test_api_schema_applicability(self):
+        self.assertEqual(self.names("APISchemaApplicability"), [validators.API_SCHEMA_APPLICABILITY_VALIDATOR])
+
     def test_attribute_allowed_tokens(self):
         self.assertEqual(self.names("AttributeAllowedTokens"), [validators.ATTRIBUTE_ALLOWED_TOKENS_VALIDATOR])
 
@@ -185,7 +197,13 @@ class TestValidatorKeywords(ValidatorTestCase):
 
     def test_schema_metadata(self):
         """Select the generic validators of schema metadata together."""
-        expected = sorted([validators.ATTRIBUTE_ALLOWED_TOKENS_VALIDATOR, validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR])
+        expected = sorted(
+            [
+                validators.API_SCHEMA_APPLICABILITY_VALIDATOR,
+                validators.ATTRIBUTE_ALLOWED_TOKENS_VALIDATOR,
+                validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR,
+            ]
+        )
         self.assertEqual(self.names("SchemaMetadata"), expected)
 
     def test_newton_sdf_collision_api(self):

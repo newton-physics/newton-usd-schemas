@@ -11,6 +11,10 @@
                         "keywords": ["NewtonCollision", "NewtonSDFCollisionAPI"],
                         "schemaTypes": ["NewtonPhysicsSDFCollisionAPI"]
                     },
+                    "APISchemaApplicabilityValidator": {
+                        "doc": "API schemas authored on a prim must be applicable to it: a prim must be of a type, or have an API schema applied, that the schema can only be applied to, and a multiple-apply schema's instance name must be one it allows. Schemas that are not registered applied API schemas are not validated.",
+                        "keywords": ["APISchemaApplicability", "SchemaMetadata"]
+                    },
                     "AttributeHardLimitsValidator": {
                         "doc": "Authored attribute values must lie within the attribute's hard limits, unless they equal the attribute's schema fallback value, which may be a sentinel outside the limits (such as -inf).",
                         "keywords": ["AttributeLimits", "SchemaMetadata"],
