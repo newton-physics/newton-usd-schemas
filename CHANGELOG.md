@@ -11,6 +11,10 @@
   - Renamed attributes should be authored with their new names, such as `newton:masses` rather than `physics:masses` on `NewtonPointsDeformableSimAPI`. Deprecated names are reported as warnings, and removed names as errors. A fix moves their values to the new names.
   - Renamed API schemas should be applied with their new names. Deprecated names are reported as warnings, and removed names as errors. A fix replaces the old names with the new ones.
 
+## Documentation
+
+- Clarified that the validators check content against the requirements of the Newton USD schemas, and not whether it simulates accurately
+
 ## Breaking Changes
 
 - Renamed `physics:masses` to `newton:masses` on `NewtonPointsDeformableSimAPI`
