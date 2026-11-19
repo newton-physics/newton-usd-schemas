@@ -129,6 +129,14 @@ class TestValidatorMetadata(ValidatorTestCase):
         self.assertEqual(list(metadata.GetSchemaTypes()), ["NewtonPhysicsKaminoSccSceneAPI"])
         self.assertFalse(metadata.isTimeDependent)
 
+    def test_attribute_allowed_tokens(self):
+        metadata = self.metadata(validators.ATTRIBUTE_ALLOWED_TOKENS_VALIDATOR)
+        self.assertEqual(metadata.name, "newton_usd_schemas.validators:AttributeAllowedTokensValidator")
+        self.assertTrue(metadata.doc)
+        self.assertEqual(sorted(metadata.GetKeywords()), ["AttributeAllowedTokens", "NewtonValidators"])
+        self.assertEqual(list(metadata.GetSchemaTypes()), [])
+        self.assertTrue(metadata.isTimeDependent)
+
     def test_attribute_hard_limits(self):
         metadata = self.metadata(validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR)
         self.assertEqual(metadata.name, "newton_usd_schemas.validators:AttributeHardLimitsValidator")
@@ -161,6 +169,7 @@ class TestValidatorKeywords(ValidatorTestCase):
     def test_newton_validators(self):
         expected = sorted(
             [
+                validators.ATTRIBUTE_ALLOWED_TOKENS_VALIDATOR,
                 validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR,
                 validators.COLLISION_PIPELINE_VALIDATOR,
                 validators.KAMINO_SCC_SOLVER_VALIDATOR,
@@ -181,6 +190,9 @@ class TestValidatorKeywords(ValidatorTestCase):
 
     def test_newton_joints(self):
         self.assertEqual(self.names("NewtonJoints"), [validators.MIMIC_JOINT_VALIDATOR])
+
+    def test_attribute_allowed_tokens(self):
+        self.assertEqual(self.names("AttributeAllowedTokens"), [validators.ATTRIBUTE_ALLOWED_TOKENS_VALIDATOR])
 
     def test_attribute_limits(self):
         self.assertEqual(self.names("AttributeLimits"), [validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR])
