@@ -17,7 +17,8 @@
   - Renamed attributes should be authored with their new names, such as `newton:masses` rather than `physics:masses` on `NewtonPointsDeformableSimAPI`. Deprecated names are reported as warnings, and removed names as errors. A fix moves their values to the new names.
   - Renamed API schemas should be applied with their new names. Deprecated names are reported as warnings, and removed names as errors. A fix replaces the old names with the new ones.
 - `NewtonMimicAPI` should only be applied to a single-DOF joint, a `PhysicsRevoluteJoint` or `PhysicsPrismaticJoint`, as its behavior on other joints is undefined. The validators now report it on other joints as a warning.
-- Added a validator for any schema: authored token and string values, and every element of token and string arrays, must be one of their attribute's `allowedTokens`. A value equal to the schema fallback is accepted even when it is not one of them.
+- Added a validator that reports token and string attribute values that are not one of the attribute's `allowedTokens`, including any element of a token or string array. A value equal to the schema fallback is accepted even when it is not an allowed token.
+  - The new `SchemaMetadata` keyword selects it together with the hard limits validator.
 
 ## Documentation
 

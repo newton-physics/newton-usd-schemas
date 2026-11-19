@@ -133,7 +133,7 @@ class TestValidatorMetadata(ValidatorTestCase):
         metadata = self.metadata(validators.ATTRIBUTE_ALLOWED_TOKENS_VALIDATOR)
         self.assertEqual(metadata.name, "newton_usd_schemas.validators:AttributeAllowedTokensValidator")
         self.assertTrue(metadata.doc)
-        self.assertEqual(sorted(metadata.GetKeywords()), ["AttributeAllowedTokens", "NewtonValidators"])
+        self.assertEqual(sorted(metadata.GetKeywords()), ["AttributeAllowedTokens", "NewtonValidators", "SchemaMetadata"])
         self.assertEqual(list(metadata.GetSchemaTypes()), [])
         self.assertTrue(metadata.isTimeDependent)
 
@@ -141,7 +141,7 @@ class TestValidatorMetadata(ValidatorTestCase):
         metadata = self.metadata(validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR)
         self.assertEqual(metadata.name, "newton_usd_schemas.validators:AttributeHardLimitsValidator")
         self.assertTrue(metadata.doc)
-        self.assertEqual(sorted(metadata.GetKeywords()), ["AttributeLimits", "NewtonValidators"])
+        self.assertEqual(sorted(metadata.GetKeywords()), ["AttributeLimits", "NewtonValidators", "SchemaMetadata"])
         self.assertEqual(list(metadata.GetSchemaTypes()), [])
         self.assertTrue(metadata.isTimeDependent)
 
@@ -196,6 +196,11 @@ class TestValidatorKeywords(ValidatorTestCase):
 
     def test_attribute_limits(self):
         self.assertEqual(self.names("AttributeLimits"), [validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR])
+
+    def test_schema_metadata(self):
+        """Select the generic validators of schema metadata together."""
+        expected = sorted([validators.ATTRIBUTE_ALLOWED_TOKENS_VALIDATOR, validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR])
+        self.assertEqual(self.names("SchemaMetadata"), expected)
 
     def test_newton_sdf_collision_api(self):
         self.assertEqual(self.names("NewtonSDFCollisionAPI"), [validators.SDF_MAX_RESOLUTION_VALIDATOR])
