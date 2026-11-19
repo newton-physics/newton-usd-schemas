@@ -5,11 +5,19 @@ import unittest
 from unittest import mock
 
 from pxr import Sdf, Usd, UsdGeom, UsdPhysics, Vt
-from validator_test_case import ValidatorTestCase, run_python
+from validator_test_case import SUPPORTS_PYTHON_VALIDATORS, ValidatorTestCase, run_python
 
 from newton_usd_schemas import validators
+from newton_usd_schemas.validators._tokens import OPENUSD_ALLOWED_TOKENS_VALIDATOR
 
 ERROR = "AttributeTokenNotAllowed"
+
+if SUPPORTS_PYTHON_VALIDATORS:
+    from pxr import UsdValidation
+
+    HAS_OPENUSD_VALIDATOR = bool(UsdValidation.ValidationRegistry().GetValidatorMetadata(OPENUSD_ALLOWED_TOKENS_VALIDATOR))
+else:
+    HAS_OPENUSD_VALIDATOR = False
 
 
 class TestAttributeAllowedTokensValidator(ValidatorTestCase):
@@ -125,6 +133,7 @@ class TestAttributeAllowedTokensValidator(ValidatorTestCase):
         self.model.Set("hollow")
         self.assertEqual(self.validate_with_keywords("AttributeAllowedTokens"), [ERROR])
 
+    @unittest.skipIf(HAS_OPENUSD_VALIDATOR, "OpenUSD provides the validator, so the other tests already defer to it")
     def test_defers_to_openusd_validator(self):
         result = run_python("""
             from pxr import Sdf, Usd, UsdGeom, UsdValidation
