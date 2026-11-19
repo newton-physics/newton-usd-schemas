@@ -37,6 +37,7 @@ class TestNewtonActuator(unittest.TestCase):
         self.assertEqual(str(targets[0]), "/World/Joint")
 
     def test_battery_relationship(self):
+        self.assertTrue(self.prim.HasRelationship("newton:battery"))
         rel = self.prim.GetRelationship("newton:battery")
         self.assertFalse(rel.HasAuthoredTargets())
         rel.SetTargets([Sdf.Path("/World/Battery")])
@@ -177,6 +178,7 @@ class TestNewtonActuatorInputProcessorBaseAPI(unittest.TestCase):
                 self.assertTrue(prim.HasAPI("NewtonActuatorInputProcessorBaseAPI"))
 
     def test_api_limitations(self):
+        self.assertTrue(self.prim.CanApplyAPI("NewtonActuatorInputProcessorBaseAPI"))
         xform = self.stage.DefinePrim("/NotActuator", "Xform")
         self.assertFalse(xform.CanApplyAPI("NewtonActuatorInputProcessorBaseAPI"))
 
@@ -245,6 +247,7 @@ class TestNewtonActuatorEncoderAPI(unittest.TestCase):
         self.assertFalse(self.prim.HasRelationship("newton:outputJoint"))
 
         self.prim.ApplyAPI("NewtonActuatorEncoderAPI")
+        self.assertTrue(self.prim.HasRelationship("newton:outputJoint"))
         rel = self.prim.GetRelationship("newton:outputJoint")
         self.assertFalse(rel.HasAuthoredTargets())
         rel.SetTargets([Sdf.Path("/World/OutputJoint")])
@@ -253,6 +256,7 @@ class TestNewtonActuatorEncoderAPI(unittest.TestCase):
         self.assertEqual(str(targets[0]), "/World/OutputJoint")
 
     def test_api_limitations(self):
+        self.assertTrue(self.prim.CanApplyAPI("NewtonActuatorEncoderAPI"))
         xform = self.stage.DefinePrim("/NotActuator", "Xform")
         self.assertFalse(xform.CanApplyAPI("NewtonActuatorEncoderAPI"))
 
@@ -344,6 +348,18 @@ class TestNewtonPDControlAPI(unittest.TestCase):
             self.assertAlmostEqual(hard.GetMinimum(), 0.0)
             self.assertIsNone(hard.GetMaximum())
 
+    def test_output_space(self):
+        self.assertFalse(self.prim.HasAttribute("newton:outputSpace"))
+
+        self.prim.ApplyAPI("NewtonPDControlAPI")
+        attr = self.prim.GetAttribute("newton:outputSpace")
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "effort")
+        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"effort", "duty"})
+
+        self.assertTrue(attr.Set("duty"))
+        self.assertEqual(attr.Get(), "duty")
+
 
 class TestNewtonPIDControlAPI(unittest.TestCase):
     def setUp(self):
@@ -431,6 +447,18 @@ class TestNewtonPIDControlAPI(unittest.TestCase):
             self.assertAlmostEqual(hard.GetMinimum(), 0.0)
             self.assertIsNone(hard.GetMaximum())
 
+    def test_output_space(self):
+        self.assertFalse(self.prim.HasAttribute("newton:outputSpace"))
+
+        self.prim.ApplyAPI("NewtonPIDControlAPI")
+        attr = self.prim.GetAttribute("newton:outputSpace")
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "effort")
+        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"effort", "duty"})
+
+        self.assertTrue(attr.Set("duty"))
+        self.assertEqual(attr.Get(), "duty")
+
 
 class TestNewtonNeuralControlAPI(unittest.TestCase):
     def setUp(self):
@@ -463,6 +491,18 @@ class TestNewtonNeuralControlAPI(unittest.TestCase):
     def test_api_limitations(self):
         xform = self.stage.DefinePrim("/NotActuator", "Xform")
         self.assertFalse(xform.CanApplyAPI("NewtonNeuralControlAPI"))
+
+    def test_output_space(self):
+        self.assertFalse(self.prim.HasAttribute("newton:outputSpace"))
+
+        self.prim.ApplyAPI("NewtonNeuralControlAPI")
+        attr = self.prim.GetAttribute("newton:outputSpace")
+        self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.Get(), "effort")
+        self.assertEqual(set(attr.GetMetadata("allowedTokens")), {"effort", "duty"})
+
+        self.assertTrue(attr.Set("duty"))
+        self.assertEqual(attr.Get(), "duty")
 
 
 class TestNewtonActuatorClampingBaseAPI(unittest.TestCase):
@@ -525,6 +565,7 @@ class TestNewtonMaxEffortClampingAPI(unittest.TestCase):
         self.prim.ApplyAPI("NewtonMaxEffortClampingAPI")
         attr = self.prim.GetAttribute("newton:inputSpace")
         self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.GetCustomData(), {})
         self.assertEqual(attr.Get(), "effort")
         self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
         self.assertEqual(attr.GetMetadata("allowedTokens"), ["effort"])
@@ -582,6 +623,7 @@ class TestNewtonDCMotorClampingAPI(unittest.TestCase):
         self.prim.ApplyAPI("NewtonDCMotorClampingAPI")
         attr = self.prim.GetAttribute("newton:inputSpace")
         self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.GetCustomData(), {})
         self.assertEqual(attr.Get(), "effort")
         self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
         self.assertEqual(attr.GetMetadata("allowedTokens"), ["effort"])
@@ -666,6 +708,7 @@ class TestNewtonPositionBasedClampingAPI(unittest.TestCase):
         self.prim.ApplyAPI("NewtonPositionBasedClampingAPI")
         attr = self.prim.GetAttribute("newton:inputSpace")
         self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.GetCustomData(), {})
         self.assertEqual(attr.Get(), "effort")
         self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
         self.assertEqual(attr.GetMetadata("allowedTokens"), ["effort"])
@@ -720,6 +763,7 @@ class TestNewtonCurrentDutyClampingAPI(unittest.TestCase):
         self.prim.ApplyAPI("NewtonCurrentDutyClampingAPI")
         attr = self.prim.GetAttribute("newton:inputSpace")
         self.assertFalse(attr.HasAuthoredValue())
+        self.assertEqual(attr.GetCustomData(), {})
         self.assertEqual(attr.Get(), "duty")
         self.assertEqual(attr.GetVariability(), Sdf.VariabilityUniform)
         self.assertEqual(attr.GetMetadata("allowedTokens"), ["duty"])
@@ -850,6 +894,7 @@ class TestNewtonCurrentDutyClampingAPI(unittest.TestCase):
             self.assertIsNone(hard.GetMaximum())
 
     def test_api_limitations(self):
+        self.assertTrue(self.prim.CanApplyAPI("NewtonCurrentDutyClampingAPI"))
         xform = self.stage.DefinePrim("/NotActuator", "Xform")
         self.assertFalse(xform.CanApplyAPI("NewtonCurrentDutyClampingAPI"))
 
@@ -871,6 +916,7 @@ class TestNewtonActuatorMotorBaseAPI(unittest.TestCase):
         self.assertTrue(self.prim.HasAPI("NewtonActuatorMotorBaseAPI"))
 
     def test_api_limitations(self):
+        self.assertTrue(self.prim.CanApplyAPI("NewtonActuatorMotorBaseAPI"))
         xform = self.stage.DefinePrim("/NotActuator", "Xform")
         self.assertFalse(xform.CanApplyAPI("NewtonActuatorMotorBaseAPI"))
 
@@ -952,6 +998,7 @@ class TestNewtonDCMotorAPI(unittest.TestCase):
             self.assertIsNone(hard.GetMaximum())
 
     def test_api_limitations(self):
+        self.assertTrue(self.prim.CanApplyAPI("NewtonDCMotorAPI"))
         xform = self.stage.DefinePrim("/NotActuator", "Xform")
         self.assertFalse(xform.CanApplyAPI("NewtonDCMotorAPI"))
 
