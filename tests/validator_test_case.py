@@ -39,7 +39,15 @@ class ValidatorTestCase(unittest.TestCase):
 
     def validate(self, prim: Usd.Prim) -> list[tuple[str, Sdf.Path]]:
         """Return the name and site of each error the validator reports for the prim."""
-        return [(error.GetName(), error.GetSites()[0].GetProperty().GetPath()) for error in self.validator.Validate(prim)]
+        results = []
+        for error in self.validator.Validate(prim):
+            site = error.GetSites()[0]
+            results.append((error.GetName(), (site.GetProperty() or site.GetPrim()).GetPath()))
+        return results
+
+    def validate_severities(self, prim: Usd.Prim) -> list[tuple[str, str]]:
+        """Return the name and severity of each error the validator reports for the prim."""
+        return [(error.GetName(), error.GetType().name) for error in self.validator.Validate(prim)]
 
     def validate_with_keywords(self, *keywords: str) -> list[str]:
         """Return the names of the errors reported for the stage by the validators with the keywords."""

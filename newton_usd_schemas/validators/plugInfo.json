@@ -16,10 +16,24 @@
                         "keywords": ["AttributeLimits"],
                         "isTimeDependent": true
                     },
+                    "KaminoSccSolverValidator": {
+                        "doc": "With NewtonKaminoSccSceneAPI, newton:kamino:dynamicsSolver must resolve to scc unless a default solver choice is explicitly authored. List the SCC API first or author the default solver choice explicitly.",
+                        "keywords": ["NewtonKamino", "NewtonKaminoSccSceneAPI"],
+                        "schemaTypes": ["NewtonPhysicsKaminoSccSceneAPI"]
+                    },
                     "MimicJointValidator": {
                         "doc": "newton:mimicJoint must target exactly one other joint, of the same joint type as the follower.",
                         "keywords": ["NewtonJoints", "NewtonMimicAPI"],
                         "schemaTypes": ["NewtonPhysicsMimicAPI"]
+                    },
+                    "RenamedAttributesValidator": {
+                        "doc": "Renamed attributes should be authored with their new names. The fixer moves values from the old names to the new ones.",
+                        "keywords": ["NewtonMigration", "NewtonPointsDeformableSimAPI"],
+                        "schemaTypes": ["NewtonPhysicsPointsDeformableSimAPI"]
+                    },
+                    "RenamedAPISchemasValidator": {
+                        "doc": "Renamed API schemas should be applied with their new names. The fixer replaces the old names with the new ones.",
+                        "keywords": ["NewtonMigration"]
                     }
                 }
             }

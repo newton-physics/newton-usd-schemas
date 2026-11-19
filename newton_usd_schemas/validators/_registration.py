@@ -40,6 +40,8 @@ class Finding(NamedTuple):
     name: str
     site: Usd.Object
     message: str
+    # Conditional, as OpenUSD can be built without UsdValidation, in which case no validators are registered
+    severity: "UsdValidation.ValidationErrorType" = UsdValidation.ValidationErrorType.Error if UsdValidation else None
 
 
 PrimCheck = Callable[[Usd.Prim, TimeRange], list[Finding]]
@@ -57,7 +59,7 @@ def native_prim_task(check: PrimCheck):
         return [
             UsdValidation.ValidationError(
                 finding.name,
-                UsdValidation.ValidationErrorType.Error,
+                finding.severity,
                 [UsdValidation.ValidationErrorSite(finding.site.GetStage(), finding.site.GetPath())],
                 finding.message,
             )

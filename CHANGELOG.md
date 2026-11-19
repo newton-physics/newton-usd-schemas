@@ -2,14 +2,14 @@
 
 ## Features
 
-- Added automated validation for a subset of the Newton schemas
-  - `NewtonSDFCollisionAPI`: `newton:sdfMaxResolution` must be divisible by 8. A fix rounds it to the nearest multiple of 8.
-  - `NewtonMimicAPI`: `newton:mimicJoint` must target exactly one other joint, of the same joint type as the follower, unless the mimic is disabled
-  - Any schema: authored values must lie within their attribute's hard limits. A value equal to the schema fallback is accepted even outside the hard limits, so sentinels such as `-inf` for `newton:contactGap` remain valid. Soft limits are not validated.
-  - The validators are available through `UsdValidation` after importing `newton_usd_schemas.validators`, which requires OpenUSD 26.05 or newer, and 26.11 or newer for the fix. Importing `newton_usd_schemas` alone still only registers the schemas.
-  - See [Validation](https://github.com/newton-physics/newton-usd-schemas/blob/main/docs/validation.md) for details
-- Added the `usd` and `usdex` extras, which install `usd-core` or `usd-exchange` respectively as the OpenUSD runtime
-  - The extras are optional, and should not be combined. Any other OpenUSD runtime can still be installed separately.
+- Added `NewtonKaminoSccSceneAPI`, which extends a `PhysicsScene` with bilateral and shared unilateral SCC solver controls
+  - Applying `NewtonKaminoSccSceneAPI` implicitly applies `NewtonKaminoSceneAPI` and `NewtonSceneAPI` as well
+  - Defaults `newton:kamino:dynamicsSolver` to `"scc"`; authored values and earlier explicitly applied APIs take precedence
+- Added dynamics solver selection, recovery times and speed caps, and contact and joint-limit compliance controls to `NewtonKaminoSceneAPI`
+- Added a validator that reports an error when API ordering prevents `NewtonKaminoSccSceneAPI` from selecting SCC
+- Added validators that report and migrate content which uses renamed attributes or API schemas
+  - Renamed attributes should be authored with their new names, such as `newton:masses` rather than `physics:masses` on `NewtonPointsDeformableSimAPI`. Deprecated names are reported as warnings, and removed names as errors. A fix moves their values to the new names.
+  - Renamed API schemas should be applied with their new names. Deprecated names are reported as warnings, and removed names as errors. A fix replaces the old names with the new ones.
 - Added `NewtonActuatorMotorBaseAPI`, the base of all actuator motors, which turn the motor command into the effort of a motor; at most one motor may be applied to an actuator
 - Added `NewtonDCMotorAPI`, a DC motor driven by an average terminal voltage following the voltage-controlled servo model of [Rhoban/bam](https://github.com/Rhoban/bam), with `newton:kt`, `newton:resistance` and `newton:vin`, which turns the motor command into the effort of a motor
   - With a motor, the control law must output a duty (`newton:outputSpace = "duty"`), and duty clamping such as `NewtonCurrentDutyClampingAPI` bounds that duty. Control laws that output an effort and effort clamping must not be combined with a motor.
@@ -24,6 +24,29 @@
 - Added `NewtonBattery`, an abstract base for batteries shared by the motors of several actuators, and `NewtonConstantResistanceBattery`, an ideal voltage source behind a constant internal resistance with `newton:nominalVoltage`, `newton:resistance` and `newton:minVoltage`
   - Actuators draw from a battery with the new `newton:battery` relationship on `NewtonActuator`.
   - Motors that provide a supply voltage, such as `NewtonDCMotorAPI`, use the battery's voltage instead of `newton:vin`.
+
+## Breaking Changes
+
+- Renamed `physics:masses` to `newton:masses` on `NewtonPointsDeformableSimAPI`
+  - The `physics:` namespace belongs to UsdPhysics and AOUSD, so a Newton schema should not define properties in it.
+  - Assets that author `physics:masses` on prims with `NewtonPointsDeformableSimAPI` should rename the attribute to `newton:masses`. The validators report the old name, and their fix renames it.
+  - Consumers that read `physics:masses` from these prims, such as Newton's USD importer, need a corresponding update to read `newton:masses`.
+
+# 0.7.0
+
+## Features
+
+- Added automated validation for a subset of the Newton schemas
+  - `NewtonSDFCollisionAPI`: `newton:sdfMaxResolution` must be divisible by 8. A fix rounds it to the nearest multiple of 8.
+  - `NewtonMimicAPI`: `newton:mimicJoint` must target exactly one other joint, of the same joint type as the follower, unless the mimic is disabled
+  - Any schema: authored values must lie within their attribute's hard limits. A value equal to the schema fallback is accepted even outside the hard limits, so sentinels such as `-inf` for `newton:contactGap` remain valid. Soft limits are not validated.
+  - The validators are available through `UsdValidation` after importing `newton_usd_schemas.validators`, which requires OpenUSD 26.05 or newer, and 26.11 or newer for the fix. Importing `newton_usd_schemas` alone still only registers the schemas.
+  - See [Validation](https://github.com/newton-physics/newton-usd-schemas/blob/main/docs/validation.md) for details
+- Added the `usd` and `usdex` extras, which install `usd-core` or `usd-exchange` respectively as the OpenUSD runtime
+  - The extras are optional, and should not be combined. Any other OpenUSD runtime can still be installed separately.
+- Added support for Python 3.14, and removed the upper bound on the Python version
+  - On Python 3.14, the `usd` extra installs `usd-core` 26.11 or newer, the first release with Python 3.14 wheels on all platforms.
+  - The `usdex` extra fails to install on Python 3.14 and newer, and the `usd` extra on Python 3.15 and newer, until `usd-exchange` and `usd-core` support them. Any other OpenUSD runtime that supports them can still be installed separately.
 
 # 0.6.0
 
