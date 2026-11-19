@@ -19,6 +19,8 @@
 - `NewtonMimicAPI` should only be applied to a single-DOF joint, a `PhysicsRevoluteJoint` or `PhysicsPrismaticJoint`, as its behavior on other joints is undefined. The validators now report it on other joints as a warning.
 - Added a validator that reports token and string attribute values that are not one of the attribute's `allowedTokens`, including any element of a token or string array. A value equal to the schema fallback is accepted even when it is not an allowed token.
   - The new `SchemaMetadata` keyword selects it together with the hard limits validator.
+- Added a validator that reports API schemas authored on prims they cannot be applied to, such as `NewtonJointAPI` on a prim that is not a `PhysicsJoint`. `ApplyAPI` refuses those prims, but authoring a schema in a prim's `apiSchemas` metadata does not.
+  - The `SchemaMetadata` keyword selects it too.
 
 ## Documentation
 
