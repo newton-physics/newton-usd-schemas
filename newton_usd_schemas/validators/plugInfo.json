@@ -16,6 +16,11 @@
                         "keywords": ["AttributeLimits"],
                         "isTimeDependent": true
                     },
+                    "AttributeAllowedTokensValidator": {
+                        "doc": "Authored token and string attribute values, and every element of token and string arrays, must be one of the attribute's allowedTokens, unless they equal the attribute's schema fallback value, which may be a sentinel that is not one of them.",
+                        "keywords": ["AttributeAllowedTokens"],
+                        "isTimeDependent": true
+                    },
                     "KaminoSccSolverValidator": {
                         "doc": "With NewtonKaminoSccSceneAPI, newton:kamino:dynamicsSolver must resolve to scc unless a default solver choice is explicitly authored. List the SCC API first or author the default solver choice explicitly.",
                         "keywords": ["NewtonKamino", "NewtonKaminoSccSceneAPI"],

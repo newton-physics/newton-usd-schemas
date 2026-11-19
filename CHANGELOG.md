@@ -10,6 +10,7 @@
 - Added validators that report and migrate content which uses renamed attributes or API schemas
   - Renamed attributes should be authored with their new names, such as `newton:masses` rather than `physics:masses` on `NewtonPointsDeformableSimAPI`. Deprecated names are reported as warnings, and removed names as errors. A fix moves their values to the new names.
   - Renamed API schemas should be applied with their new names. Deprecated names are reported as warnings, and removed names as errors. A fix replaces the old names with the new ones.
+- Added a validator for any schema: authored token and string values, and every element of token and string arrays, must be one of their attribute's `allowedTokens`. A value equal to the schema fallback is accepted even when it is not one of them.
 
 ## Breaking Changes
 
