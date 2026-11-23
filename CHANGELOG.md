@@ -11,6 +11,8 @@
   - Applying `NewtonCollisionPipelineAPI` implicitly applies `NewtonSceneAPI` as well
   - The schema is experimental, and its attributes may change without notice
 - Added a validator that reports an error when API ordering prevents `NewtonKaminoSccSceneAPI` from selecting SCC
+- Added a validator that reports an error when `newton:collision:maxTrianglePairs` or `newton:collision:maxShapePairs` is 0, or when `newton:collision:contactReport` is enabled while `newton:collision:contactMatching` is `"disabled"`
+  - A fix sets a capacity of 0 to -1, so the engine chooses it.
 - Added validators that report and migrate content which uses renamed attributes or API schemas
   - Renamed attributes should be authored with their new names, such as `newton:masses` rather than `physics:masses` on `NewtonPointsDeformableSimAPI`. Deprecated names are reported as warnings, and removed names as errors. A fix moves their values to the new names.
   - Renamed API schemas should be applied with their new names. Deprecated names are reported as warnings, and removed names as errors. A fix replaces the old names with the new ones.
