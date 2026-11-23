@@ -7,6 +7,9 @@
   - Applying `NewtonKaminoSccSceneAPI` implicitly applies `NewtonKaminoSceneAPI` and `NewtonSceneAPI` as well
   - Defaults `newton:kamino:dynamicsSolver` to `"scc"`; authored values and earlier explicitly applied APIs take precedence
 - Added dynamics solver selection, recovery times and speed caps, and contact and joint-limit compliance controls to `NewtonKaminoSceneAPI`
+- Added `NewtonCollisionPipelineAPI`, which extends a `PhysicsScene` with Newton collision pipeline settings
+  - Applying `NewtonCollisionPipelineAPI` implicitly applies `NewtonSceneAPI` as well
+  - The schema is experimental, and its attributes may change without notice
 - Added a validator that reports an error when API ordering prevents `NewtonKaminoSccSceneAPI` from selecting SCC
 - Added validators that report and migrate content which uses renamed attributes or API schemas
   - Renamed attributes should be authored with their new names, such as `newton:masses` rather than `physics:masses` on `NewtonPointsDeformableSimAPI`. Deprecated names are reported as warnings, and removed names as errors. A fix moves their values to the new names.
