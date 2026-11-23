@@ -2,6 +2,7 @@
 
 ## Features
 
+- Added `newton:deterministic` to `NewtonSceneAPI`, which requests a reproducibility guarantee (`inherit`, `notGuaranteed`, `runToRun` or `gpuToGpu`) for the solver kernels
 - Added `NewtonKaminoSccSceneAPI`, which extends a `PhysicsScene` with bilateral and shared unilateral SCC solver controls
   - Applying `NewtonKaminoSccSceneAPI` implicitly applies `NewtonKaminoSceneAPI` and `NewtonSceneAPI` as well
   - Defaults `newton:kamino:dynamicsSolver` to `"scc"`; authored values and earlier explicitly applied APIs take precedence
