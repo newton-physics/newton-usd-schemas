@@ -143,7 +143,9 @@ Reviewers must confirm that the tests in a PR meet this bar by comparing them ag
 
 ## Validators
 
-The validators in `newton_usd_schemas/validators` check content against requirements of the Newton schemas that OpenUSD cannot express in the schema itself, such as an attribute value that must be divisible by 8, or a relationship that must target a particular kind of prim. Add a validator when the schema documents a requirement, and Newton rejects or misinterprets content that breaks it. Requirements that are not specific to Newton, such as hard limits, should also be proposed to OpenUSD.
+The validators in `newton_usd_schemas/validators` check content against requirements of the Newton USD schemas that OpenUSD cannot express in the schema itself, such as an attribute value that must be divisible by 8, or a relationship that must target a particular kind of prim. Add a validator when the schema documents a requirement, and Newton rejects or misinterprets content that breaks it. Requirements that are not specific to Newton, such as hard limits, should also be proposed to OpenUSD.
+
+Passing the validators means content meets these requirements, not that it simulates accurately. A validator's `doc`, messages, and changelog entry state the requirement it checks, and do not describe content as physically valid, accurate, or simulation ready.
 
 ### Adding a Validator
 
@@ -156,6 +158,8 @@ The validators in `newton_usd_schemas/validators` check content against requirem
    - `isTimeDependent`: `true` if the check validates values at the times in its `time_range`, such as time-sampled attribute values. When `UsdValidation` validates a list of time codes, it runs time dependent validators once for each, and other validators once with the whole time range. A check that is not time dependent can still read time samples to decide whether a requirement applies, as the mimic validator does with `newton:mimicEnabled`.
 4. To add a fixer, pass a list of `UsdValidation.ValidationFixer`s as the third argument of `register_prim_validator`, built only when `SUPPORTS_PYTHON_FIXERS` is true, since Python fixers require OpenUSD 26.11 or newer. Its `errorName` must match the findings it fixes, and it must author in the edit target it is given. See `_collision.py` for an example.
 5. Add a changelog entry under `## Features` that states the requirement.
+
+`docs/validation.md` describes how to run the validators, not what each one checks, so a new validator does not usually change it: its `doc` in `plugInfo.json` and its changelog entry describe its requirement. Update `docs/validation.md` only when a change affects how all of the validators are run or selected, such as a new OpenUSD version requirement or a new kind of keyword.
 
 ### Renames and Deprecations
 
