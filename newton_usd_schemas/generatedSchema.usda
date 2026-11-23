@@ -745,7 +745,10 @@ class "NewtonCollisionPipelineAPI" (
         allocation. Adds a radix sort + gather pass.
 
         If `newton:collision:contactMatching` is set to any mode other
-        than "disabled", this flag behaves as true."""
+        than "disabled", this flag behaves as true.
+
+        If `newton:collision:deterministic` is false, an engine may still
+        generate deterministic contacts."""
     )
 
     uniform bool newton:collision:includeStaticKinematicPairs = true (
