@@ -27,7 +27,7 @@
                         "schemaTypes": ["NewtonPhysicsKaminoSccSceneAPI"]
                     },
                     "MimicJointValidator": {
-                        "doc": "newton:mimicJoint must target exactly one other joint, of the same joint type as the follower.",
+                        "doc": "newton:mimicJoint must target exactly one other joint, of the same joint type as the follower. NewtonMimicAPI should only be applied to a single-DOF joint, as its behavior on other joints is undefined.",
                         "keywords": ["NewtonJoints", "NewtonMimicAPI"],
                         "schemaTypes": ["NewtonPhysicsMimicAPI"]
                     },
