@@ -103,6 +103,15 @@ class TestValidatorMetadata(ValidatorTestCase):
         self.assertEqual(list(metadata.GetSchemaTypes()), ["NewtonPhysicsSDFCollisionAPI"])
         self.assertFalse(metadata.isTimeDependent)
 
+    def test_collision_pipeline(self):
+        """Register metadata for the collision pipeline requirements."""
+        metadata = self.metadata(validators.COLLISION_PIPELINE_VALIDATOR)
+        self.assertEqual(metadata.name, "newton_usd_schemas.validators:CollisionPipelineValidator")
+        self.assertTrue(metadata.doc)
+        self.assertEqual(sorted(metadata.GetKeywords()), ["NewtonCollision", "NewtonCollisionPipelineAPI", "NewtonValidators"])
+        self.assertEqual(list(metadata.GetSchemaTypes()), ["NewtonPhysicsCollisionPipelineAPI"])
+        self.assertFalse(metadata.isTimeDependent)
+
     def test_mimic_joint(self):
         metadata = self.metadata(validators.MIMIC_JOINT_VALIDATOR)
         self.assertEqual(metadata.name, "newton_usd_schemas.validators:MimicJointValidator")
@@ -153,6 +162,7 @@ class TestValidatorKeywords(ValidatorTestCase):
         expected = sorted(
             [
                 validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR,
+                validators.COLLISION_PIPELINE_VALIDATOR,
                 validators.KAMINO_SCC_SOLVER_VALIDATOR,
                 validators.MIMIC_JOINT_VALIDATOR,
                 validators.RENAMED_API_SCHEMAS_VALIDATOR,
@@ -163,7 +173,11 @@ class TestValidatorKeywords(ValidatorTestCase):
         self.assertEqual(self.names("NewtonValidators"), expected)
 
     def test_newton_collision(self):
-        self.assertEqual(self.names("NewtonCollision"), [validators.SDF_MAX_RESOLUTION_VALIDATOR])
+        self.assertEqual(self.names("NewtonCollision"), sorted([validators.COLLISION_PIPELINE_VALIDATOR, validators.SDF_MAX_RESOLUTION_VALIDATOR]))
+
+    def test_newton_collision_pipeline_api(self):
+        """Select the collision pipeline validator through its schema keyword."""
+        self.assertEqual(self.names("NewtonCollisionPipelineAPI"), [validators.COLLISION_PIPELINE_VALIDATOR])
 
     def test_newton_joints(self):
         self.assertEqual(self.names("NewtonJoints"), [validators.MIMIC_JOINT_VALIDATOR])
