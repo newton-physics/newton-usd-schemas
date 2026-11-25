@@ -1860,8 +1860,8 @@ class NewtonActuator "NewtonActuator" (
     `NewtonDCMotorAPI`). With a motor, the control law must output a duty (`newton:outputSpace = "duty"`),
     and the motor turns it into the effort of the motor. Effort clamping must not be combined with a motor.
 
-    The motor of an actuator may draw from a battery shared with other actuators (e.g.
-    `NewtonConstantResistanceBattery`) via the `newton:battery` relationship.
+    The motor of an actuator may draw from a supply shared with other actuators, e.g. a battery
+    such as `NewtonConstantResistanceBattery`, via the `newton:supply` relationship.
 
     Note: Newton actuators use radians, diverging from `UsdPhysicsDriveAPI` which uses degrees.
     Actuator attributes are also documented in joint space, though this is not enforced,
@@ -1883,28 +1883,28 @@ class NewtonActuator "NewtonActuator" (
         """
     )
 
-    rel newton:battery (
-        doc = """The battery this actuator draws from.
+    rel newton:supply (
+        doc = """The supply this actuator draws from, e.g. a battery.
 
         The relationship is optional. Only the first target is honored, and it must
-        identify a prim derived from `NewtonBattery` (e.g. `NewtonConstantResistanceBattery`).
-        Parsers should raise an error if it does not. The battery type defines which actuators
+        identify a prim derived from `NewtonSupply` (e.g. `NewtonConstantResistanceBattery`).
+        Parsers should raise an error if it does not. The supply type defines which actuators
         may target it.
         """
     )
 }
 
-class "NewtonBattery" (
-    doc = """Base class for all batteries shared by one or more actuators.
+class "NewtonSupply" (
+    doc = """Base class for all supplies shared by one or more actuators, e.g. batteries.
 
     EXPERIMENTAL: The Newton actuator schema family is provisional. Attribute names,
     defaults, and composition rules may change without notice in subsequent releases.
 
-    A battery is defined by a prim of a concrete type derived from `NewtonBattery` (e.g.
-    `NewtonConstantResistanceBattery`), which determines the battery model.
+    A supply is defined by a prim of a concrete type derived from `NewtonSupply` (e.g.
+    `NewtonConstantResistanceBattery`), which determines the supply model.
 
-    An actuator draws from a battery by targeting it with its `newton:battery` relationship.
-    The battery type defines how the battery affects its actuators and which actuators may
+    An actuator draws from a supply by targeting it with its `newton:supply` relationship.
+    The supply type defines how the supply affects its actuators and which actuators may
     draw from it.
     """
 )
@@ -2549,9 +2549,9 @@ class NewtonDCMotorAPI "NewtonDCMotorAPI" (
     which would apply the effort-speed limit a second time. Parsers should raise an error if both are
     applied.
 
-    The motor provides the supply voltage `V`: `newton:vin`, or the voltage of the battery the
-    actuator draws from if that battery provides one (e.g. `NewtonConstantResistanceBattery`).
-    The actuator then draws the current `clamp(duty, -1, 1) * current` from the battery.
+    The motor provides the supply voltage `V`: `newton:vin`, or the voltage of the supply the
+    actuator draws from if that supply provides one (e.g. `NewtonConstantResistanceBattery`).
+    The actuator then draws the current `clamp(duty, -1, 1) * current` from the supply.
 
     For a BAM fit, `newton:kt` and `newton:resistance` are the fit's `kt` and `R`, and
     `newton:vin` is the supply voltage of the servo, not a fitted value. The firmware P controller
@@ -2563,7 +2563,7 @@ class NewtonDCMotorAPI "NewtonDCMotorAPI" (
     modeled, and BAM's current-controlled servo models are not covered.
 
     `newton:kt` and `newton:resistance` have no fallback values and must be authored, as must
-    `newton:vin` unless the actuator draws from a battery that provides its supply voltage.
+    `newton:vin` unless the actuator draws from a supply that provides its voltage.
     Parsers should raise an error if any of them is missing.
     """
 )
@@ -2593,8 +2593,8 @@ class NewtonDCMotorAPI "NewtonDCMotorAPI" (
     )
 
     float newton:vin (
-        doc = """Supply voltage, unless the actuator draws from a battery that provides its
-        supply voltage (e.g. `NewtonConstantResistanceBattery`).
+        doc = """Supply voltage, unless the actuator draws from a supply that provides its
+        voltage (e.g. `NewtonConstantResistanceBattery`).
 
         Range: (0, inf)
         Units: volt"""

@@ -26,7 +26,7 @@ class TestNewtonActuator(unittest.TestCase):
         self.assertEqual(self.prim.GetTypeName(), "NewtonActuator")
         self.assertTrue(self.prim.IsValid())
         self.assertTrue(self.prim.HasRelationship("newton:targets"))
-        self.assertTrue(self.prim.HasRelationship("newton:battery"))
+        self.assertTrue(self.prim.HasRelationship("newton:supply"))
 
     def test_targets_relationship(self):
         rel = self.prim.GetRelationship("newton:targets")
@@ -36,12 +36,12 @@ class TestNewtonActuator(unittest.TestCase):
         self.assertEqual(len(targets), 1)
         self.assertEqual(str(targets[0]), "/World/Joint")
 
-    def test_battery_relationship(self):
-        self.assertTrue(self.prim.HasRelationship("newton:battery"))
-        rel = self.prim.GetRelationship("newton:battery")
+    def test_supply_relationship(self):
+        self.assertTrue(self.prim.HasRelationship("newton:supply"))
+        rel = self.prim.GetRelationship("newton:supply")
         self.assertFalse(rel.HasAuthoredTargets())
-        rel.SetTargets([Sdf.Path("/World/Battery")])
-        self.assertEqual([str(t) for t in rel.GetTargets()], ["/World/Battery"])
+        rel.SetTargets([Sdf.Path("/World/Supply")])
+        self.assertEqual([str(t) for t in rel.GetTargets()], ["/World/Supply"])
 
     def test_not_imageable(self):
         # Actuators carry a control law bound to a joint; they have no extent and are
@@ -51,7 +51,7 @@ class TestNewtonActuator(unittest.TestCase):
         # The prim definition must not advertise Imageable properties it does not have.
         definition = Usd.SchemaRegistry().FindConcretePrimDefinition("NewtonActuator")
         self.assertIsNotNone(definition)
-        self.assertEqual(sorted(definition.GetPropertyNames()), ["newton:battery", "newton:targets"])
+        self.assertEqual(sorted(definition.GetPropertyNames()), ["newton:supply", "newton:targets"])
 
     def test_bbox_cache_skips_actuator(self):
         # Regression test: when NewtonActuator declared UsdGeomImageable as its base
@@ -65,16 +65,16 @@ class TestNewtonActuator(unittest.TestCase):
         self.assertTrue(bound.GetRange().IsEmpty())
 
 
-class TestNewtonBattery(unittest.TestCase):
+class TestNewtonSupply(unittest.TestCase):
     def test_typed_schema_registered(self):
-        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsBattery")
-        self.assertEqual(plug_type.typeName, "NewtonPhysicsBattery")
-        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsBattery")
-        self.assertEqual(schema_type, "NewtonBattery")
+        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsSupply")
+        self.assertEqual(plug_type.typeName, "NewtonPhysicsSupply")
+        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsSupply")
+        self.assertEqual(schema_type, "NewtonSupply")
 
     def test_abstract(self):
-        self.assertEqual(Usd.SchemaRegistry().GetSchemaKind("NewtonBattery"), Usd.SchemaKind.AbstractTyped)
-        self.assertIsNone(Usd.SchemaRegistry().FindConcretePrimDefinition("NewtonBattery"))
+        self.assertEqual(Usd.SchemaRegistry().GetSchemaKind("NewtonSupply"), Usd.SchemaKind.AbstractTyped)
+        self.assertIsNone(Usd.SchemaRegistry().FindConcretePrimDefinition("NewtonSupply"))
 
 
 class TestNewtonConstantResistanceBattery(unittest.TestCase):
@@ -91,7 +91,7 @@ class TestNewtonConstantResistanceBattery(unittest.TestCase):
     def test_prim_is_battery(self):
         self.assertEqual(self.prim.GetTypeName(), "NewtonConstantResistanceBattery")
         self.assertTrue(self.prim.IsValid())
-        self.assertTrue(self.prim.IsA("NewtonBattery"))
+        self.assertTrue(self.prim.IsA("NewtonSupply"))
 
     def test_not_imageable(self):
         self.assertFalse(self.prim.IsA(UsdGeom.Imageable))
