@@ -11,6 +11,11 @@
                         "keywords": ["NewtonCollision", "NewtonSDFCollisionAPI"],
                         "schemaTypes": ["NewtonPhysicsSDFCollisionAPI"]
                     },
+                    "CollisionPipelineValidator": {
+                        "doc": "With NewtonCollisionPipelineAPI, newton:collision:maxTrianglePairs and newton:collision:maxShapePairs must be -1 or positive, and newton:collision:contactReport requires newton:collision:contactMatching to be latest or sticky. The fixer sets a capacity of 0 to -1, so the engine chooses it.",
+                        "keywords": ["NewtonCollision", "NewtonCollisionPipelineAPI"],
+                        "schemaTypes": ["NewtonPhysicsCollisionPipelineAPI"]
+                    },
                     "AttributeHardLimitsValidator": {
                         "doc": "Authored attribute values must lie within the attribute's hard limits, unless they equal the attribute's schema fallback value, which may be a sentinel outside the limits (such as -inf).",
                         "keywords": ["AttributeLimits"],
@@ -22,7 +27,7 @@
                         "schemaTypes": ["NewtonPhysicsKaminoSccSceneAPI"]
                     },
                     "MimicJointValidator": {
-                        "doc": "newton:mimicJoint must target exactly one other joint, of the same joint type as the follower.",
+                        "doc": "newton:mimicJoint must target exactly one other joint, of the same joint type as the follower. NewtonMimicAPI should only be applied to a single-DOF joint, as its behavior on other joints is undefined.",
                         "keywords": ["NewtonJoints", "NewtonMimicAPI"],
                         "schemaTypes": ["NewtonPhysicsMimicAPI"]
                     },

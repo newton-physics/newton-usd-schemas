@@ -143,7 +143,9 @@ Reviewers must confirm that the tests in a PR meet this bar by comparing them ag
 
 ## Validators
 
-The validators in `newton_usd_schemas/validators` check content against requirements of the Newton schemas that OpenUSD cannot express in the schema itself, such as an attribute value that must be divisible by 8, or a relationship that must target a particular kind of prim. Add a validator when the schema documents a requirement, and Newton rejects or misinterprets content that breaks it. Requirements that are not specific to Newton, such as hard limits, should also be proposed to OpenUSD.
+The validators in `newton_usd_schemas/validators` check content against requirements of the Newton USD schemas that OpenUSD cannot express in the schema itself, such as an attribute value that must be divisible by 8, or a relationship that must target a particular kind of prim. Add a validator when the schema documents a requirement, and Newton rejects or misinterprets content that breaks it. Requirements that are not specific to Newton, such as hard limits, should also be proposed to OpenUSD.
+
+Passing the validators means content meets these requirements, not that it simulates accurately. A validator's `doc`, messages, and changelog entry state the requirement it checks, and do not describe content as physically valid, accurate, or simulation ready.
 
 ### Adding a Validator
 

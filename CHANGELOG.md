@@ -2,11 +2,17 @@
 
 ## Features
 
+- Added `newton:deterministic` to `NewtonSceneAPI`, which requests a reproducibility guarantee (`inherit`, `notGuaranteed`, `runToRun` or `gpuToGpu`) for the solver kernels
 - Added `NewtonKaminoSccSceneAPI`, which extends a `PhysicsScene` with bilateral and shared unilateral SCC solver controls
   - Applying `NewtonKaminoSccSceneAPI` implicitly applies `NewtonKaminoSceneAPI` and `NewtonSceneAPI` as well
   - Defaults `newton:kamino:dynamicsSolver` to `"scc"`; authored values and earlier explicitly applied APIs take precedence
 - Added dynamics solver selection, recovery times and speed caps, and contact and joint-limit compliance controls to `NewtonKaminoSceneAPI`
+- Added `NewtonCollisionPipelineAPI`, which extends a `PhysicsScene` with Newton collision pipeline settings
+  - Applying `NewtonCollisionPipelineAPI` implicitly applies `NewtonSceneAPI` as well
+  - The schema is experimental, and its attributes may change without notice
 - Added a validator that reports an error when API ordering prevents `NewtonKaminoSccSceneAPI` from selecting SCC
+- Added a validator that reports an error when `newton:collision:maxTrianglePairs` or `newton:collision:maxShapePairs` is 0, or when `newton:collision:contactReport` is enabled while `newton:collision:contactMatching` is `"disabled"`
+  - A fix sets a capacity of 0 to -1, so the engine chooses it.
 - Added validators that report and migrate content which uses renamed attributes or API schemas
   - Renamed attributes should be authored with their new names, such as `newton:masses` rather than `physics:masses` on `NewtonPointsDeformableSimAPI`. Deprecated names are reported as warnings, and removed names as errors. A fix moves their values to the new names.
   - Renamed API schemas should be applied with their new names. Deprecated names are reported as warnings, and removed names as errors. A fix replaces the old names with the new ones.
@@ -23,6 +29,11 @@
   - Actuators draw from a supply with the new `newton:supply` relationship on `NewtonActuator`.
   - Motors that provide a supply voltage, such as `NewtonDCMotorAPI`, use the supply's voltage instead of `newton:vin`.
   - Consumers update the battery voltage once per step, after the actuators, so motors use the voltage computed from the previous step's currents.
+- `NewtonMimicAPI` should only be applied to a single-DOF joint, a `PhysicsRevoluteJoint` or `PhysicsPrismaticJoint`, as its behavior on other joints is undefined. The validators now report it on other joints as a warning.
+
+## Documentation
+
+- Clarified that the validators check content against the requirements of the Newton USD schemas, and not whether it simulates accurately
 
 ## Breaking Changes
 

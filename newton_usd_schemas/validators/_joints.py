@@ -1,9 +1,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
-from pxr import Usd
+from pxr import Usd, UsdPhysics
 
-from ._registration import Finding, TimeRange, native_prim_task, register_prim_validator, validator_name
+from ._registration import Finding, TimeRange, UsdValidation, native_prim_task, register_prim_validator, validator_name
 
 MIMIC_JOINT_VALIDATOR = validator_name("MimicJointValidator")
 
@@ -27,6 +27,18 @@ def _is_mimic_disabled(prim: Usd.Prim) -> bool:
 def check_mimic_joint(prim: Usd.Prim, time_range: TimeRange) -> list[Finding]:
     if not prim.HasAPI("NewtonMimicAPI") or _is_mimic_disabled(prim):
         return []
+    findings = []
+    # Classified by prim type, as Newton does, so a generic joint locked to a single axis is still reported
+    if not prim.IsA(UsdPhysics.RevoluteJoint) and not prim.IsA(UsdPhysics.PrismaticJoint):
+        message = (
+            f"NewtonMimicAPI on <{prim.GetPath()}> is applied to a {prim.GetTypeName()}, which is not a single-DOF joint. "
+            "Its behavior is undefined, so it should only be applied to a PhysicsRevoluteJoint or PhysicsPrismaticJoint."
+        )
+        findings.append(Finding("MimicJointNotSingleDOF", prim, message, UsdValidation.ValidationErrorType.Warn))
+    return findings + _check_leader(prim)
+
+
+def _check_leader(prim: Usd.Prim) -> list[Finding]:
     rel = prim.GetRelationship("newton:mimicJoint")
     targets = rel.GetForwardedTargets()
     if len(targets) != 1:
