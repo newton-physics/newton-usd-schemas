@@ -154,35 +154,6 @@ class TestNewtonConstantResistanceBattery(unittest.TestCase):
             self.assertIsNone(hard.GetMaximum())
 
 
-class TestNewtonActuatorInputProcessorBaseAPI(unittest.TestCase):
-    def setUp(self):
-        self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
-        self.prim: Usd.Prim = self.stage.DefinePrim("/Actuator", "NewtonActuator")
-
-    def test_api_registered(self):
-        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsActuatorInputProcessorBaseAPI")
-        self.assertEqual(plug_type.typeName, "NewtonPhysicsActuatorInputProcessorBaseAPI")
-        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsActuatorInputProcessorBaseAPI")
-        self.assertEqual(schema_type, "NewtonActuatorInputProcessorBaseAPI")
-
-    def test_api_application(self):
-        self.assertFalse(self.prim.HasAPI("NewtonActuatorInputProcessorBaseAPI"))
-        self.prim.ApplyAPI("NewtonActuatorInputProcessorBaseAPI")
-        self.assertTrue(self.prim.HasAPI("NewtonActuatorInputProcessorBaseAPI"))
-
-    def test_applied_by_input_processors(self):
-        for name in ("NewtonActuatorDelayAPI", "NewtonActuatorEncoderAPI"):
-            with self.subTest(name=name):
-                prim = self.stage.DefinePrim(f"/{name}", "NewtonActuator")
-                prim.ApplyAPI(name)
-                self.assertTrue(prim.HasAPI("NewtonActuatorInputProcessorBaseAPI"))
-
-    def test_api_limitations(self):
-        self.assertTrue(self.prim.CanApplyAPI("NewtonActuatorInputProcessorBaseAPI"))
-        xform = self.stage.DefinePrim("/NotActuator", "Xform")
-        self.assertFalse(xform.CanApplyAPI("NewtonActuatorInputProcessorBaseAPI"))
-
-
 class TestNewtonActuatorDelayAPI(unittest.TestCase):
     def setUp(self):
         self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
@@ -201,8 +172,6 @@ class TestNewtonActuatorDelayAPI(unittest.TestCase):
         self.assertTrue(self.prim.HasAttribute("newton:delaySteps"))
 
     def test_delay_steps(self):
-        self.assertFalse(self.prim.HasAttribute("newton:delaySteps"))
-
         self.prim.ApplyAPI("NewtonActuatorDelayAPI")
         attr = self.prim.GetAttribute("newton:delaySteps")
         self.assertFalse(attr.HasAuthoredValue())
@@ -224,41 +193,6 @@ class TestNewtonActuatorDelayAPI(unittest.TestCase):
     def test_api_limitations(self):
         xform = self.stage.DefinePrim("/NotActuator", "Xform")
         self.assertFalse(xform.CanApplyAPI("NewtonActuatorDelayAPI"))
-
-
-class TestNewtonActuatorEncoderAPI(unittest.TestCase):
-    def setUp(self):
-        self.stage: Usd.Stage = Usd.Stage.CreateInMemory()
-        self.prim: Usd.Prim = self.stage.DefinePrim("/Actuator", "NewtonActuator")
-
-    def test_api_registered(self):
-        plug_type = Plug.Registry().FindTypeByName("NewtonPhysicsActuatorEncoderAPI")
-        self.assertEqual(plug_type.typeName, "NewtonPhysicsActuatorEncoderAPI")
-        schema_type = Usd.SchemaRegistry().GetSchemaTypeName("NewtonPhysicsActuatorEncoderAPI")
-        self.assertEqual(schema_type, "NewtonActuatorEncoderAPI")
-
-    def test_api_application(self):
-        self.assertFalse(self.prim.HasAPI("NewtonActuatorEncoderAPI"))
-        self.prim.ApplyAPI("NewtonActuatorEncoderAPI")
-        self.assertTrue(self.prim.HasAPI("NewtonActuatorEncoderAPI"))
-        self.assertTrue(self.prim.HasRelationship("newton:outputJoint"))
-
-    def test_output_joint_relationship(self):
-        self.assertFalse(self.prim.HasRelationship("newton:outputJoint"))
-
-        self.prim.ApplyAPI("NewtonActuatorEncoderAPI")
-        self.assertTrue(self.prim.HasRelationship("newton:outputJoint"))
-        rel = self.prim.GetRelationship("newton:outputJoint")
-        self.assertFalse(rel.HasAuthoredTargets())
-        rel.SetTargets([Sdf.Path("/World/OutputJoint")])
-        targets = rel.GetTargets()
-        self.assertEqual(len(targets), 1)
-        self.assertEqual(str(targets[0]), "/World/OutputJoint")
-
-    def test_api_limitations(self):
-        self.assertTrue(self.prim.CanApplyAPI("NewtonActuatorEncoderAPI"))
-        xform = self.stage.DefinePrim("/NotActuator", "Xform")
-        self.assertFalse(xform.CanApplyAPI("NewtonActuatorEncoderAPI"))
 
 
 class TestNewtonActuatorControlBaseAPI(unittest.TestCase):

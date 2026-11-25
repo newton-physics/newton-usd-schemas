@@ -1849,9 +1849,7 @@ class NewtonActuator "NewtonActuator" (
 
     Actuators must provide a single control law by applying a `NewtonActuatorControlBaseAPI` derived schema (e.g. `NewtonPDControlAPI`).
 
-    Additional input processing (e.g. command delay or a position encoder behind an output joint) can be added by applying
-    `NewtonActuatorInputProcessorBaseAPI` derived schemas (e.g. `NewtonActuatorDelayAPI`). The order of input
-    processors is not guaranteed to be preserved, thus input processors must be order independent.
+    Actuator command input delay can be included by applying `NewtonActuatorDelayAPI`. This is useful to model actuator communication or processing lag.
 
     Clamping behaviors can be added by applying `NewtonActuatorClampingBaseAPI` derived schemas. Each bounds
     either the effort (e.g. `NewtonMaxEffortClampingAPI`) or, with a motor, the duty (e.g.
@@ -1988,26 +1986,7 @@ class NewtonConstantResistanceBattery "NewtonConstantResistanceBattery" (
     )
 }
 
-class NewtonActuatorInputProcessorBaseAPI "NewtonActuatorInputProcessorBaseAPI" (
-    doc = """Base API for all actuator input processors.
-
-    Input processors transform the inputs of the control law, such as the commanded inputs
-    (e.g. `NewtonActuatorDelayAPI`) or the sensed joint state (e.g.
-    `NewtonActuatorEncoderAPI`), before the control law computes the actuator output.
-    Any number of input processors may be applied to a `NewtonActuator`. The order of input
-    processors is not guaranteed to be preserved, thus input processors must be order
-    independent.
-
-    Applying any input processor API automatically applies this base. Check
-    `prim.HasAPI('NewtonActuatorInputProcessorBaseAPI')` to detect whether any input
-    processor is present.
-    """
-)
-{
-}
-
 class NewtonActuatorDelayAPI "NewtonActuatorDelayAPI" (
-    apiSchemas = ["NewtonActuatorInputProcessorBaseAPI"]
     doc = """Adds command input delay to an actuator to model communication or processing lag.
 
     Command inputs such as control targets and feedforward terms are delayed by the specified
@@ -2032,39 +2011,6 @@ class NewtonActuatorDelayAPI "NewtonActuatorDelayAPI" (
                 int minimum = 0
             }
         }
-    )
-}
-
-class NewtonActuatorEncoderAPI "NewtonActuatorEncoderAPI" (
-    apiSchemas = ["NewtonActuatorInputProcessorBaseAPI"]
-    doc = """Position encoder of the actuator.
-
-    Models the sensor that provides the position the control law reads, including effects of
-    how the encoder is mounted and how it measures.
-
-    Output-side mounting: the encoder measures after a passive single-DOF joint between the
-    actuated joint and the link, named by `newton:outputJoint`. The control law reads the position
-    `q = q_actuated + q_output` instead of the actuated joint position alone. This captures
-    gearbox backlash when the output joint has a small motion range: the simulation handles
-    the dead zone, where the actuator effort does not reach the link.
-
-    The velocity is still that of the actuated joint.
-    """
-)
-{
-    rel newton:outputJoint (
-        doc = """The passive joint between the actuated joint and the link, e.g. to model gearbox
-        backlash. The encoder measures the position after this joint:
-        `q = q_actuated + q_output`.
-
-        The relationship must be authored. Parsers should raise an error if no target
-        is provided.
-
-        Only the first target is honored, and it must identify either a
-        `PhysicsRevoluteJoint` or `PhysicsPrismaticJoint`, matching the type of the
-        actuated joint. Since the positions are summed, its axis must be aligned with the
-        axis of the actuated joint, with the same direction and sign convention.
-        """
     )
 }
 

@@ -19,9 +19,6 @@
 - Added `NewtonCurrentDutyClampingAPI`, the current and duty limits of the firmware of a servo, with `newton:maxCurrent` and `newton:maxDuty`
   - The current limit uses the firmware estimates `newton:ktEstimate` and `newton:resistanceEstimate`, by default the motor's `newton:kt` and `newton:resistance`, and the motor's supply voltage (`newton:voltageSource = "input"`) or `newton:nominalVoltage` (`"nominal"`). It is skipped at or below `newton:minVoltage`.
   - `NewtonPDControlAPI` with `newton:outputSpace = "duty"`, `newton:kp` set to the firmware gain times the error gain and `newton:kd = 0`, `NewtonCurrentDutyClampingAPI` and `NewtonDCMotorAPI` together model a BAM voltage-controlled servo without friction; its command delay is authored with `NewtonActuatorDelayAPI` and its armature on the joint.
-- Added `NewtonActuatorInputProcessorBaseAPI`, the base of all actuator input processors, which transform the inputs of the control law
-  - `NewtonActuatorDelayAPI` now applies it implicitly.
-- Added `NewtonActuatorEncoderAPI`, an input processor that models the position encoder of an actuator, mounted behind a passive output joint named by the `newton:outputJoint` relationship, e.g. to capture gearbox backlash
 - Added `NewtonBattery`, an abstract base for batteries shared by the motors of several actuators, and `NewtonConstantResistanceBattery`, an ideal voltage source behind a constant internal resistance with `newton:nominalVoltage`, `newton:resistance` and `newton:minVoltage`
   - Actuators draw from a battery with the new `newton:battery` relationship on `NewtonActuator`.
   - Motors that provide a supply voltage, such as `NewtonDCMotorAPI`, use the battery's voltage instead of `newton:vin`.
