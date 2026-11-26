@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="1080" viewBox="0 0 1320 1080" role="img" aria-labelledby="title desc">
+  <title id="title">One tendon, three guides</title>
+  <desc id="desc">The NewtonTendon prim /Rig/Cable owns three NewtonTendonGuide children: Start, Roller, and End. Their guide, profile, and incoming-span parameters stay under the tendon. Each guide's frame relationship targets a USD prim elsewhere in the asset. Start references /Rig/Frames/Start with no enclosing body. Roller references /Rig/Pulley/GuideFrame, beneath a rigid body. End references /Rig/Load/AttachmentSite, a Sphere with NewtonSiteAPI beneath another rigid body. Span 0 belongs to Roller and span 1 belongs to End.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6a788a"/></marker>
+    <style>
+      text { font-family: 'Segoe UI', Arial, sans-serif; fill: #1c2b3d; }
+      .title { font-size: 30px; font-weight: 650; }
+      .subtitle { font-size: 18px; fill: #536376; }
+      .path { font-size: 21px; font-weight: 650; }
+      .label { font-size: 17px; fill: #536376; }
+      .value { font-size: 19px; }
+      .frame { font-size: 17px; }
+      .api { font-size: 19px; fill: #226643; }
+      .card { fill: #ffffff; stroke: #cbd5df; stroke-width: 1.5; }
+      .relation { fill: none; stroke: #6a788a; stroke-width: 1.5; stroke-dasharray: 5 5; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1320" height="1080" fill="#ffffff"/>
+  <text x="38" y="46" class="title">One tendon, three guides</text>
+  <text x="38" y="77" class="subtitle">Parameters under the tendon · placement through references to USD frames</text>
+
+  <rect x="38" y="102" width="1244" height="94" rx="12" fill="#f1f5f9" stroke="#cbd5df"/>
+  <text x="60" y="138" class="path">/Rig/Cable</text>
+  <text x="220" y="138" class="value">type: NewtonTendon</text>
+  <text x="60" y="172" class="value">newton:tendon:guides = [ /Rig/Cable/Start, /Rig/Cable/Roller, /Rig/Cable/End ]</text>
+
+  <!-- A planar route tangent to the upper side of the circle. -->
+  <circle cx="660" cy="304" r="64" fill="#e5f1f7" stroke="#558baa" stroke-width="2.5"/>
+  <path d="M 242 380 L 639 243.5" fill="none" stroke="#2676ad" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 639 243.5 A 64 64 0 0 1 681 243.5" fill="none" stroke="#24334a" stroke-width="5"/>
+  <path d="M 681 243.5 L 1078 380" fill="none" stroke="#bd651f" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 232 380 L 242 370 L 252 380 L 242 390 Z M 1068 380 L 1078 370 L 1088 380 L 1078 390 Z" fill="#24334a"/>
+  <circle cx="660" cy="304" r="4" fill="#558baa"/>
+  <text x="376" y="264" class="value" style="fill:#2676ad">Span 0 → Roller</text>
+  <text x="790" y="264" class="value" style="fill:#bd651f">Span 1 → End</text>
+  <text x="660" y="402" text-anchor="middle" class="label">Circle in the referenced frame’s XY plane</text>
+  <path d="M 242 400 L 242 431" class="relation"/>
+  <path d="M 660 414 L 660 431" class="relation"/>
+  <path d="M 1078 400 L 1078 431" class="relation"/>
+
+  <rect x="38" y="438" width="396" height="321" rx="12" class="card"/>
+  <rect x="462" y="438" width="396" height="321" rx="12" class="card"/>
+  <rect x="886" y="438" width="396" height="321" rx="12" class="card"/>
+
+  <text x="60" y="476" class="path">/Rig/Cable/Start</text>
+  <text x="60" y="511" class="label">Prim type</text>
+  <text x="60" y="538" class="value">NewtonTendonGuide</text>
+  <text x="60" y="577" class="label">Applied APIs</text>
+  <text x="60" y="605" class="api">NewtonTendonAnchorAPI</text>
+  <text x="60" y="698" class="frame">frame → /Rig/Frames/Start</text>
+  <text x="60" y="728" class="label">No incoming span</text>
+
+  <text x="484" y="476" class="path">/Rig/Cable/Roller</text>
+  <text x="484" y="511" class="label">Prim type</text>
+  <text x="484" y="538" class="value">NewtonTendonGuide</text>
+  <text x="484" y="577" class="label">Applied APIs</text>
+  <text x="484" y="605" class="api">NewtonTendonRollerAPI</text>
+  <text x="484" y="633" class="api">NewtonRollerCircleAPI</text>
+  <text x="484" y="661" class="api">NewtonTendonSpanAPI</text>
+  <text x="484" y="698" class="frame">frame → /Rig/Pulley/GuideFrame</text>
+  <text x="484" y="728" class="label">Incoming span 0: rest length, c, damping</text>
+
+  <text x="908" y="476" class="path">/Rig/Cable/End</text>
+  <text x="908" y="511" class="label">Prim type</text>
+  <text x="908" y="538" class="value">NewtonTendonGuide</text>
+  <text x="908" y="577" class="label">Applied APIs</text>
+  <text x="908" y="605" class="api">NewtonTendonAnchorAPI</text>
+  <text x="908" y="633" class="api">NewtonTendonSpanAPI</text>
+  <text x="908" y="698" class="frame">frame → /Rig/Load/AttachmentSite</text>
+  <text x="908" y="728" class="label">Incoming span 1: rest length, c, damping</text>
+
+  <path d="M 242 760 L 242 822" class="relation"/>
+  <path d="M 660 760 L 660 822" class="relation"/>
+  <path d="M 1084 760 L 1084 822" class="relation"/>
+  <rect x="38" y="830" width="396" height="185" rx="10" fill="#f1f5f9" stroke="#cbd5df"/>
+  <rect x="462" y="830" width="396" height="185" rx="10" fill="#f1f5f9" stroke="#cbd5df"/>
+  <rect x="886" y="830" width="396" height="185" rx="10" fill="#f1f5f9" stroke="#cbd5df"/>
+  <text x="60" y="864" class="path">/Rig/Frames</text>
+  <text x="60" y="893" class="value">Xform</text>
+  <path d="M 68 910 L 68 929 L 86 929" fill="none" stroke="#6a788a"/>
+  <text x="98" y="936" class="value">Start · Xform</text>
+  <text x="60" y="986" class="label">No enclosing rigid body: world attachment</text>
+  <text x="484" y="864" class="path">/Rig/Pulley</text>
+  <text x="484" y="893" class="value">Xform + PhysicsRigidBodyAPI</text>
+  <path d="M 492 910 L 492 929 L 510 929" fill="none" stroke="#6a788a"/>
+  <text x="522" y="936" class="value">GuideFrame · Xform</text>
+  <text x="484" y="986" class="label">Body attachment: /Rig/Pulley</text>
+  <text x="908" y="864" class="path">/Rig/Load</text>
+  <text x="908" y="893" class="value">Xform + PhysicsRigidBodyAPI</text>
+  <path d="M 916 910 L 916 929 L 934 929" fill="none" stroke="#6a788a"/>
+  <text x="946" y="936" class="value">AttachmentSite</text>
+  <text x="946" y="963" class="frame">Sphere + NewtonSiteAPI</text>
+  <text x="908" y="994" class="label">Body attachment: /Rig/Load</text>
+  <text x="38" y="1054" class="label">Frame relationships supply placement. Guide and span parameters stay in the upper cards. c = span compliance.</text>
+</svg>
