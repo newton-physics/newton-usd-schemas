@@ -7,6 +7,8 @@
   - Authored `newton:materialPair:mu`, `newton:materialPair:muStatic`, `newton:materialPair:muTorsional`, `newton:materialPair:muRolling` and `newton:materialPair:restitution` replace the coefficients combined from the materials. Unauthored coefficients are not overridden.
   - The schema can be applied to any prim, typically a `Scope` for each pair
   - The schema is experimental, and its attributes may change without notice
+- Added a validator that reports an error when a `NewtonMaterialPairAPI` material relationship does not target exactly one `Material` with `PhysicsMaterialAPI`, when no coefficient is authored, when an authored coefficient has no finite value at the default time, or when `newton:materialPair:muStatic` is less than `newton:materialPair:mu`
+  - Negative coefficients are reported by the hard limits validator
 
 # 0.8.0
 
