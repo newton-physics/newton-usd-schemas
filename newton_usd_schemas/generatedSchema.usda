@@ -2090,6 +2090,130 @@ class NewtonCurvesDeformableMaterialAPI "NewtonCurvesDeformableMaterialAPI" (
     )
 }
 
+class NewtonMaterialPairAPI "NewtonMaterialPairAPI" (
+    doc = """`NewtonMaterialPairAPI` overrides the contact coefficients of one pair of physics materials.
+
+    EXPERIMENTAL: The Newton material pair schema is provisional. Attribute names,
+    defaults, and composition rules may change without notice in subsequent releases.
+
+    Apply this schema to a prim in the imported subtree, typically a `Scope`, once for
+    each overridden pair. `newton:materialPair:material0` and `newton:materialPair:material1`
+    each target one `Material` with `PhysicsMaterialAPI` applied. Both may target the same
+    material, and the pair is unordered: swapping the targets has the same effect.
+
+    When two colliders whose bound physics materials form the pair come into contact, each
+    authored coefficient replaces the value the solver would otherwise combine from the
+    colliders' materials. An unauthored coefficient is not overridden, so the solver keeps
+    its usual per-material combination for it.
+
+    At least one coefficient must be authored. Newton reads only the values authored at the
+    default time, and each must be finite."""
+)
+{
+    rel newton:materialPair:material0 (
+        doc = """First material of the pair.
+
+        Must have exactly one target, a `Material` with `PhysicsMaterialAPI` applied."""
+    )
+
+    rel newton:materialPair:material1 (
+        doc = """Second material of the pair.
+
+        Must have exactly one target, a `Material` with `PhysicsMaterialAPI` applied.
+        It may be the same material as `newton:materialPair:material0`."""
+    )
+
+    float newton:materialPair:mu = -inf (
+        doc = """Coulomb (dynamic) friction coefficient of the pair.
+
+        Overrides the friction combined from the materials' `physics:dynamicFriction`.
+
+        If `newton:materialPair:mu` is unauthored, the pair does not override it. The
+        `-inf` fallback only marks it as unauthored: an authored value must be finite.
+
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:materialPair:muStatic = -inf (
+        doc = """Static friction coefficient of the pair.
+
+        Overrides the friction threshold for sticking, which is otherwise combined from
+        the materials' `physics:staticFriction`. Solvers without a separate static friction
+        coefficient ignore it.
+
+        When `newton:materialPair:mu` is also authored, `newton:materialPair:muStatic`
+        must be greater than or equal to it.
+
+        If `newton:materialPair:muStatic` is unauthored, the pair does not override it. The
+        `-inf` fallback only marks it as unauthored: an authored value must be finite.
+
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:materialPair:muTorsional = -inf (
+        doc = """Torsional friction coefficient of the pair (resistance to spinning at a contact point).
+
+        Overrides the torsional friction combined from the materials' `newton:torsionalFriction`.
+
+        If `newton:materialPair:muTorsional` is unauthored, the pair does not override it. The
+        `-inf` fallback only marks it as unauthored: an authored value must be finite.
+
+        Range: [0, inf)
+        Units: distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:materialPair:muRolling = -inf (
+        doc = """Rolling friction coefficient of the pair (resistance to rolling motion).
+
+        Overrides the rolling friction combined from the materials' `newton:rollingFriction`.
+
+        If `newton:materialPair:muRolling` is unauthored, the pair does not override it. The
+        `-inf` fallback only marks it as unauthored: an authored value must be finite.
+
+        Range: [0, inf)
+        Units: distance"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+
+    float newton:materialPair:restitution = -inf (
+        doc = """Restitution coefficient of the pair.
+
+        Overrides the restitution combined from the materials' `physics:restitution`.
+
+        If `newton:materialPair:restitution` is unauthored, the pair does not override it. The
+        `-inf` fallback only marks it as unauthored: an authored value must be finite.
+
+        Range: [0, inf)
+        Units: dimensionless"""
+        limits = {
+            dictionary hard = {
+                float minimum = 0
+            }
+        }
+    )
+}
+
 class NewtonMimicAPI "NewtonMimicAPI" (
     doc = """`NewtonMimicAPI` applies on top of a `PhysicsJoint`, adding additional constraints to mimic the DOFs of another joint.
 

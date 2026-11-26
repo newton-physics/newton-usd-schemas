@@ -1,3 +1,13 @@
+# Unreleased
+
+## Features
+
+- Added `NewtonMaterialPairAPI`, which overrides the contact coefficients of one unordered pair of physics materials
+  - `newton:materialPair:material0` and `newton:materialPair:material1` each target a `Material` with `PhysicsMaterialAPI`, and may target the same material
+  - Authored `newton:materialPair:mu`, `newton:materialPair:muStatic`, `newton:materialPair:muTorsional`, `newton:materialPair:muRolling` and `newton:materialPair:restitution` replace the coefficients combined from the materials. Unauthored coefficients are not overridden.
+  - The schema can be applied to any prim, typically a `Scope` for each pair
+  - The schema is experimental, and its attributes may change without notice
+
 # 0.8.0
 
 ## Features
