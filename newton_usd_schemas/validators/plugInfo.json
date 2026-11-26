@@ -35,6 +35,11 @@
                         "keywords": ["NewtonKamino", "NewtonKaminoSccSceneAPI"],
                         "schemaTypes": ["NewtonPhysicsKaminoSccSceneAPI"]
                     },
+                    "MaterialPairValidator": {
+                        "doc": "With NewtonMaterialPairAPI, newton:materialPair:material0 and newton:materialPair:material1 must each target exactly one Material with PhysicsMaterialAPI applied, and at least one coefficient must be authored. Each authored coefficient must have a finite value at the default time, and newton:materialPair:muStatic must not be less than newton:materialPair:mu when both are authored.",
+                        "keywords": ["NewtonMaterials", "NewtonMaterialPairAPI"],
+                        "schemaTypes": ["NewtonPhysicsMaterialPairAPI"]
+                    },
                     "MimicJointValidator": {
                         "doc": "newton:mimicJoint must target exactly one other joint, of the same joint type as the follower. NewtonMimicAPI should only be applied to a single-DOF joint, as its behavior on other joints is undefined.",
                         "keywords": ["NewtonJoints", "NewtonMimicAPI"],

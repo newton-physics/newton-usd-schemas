@@ -112,6 +112,15 @@ class TestValidatorMetadata(ValidatorTestCase):
         self.assertEqual(list(metadata.GetSchemaTypes()), ["NewtonPhysicsCollisionPipelineAPI"])
         self.assertFalse(metadata.isTimeDependent)
 
+    def test_material_pair(self):
+        """Register metadata for the material pair requirements."""
+        metadata = self.metadata(validators.MATERIAL_PAIR_VALIDATOR)
+        self.assertEqual(metadata.name, "newton_usd_schemas.validators:MaterialPairValidator")
+        self.assertTrue(metadata.doc)
+        self.assertEqual(sorted(metadata.GetKeywords()), ["NewtonMaterialPairAPI", "NewtonMaterials", "NewtonValidators"])
+        self.assertEqual(list(metadata.GetSchemaTypes()), ["NewtonPhysicsMaterialPairAPI"])
+        self.assertFalse(metadata.isTimeDependent)
+
     def test_mimic_joint(self):
         metadata = self.metadata(validators.MIMIC_JOINT_VALIDATOR)
         self.assertEqual(metadata.name, "newton_usd_schemas.validators:MimicJointValidator")
@@ -182,6 +191,7 @@ class TestValidatorKeywords(ValidatorTestCase):
                 validators.ATTRIBUTE_HARD_LIMITS_VALIDATOR,
                 validators.COLLISION_PIPELINE_VALIDATOR,
                 validators.KAMINO_SCC_SOLVER_VALIDATOR,
+                validators.MATERIAL_PAIR_VALIDATOR,
                 validators.MIMIC_JOINT_VALIDATOR,
                 validators.RENAMED_API_SCHEMAS_VALIDATOR,
                 validators.RENAMED_ATTRIBUTES_VALIDATOR,
@@ -199,6 +209,14 @@ class TestValidatorKeywords(ValidatorTestCase):
 
     def test_newton_joints(self):
         self.assertEqual(self.names("NewtonJoints"), [validators.MIMIC_JOINT_VALIDATOR])
+
+    def test_newton_materials(self):
+        """Select the material pair validator through the materials topic keyword."""
+        self.assertEqual(self.names("NewtonMaterials"), [validators.MATERIAL_PAIR_VALIDATOR])
+
+    def test_newton_material_pair_api(self):
+        """Select the material pair validator through its schema keyword."""
+        self.assertEqual(self.names("NewtonMaterialPairAPI"), [validators.MATERIAL_PAIR_VALIDATOR])
 
     def test_api_schema_applicability(self):
         self.assertEqual(self.names("APISchemaApplicability"), [validators.API_SCHEMA_APPLICABILITY_VALIDATOR])
